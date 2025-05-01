@@ -2,7 +2,7 @@
 # SDF objects are now managed on a primitive-by-primitive basis. Not tested yet.
 
 bl_info = {
-    "name" : "Mesh from SDF UI",
+    "name" : "Mesh from SDF",
     "description" : "",
     "author" : "TLabAltoh",
     "version" : (0, 0, 1),
