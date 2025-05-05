@@ -260,7 +260,7 @@ edges = np.array([
     0x203,
     0x109,
     0x0
-])
+], dtype='int32')
 
 triangulation = np.array([
     [ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 ],
@@ -519,7 +519,7 @@ triangulation = np.array([
     [ 0, 9, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 ],
     [ 0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 ],
     [ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 ]
-])
+], dtype='int32')
 
 corner_index_a_from_edge = np.array([
     0,
@@ -534,7 +534,7 @@ corner_index_a_from_edge = np.array([
     1,
     2,
     3
-])
+], dtype='int32')
 
 corner_index_b_from_edge = np.array([
     1,
@@ -549,4 +549,4 @@ corner_index_b_from_edge = np.array([
     5,
     6,
     7
-])
+], dtype='int32')

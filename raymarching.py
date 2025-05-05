@@ -235,26 +235,18 @@ class Raymarching(bpy.types.Operator):
     @classmethod
     def get_frag(cls):
         # generate fragment shader
-        frag_ = '''
+        frag_ = sc.frag_include_ + '''
         
-        struct SDFObjectProperty {
-            vec4 position_scale;
-            mat4 rotation;
-            vec2 prop_blend;
-            float prop_round;
-            float prop_dummy;
-        };
-        
-        layout(binding=0) readonly buffer in_prop_object { SDFObjectProperty objectPropertys[]; };
-        layout(binding=1) readonly buffer in_prop_box { uint box; };
-        layout(binding=2) readonly buffer in_prop_sphere { uint sphere; };
-        layout(binding=3) readonly buffer in_prop_cylinder { uint cylinder; };
-        layout(binding=4) readonly buffer in_prop_torus { uint torus; };
-        layout(binding=5) readonly buffer in_prop_hex_prism { uint hex_prism; };
-        layout(binding=6) readonly buffer in_prop_tri_prism { uint tri_prism; };
-        layout(binding=7) readonly buffer in_prop_ngon_prism { uint ngon_prism; };
-        layout(binding=8) readonly buffer in_prop_cone_prism { uint cone_prism; };
-        layout(binding=9) readonly buffer in_prop_glsl_prism { uint glsl_prism; };
+        // layout(binding=0) readonly buffer in_prop_object { SDFObjectProperty objectPropertys[]; };
+        layout(binding=0) readonly buffer in_prop_object { float testValue0; float testValue1; };
+        layout(binding=1) readonly buffer in_prop_box { SDFBoxProperty boxPropertys[]; };
+        layout(binding=2) readonly buffer in_prop_sphere { SDfSphereProperty spherePropertys[]; };
+        layout(binding=3) readonly buffer in_prop_cylinder { SDFCylinderProperty cylinderPropertys[]; };
+        layout(binding=4) readonly buffer in_prop_torus { SDFTorusProperty torusPropertys; };
+        layout(binding=5) readonly buffer in_prop_hex_prism { SDFPrismProperty hexPrismPropertys[]; };
+        layout(binding=6) readonly buffer in_prop_tri_prism { SDFPrismProperty triPrismPropertys[]; };
+        layout(binding=7) readonly buffer in_prop_ngon_prism { SDFNGonPrismProperty ngonPrismPropertys[]; };
+        layout(binding=8) readonly buffer in_prop_cone { SDFConeProperty conePropertys[]; };
         
         in vec3 pos;
         in vec3 orthoRayDir;
@@ -298,7 +290,8 @@ class Raymarching(bpy.types.Operator):
             //return opSubtraction(d0, d1);
             //return opIntersection(d0, d1);
             //return opXor(d0, d1);
-            return minDist;
+            //return minDist;
+            return minDist * (testValue0 + testValue1);
         }
         vec2 raymarch(vec3 ro, vec3 rd) {
             float dO = 0;
@@ -378,6 +371,7 @@ class Raymarching(bpy.types.Operator):
 
     @classmethod
     def draw(cls):
+        
         if cls.pause:
             return
 
@@ -392,6 +386,9 @@ class Raymarching(bpy.types.Operator):
         cls.shader.uniform_float("u_ViewMatrix", cls.config["u_ViewMatrix"])
         cls.shader.uniform_float("u_CameraPosition", cls.config["u_CameraPosition"])
         cls.shader.uniform_float("u_CameraRotationMatrix", cls.config["u_CameraRotationMatrix"])
+
+        test_buf = cls.ctx.buffer(np.array([0.5, 0.5], dtype='float32'))
+        test_buf.bind_to_storage_buffer(0)
         
         batch = batch_for_shader(cls.shader, 'TRIS', {"position": cls.config["vertices"]}, indices=cls.indices,)
         gpu.state.blend_set("ALPHA") 

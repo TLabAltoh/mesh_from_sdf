@@ -1,3 +1,4 @@
+
 # A library of distance functions and mathematical utilities.
 include_ = '''
         mat4 rotmat(vec3 axis, float angle) {
@@ -186,4 +187,52 @@ include_ = '''
             
             return opExtrusion(p, sign(side) * dist, height);
         }
+'''
+
+# A library of fragment shader
+frag_include_ = '''
+        struct SDFObjectProperty {
+            vec4 position_scale;
+            mat4 rotation;
+            vec2 prop_blend;
+            float prop_round;
+            float prop_dummy;
+        };
+        
+        struct SDFBoxProperty {
+            vec4 bounding;
+        };
+        
+        struct SDfSphereProperty {
+            float radius;
+        };
+        
+        struct SDFCylinderProperty {
+            float height;
+            float radius;
+        };
+        
+        struct SDFTorusProperty {
+            float radius0;
+            float radius1;
+        };
+        
+        struct SDFPrismProperty {
+            float height;
+            float radius;
+        };
+        
+        struct SDFNGonPrismProperty {
+            float radius;
+            float height;
+            uint nsideds;
+            float dummyy;
+        };
+        
+        struct SDFConeProperty {
+            float radius0;
+            float radius1;
+            float height;
+            float dummyy;
+        };
 '''

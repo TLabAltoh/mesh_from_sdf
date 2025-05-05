@@ -16,6 +16,9 @@ class MarchingCube(object):
     basic_shader = '''
 
     #version 430
+    
+    ''' + sc.frag_include_ + '''
+    
     #define LOCAL_X 8
     #define LOCAL_Y 8
     #define LOCAL_Z 8
@@ -50,8 +53,8 @@ class MarchingCube(object):
     const ivec3 boxDim = ivec3(BOX_DIM_X,BOX_DIM_Y,BOX_DIM_Z);
     ''' + sc.include_ + '''
     float getDist(vec3 p) {
-        return sdBox(p, vec3(0.5,0.25,0.7), 0.1);
-        //return torus(p, vec2(0.25,0.75));
+        return sdBox(p, vec3(1,1,1), 0.1);
+        //return sdTorus(p, 1.0, 0.25);
     }
     float saturate(float x, float min, float max) {
         if (max<=min) return min;
@@ -128,6 +131,7 @@ class MarchingCube(object):
     } 
     '''
 
+    ctx = None
     LOCAL_X,LOCAL_Y,LOCAL_Z = 8,8,8
     BOX_DIM_X,BOX_DIM_Y,BOX_DIM_Z = 128,128,128
     BOX_SIZE_X,BOX_SIZE_Y,BOX_SIZE_Z = 0.5,0.5,0.5
@@ -135,7 +139,11 @@ class MarchingCube(object):
     max_triangle_count=voxel_count*5
 
     @classmethod
-    def generate(cls, ctx):
+    def set_context(cls, ctx):
+        cls.ctx = ctx
+
+    @classmethod
+    def generate(cls):
         view_layer = bpy.context.view_layer
         mesh = bpy.data.meshes.new("marching-cube")
         new_object = bpy.data.objects.new("Marching Cube", mesh)
@@ -143,18 +151,19 @@ class MarchingCube(object):
         new_object.select_set(True)
         view_layer.objects.active = new_object
 
-        compute_shader = ctx.compute_shader(cls.basic_shader)
-        compute_shader.bind()
+        print('[Mesh Generation] start ...')
+
+        compute_shader = cls.ctx.compute_shader(cls.basic_shader)
         compute_shader["isoRange"].value = np.array([-0.1,0.1])
         compute_shader["isoLevel"].value = 0.5
         compute_shader["boxSize"].value = np.array([cls.BOX_SIZE_X,cls.BOX_SIZE_Y,cls.BOX_SIZE_Z])
-        in_buf = ctx.buffer(mt.edges)
+        in_buf = cls.ctx.buffer(mt.edges)
         in_buf.bind_to_storage_buffer(2)
-        in_buf = ctx.buffer(mt.triangulation)
+        in_buf = cls.ctx.buffer(mt.triangulation)
         in_buf.bind_to_storage_buffer(3)
-        in_buf = ctx.buffer(mt.corner_index_a_from_edge)
+        in_buf = cls.ctx.buffer(mt.corner_index_a_from_edge)
         in_buf.bind_to_storage_buffer(4)
-        in_buf = ctx.buffer(mt.corner_index_b_from_edge)
+        in_buf = cls.ctx.buffer(mt.corner_index_b_from_edge)
         in_buf.bind_to_storage_buffer(5)
 
         total_count = 0
@@ -163,11 +172,11 @@ class MarchingCube(object):
         for x in [-1,1]:
             for y in [-1,1]:
                 for z in [-1,1]:
-                    count_buf = ctx.buffer(data=b'\x00\x00\x00\x00')
+                    count_buf = cls.ctx.buffer(data=b'\x00\x00\x00\x00')
                     count_buf.bind_to_storage_buffer(0)
                     tri_siz = 3*3+1
                     out_buf = np.empty((cls.max_triangle_count,tri_siz),dtype=np.float32).tobytes()
-                    out_buf = ctx.buffer(out_buf) # 128 --> 400MB, 256 --> 3019 MB (map error !)
+                    out_buf = cls.ctx.buffer(out_buf) # 128 --> 400MB, 256 --> 3019 MB (map error !)
                     out_buf.bind_to_storage_buffer(1)
                     compute_shader["boxOffset"].value = np.array([x,y,z])
                     compute_shader.run(group_x=cls.BOX_DIM_X//cls.LOCAL_X,group_y=cls.BOX_DIM_Y//cls.LOCAL_Y,group_z=cls.BOX_DIM_Z//cls.LOCAL_Z)
@@ -197,7 +206,7 @@ class MarchingCube(object):
         faces = np.arange(3*total_count).reshape(total_count,3)
         mesh.from_pydata(total_verts, edges, faces)
 
-        print("fin.")
+        print('[Mesh Generation] finish.')
 
 
 class SDF2MESH_OT_Generate(bpy.types.Operator):
@@ -207,10 +216,7 @@ class SDF2MESH_OT_Generate(bpy.types.Operator):
     bl_description = "Generate a mesh from the SDF"
 
     def invoke(self, context, event):
-        Raymarching.pause = True
-        Raymarching.tag_redraw_all_3dviews()
-        marchingcube = MarchingCube()
-        marchingcube.generate()
+        MarchingCube.generate()
         return {'FINISHED'}
 
 

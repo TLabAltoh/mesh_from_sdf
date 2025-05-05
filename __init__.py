@@ -999,6 +999,7 @@ classes = [
 global ctx
 ctx = moderngl_util.create_context()
 ry.Raymarching.set_context(ctx)
+mc.MarchingCube.set_context(ctx)
 
 
 def init_shader_buffer():
