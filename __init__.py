@@ -16,8 +16,9 @@ bl_info = {
 
 import bpy
 import numpy as np
+from mesh_from_sdf import moderngl_util
 from mesh_from_sdf import raymarching as ry
-# from mesh_from_sdf import marching_cube as mc
+from mesh_from_sdf import marching_cube as mc
 from mesh_from_sdf import marching_tables as mt
 from bpy.app.handlers import persistent
 from bpy.types import Panel, Operator, UIList, PropertyGroup
@@ -995,6 +996,11 @@ classes = [
 ]
 
 
+global ctx
+ctx = moderngl_util.create_context()
+ry.Raymarching.set_context(ctx)
+
+
 def init_shader_buffer():
     pass
 
@@ -1009,7 +1015,7 @@ def register():
 
     init_shader_buffer()
     ry.register()
-    # mc.register()
+    mc.register()
 
     bpy.types.OUTLINER_MT_object.append(sdf_object_delete_func)
     bpy.types.VIEW3D_MT_object.append(sdf_object_delete_func)
@@ -1044,7 +1050,7 @@ def unregister():
     bpy.types.VIEW3D_MT_object.remove(sdf_object_delete_func)
     bpy.types.VIEW3D_MT_object_context_menu.remove(sdf_object_delete_func)
 
-    # mc.unregister()
+    mc.unregister()
     ry.unregister()
     deinit_shader_buffer()
     

@@ -12,12 +12,6 @@ from mesh_from_sdf import marching_tables as mt
 
 
 class MarchingCube(object):
-    # Note: bgl.glGetString has defined but returns None. How can I detect the OpenGL version in Blender ?
-    # print("OpenGL supported version (by Blender):", bgl.glGetString(bgl.GL_VERSION))
-    ctx = moderngl.create_context()
-    print("[MarchingCube] GL context version code:", ctx.version_code)
-    assert ctx.version_code >= 430
-    print("[MarchingCube] Compute max work group size:", ctx.info['GL_MAX_COMPUTE_WORK_GROUP_SIZE'], end='\n\n')
 
     basic_shader = '''
 
@@ -141,11 +135,7 @@ class MarchingCube(object):
     max_triangle_count=voxel_count*5
 
     @classmethod
-    def get_context(cls):
-        return cls.ctx
-
-    @classmethod
-    def generate(cls):
+    def generate(cls, ctx):
         view_layer = bpy.context.view_layer
         mesh = bpy.data.meshes.new("marching-cube")
         new_object = bpy.data.objects.new("Marching Cube", mesh)
@@ -153,17 +143,18 @@ class MarchingCube(object):
         new_object.select_set(True)
         view_layer.objects.active = new_object
 
-        compute_shader = cls.ctx.compute_shader(cls.basic_shader)
+        compute_shader = ctx.compute_shader(cls.basic_shader)
+        compute_shader.bind()
         compute_shader["isoRange"].value = np.array([-0.1,0.1])
         compute_shader["isoLevel"].value = 0.5
         compute_shader["boxSize"].value = np.array([cls.BOX_SIZE_X,cls.BOX_SIZE_Y,cls.BOX_SIZE_Z])
-        in_buf = cls.ctx.buffer(mt.edges)
+        in_buf = ctx.buffer(mt.edges)
         in_buf.bind_to_storage_buffer(2)
-        in_buf = cls.ctx.buffer(mt.triangulation)
+        in_buf = ctx.buffer(mt.triangulation)
         in_buf.bind_to_storage_buffer(3)
-        in_buf = cls.ctx.buffer(mt.corner_index_a_from_edge)
+        in_buf = ctx.buffer(mt.corner_index_a_from_edge)
         in_buf.bind_to_storage_buffer(4)
-        in_buf = cls.ctx.buffer(mt.corner_index_b_from_edge)
+        in_buf = ctx.buffer(mt.corner_index_b_from_edge)
         in_buf.bind_to_storage_buffer(5)
 
         total_count = 0
@@ -172,11 +163,11 @@ class MarchingCube(object):
         for x in [-1,1]:
             for y in [-1,1]:
                 for z in [-1,1]:
-                    count_buf = cls.ctx.buffer(data=b'\x00\x00\x00\x00')
+                    count_buf = ctx.buffer(data=b'\x00\x00\x00\x00')
                     count_buf.bind_to_storage_buffer(0)
                     tri_siz = 3*3+1
                     out_buf = np.empty((cls.max_triangle_count,tri_siz),dtype=np.float32).tobytes()
-                    out_buf = cls.ctx.buffer(out_buf) # 128 --> 400MB, 256 --> 3019 MB (map error !)
+                    out_buf = ctx.buffer(out_buf) # 128 --> 400MB, 256 --> 3019 MB (map error !)
                     out_buf.bind_to_storage_buffer(1)
                     compute_shader["boxOffset"].value = np.array([x,y,z])
                     compute_shader.run(group_x=cls.BOX_DIM_X//cls.LOCAL_X,group_y=cls.BOX_DIM_Y//cls.LOCAL_Y,group_z=cls.BOX_DIM_Z//cls.LOCAL_Z)

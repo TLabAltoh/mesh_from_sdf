@@ -14,18 +14,7 @@ from mesh_from_sdf import marching_tables as mt
 
 class Raymarching(bpy.types.Operator):
     
-    # Note: bgl.glGetString has defined but returns None. How can I detect the OpenGL version in Blender ?
-    # print("OpenGL supported version (by Blender):", bgl.glGetString(bgl.GL_VERSION))
-    ctx = moderngl.create_context()
-    print("[Raymarching] GL context version code:", ctx.version_code)
-    assert ctx.version_code >= 430
-    print("[Raymarching] Compute max work group size:", ctx.info['GL_MAX_COMPUTE_WORK_GROUP_SIZE'], end='\n\n')
-    
     config = {}
-
-    @classmethod
-    def get_context(cls):
-        return cls.ctx
 
     @classmethod
     def get_frustom_plane_from_view3d(cls,region,region3d,near):
@@ -367,6 +356,7 @@ class Raymarching(bpy.types.Operator):
         return frag_
     
 
+    ctx = None
     pause = False
     shader = None
     recreate_shader_requested = False
@@ -381,6 +371,10 @@ class Raymarching(bpy.types.Operator):
     @classmethod
     def update_sdf(cls):
         pass
+
+    @classmethod
+    def set_context(cls, ctx):
+        cls.ctx = ctx
 
     @classmethod
     def draw(cls):
