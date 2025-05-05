@@ -12,11 +12,11 @@ from mesh_from_sdf import sdf_common as sc
 from mesh_from_sdf import marching_tables as mt
 
 
-class Raymarching(object):
+class Raymarching(bpy.types.Operator):
     
     # Note: bgl.glGetString has defined but returns None. How can I detect the OpenGL version in Blender ?
     # print("OpenGL supported version (by Blender):", bgl.glGetString(bgl.GL_VERSION))
-    ctx = moderngl.create_context(require=430)
+    ctx = moderngl.create_context()
     print("[Raymarching] GL context version code:", ctx.version_code)
     assert ctx.version_code >= 430
     print("[Raymarching] Compute max work group size:", ctx.info['GL_MAX_COMPUTE_WORK_GROUP_SIZE'], end='\n\n')
@@ -370,7 +370,7 @@ class Raymarching(object):
     pause = False
     shader = None
     recreate_shader_requested = False
-    indices = np.array([[0,2,1],[0,3,2]])
+    indices = np.array([[0,2,1],[0,3,2]], dtype='int32')
 
     @classmethod
     def recreate_shader(cls):
@@ -407,3 +407,33 @@ class Raymarching(object):
         gpu.state.depth_mask_set(False)
         gpu.state.blend_set("NONE")
         cls.tag_redraw_all_3dviews()
+
+
+    __handle = None
+
+
+    @classmethod
+    def start(cls):
+        cls.__handle = bpy.types.SpaceView3D.draw_handler_add(cls.draw, (), 'WINDOW', 'POST_VIEW')
+        # cls.recreate_shader()
+
+    @classmethod
+    def stop(cls):
+        bpy.types.SpaceView3D.draw_handler_remove(cls.__handle, 'WINDOW')
+        cls.__handle = None
+
+
+classes = []
+
+def register():
+    for c in classes:
+        bpy.utils.register_class(c)
+        
+    Raymarching.start()
+
+def unregister():
+    
+    Raymarching.stop()
+    
+    for c in classes:
+        bpy.utils.unregister_class(c)

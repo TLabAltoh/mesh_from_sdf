@@ -14,7 +14,7 @@ from mesh_from_sdf import marching_tables as mt
 class MarchingCube(object):
     # Note: bgl.glGetString has defined but returns None. How can I detect the OpenGL version in Blender ?
     # print("OpenGL supported version (by Blender):", bgl.glGetString(bgl.GL_VERSION))
-    ctx = moderngl.create_context(require=430)
+    ctx = moderngl.create_context()
     print("[MarchingCube] GL context version code:", ctx.version_code)
     assert ctx.version_code >= 430
     print("[MarchingCube] Compute max work group size:", ctx.info['GL_MAX_COMPUTE_WORK_GROUP_SIZE'], end='\n\n')

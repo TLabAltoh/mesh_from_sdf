@@ -17,7 +17,7 @@ bl_info = {
 import bpy
 import numpy as np
 from mesh_from_sdf import raymarching as ry
-from mesh_from_sdf import marching_cube as mc
+# from mesh_from_sdf import marching_cube as mc
 from mesh_from_sdf import marching_tables as mt
 from bpy.app.handlers import persistent
 from bpy.types import Panel, Operator, UIList, PropertyGroup
@@ -995,10 +995,6 @@ classes = [
 ]
 
 
-global raymarching
-raymarching = ry.Raymarching()
-
-
 def init_shader_buffer():
     pass
 
@@ -1007,22 +1003,13 @@ def deinit_shader_buffer():
     ShaderBufferFactory.release_all()
 
 
-def start_raymarching():
-    bpy.types.SpaceView3D.draw_handler_add(raymarching.draw, (), 'WINDOW', 'POST_VIEW')
-    # Raymarching.recreate_shader()
-
-
-def finish_raymarching():
-    bpy.types.SpaceView3D.draw_handler_remove(raymarching.draw, (), 'WINDOW', 'POST_VIEW')
-
-
 def register():
     for c in classes:
         bpy.utils.register_class(c)
 
     init_shader_buffer()
-    start_raymarching()    
-    mc.register()
+    ry.register()
+    # mc.register()
 
     bpy.types.OUTLINER_MT_object.append(sdf_object_delete_func)
     bpy.types.VIEW3D_MT_object.append(sdf_object_delete_func)
@@ -1057,8 +1044,8 @@ def unregister():
     bpy.types.VIEW3D_MT_object.remove(sdf_object_delete_func)
     bpy.types.VIEW3D_MT_object_context_menu.remove(sdf_object_delete_func)
 
-    mc.unregister()
-    finish_raymarching()
+    # mc.unregister()
+    ry.unregister()
     deinit_shader_buffer()
     
     for c in classes:
