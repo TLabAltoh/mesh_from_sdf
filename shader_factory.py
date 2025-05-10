@@ -48,8 +48,9 @@ class ShaderFactory(object):
                    ('Round', f_round_merge))
 
         is_this_first_elem = True
+        last_index = len(alist) - 1
                 
-        for i, pointer in enumerate(alist):
+        for idx, pointer in enumerate(alist):
 
             f_dist = f_dist + '''
             sdfObjectProp = sdfObjectProps[sdfObjectPropIdx++];
@@ -63,14 +64,23 @@ class ShaderFactory(object):
             
             f_merge = f_blend[blend_type][boolean_type]
             
-            if indent == 1 or i == 0:
-                f_dist = f_dist + '''{
-                '''
-                
+            """
+        {
+            //
+        }
+        {
+            //
+        }
+            """
             
-            
-            if primitive_type == 'Empty':
-                continue
+            if idx == 0:
+                f_dist = f_dist + '''
+        {'''
+            else:
+                if indent == 1:
+                    f_dist = f_dist + '''
+        }
+        {'''
             
             f_dist = f_dist + '''
                 {
@@ -127,7 +137,12 @@ class ShaderFactory(object):
                 '''
             elif primitive_type == 'GLSL':
                 pass
+            elif primitive_type == 'Empty':
+                pass
                 
             f_dist = f_dist + f_merge + '''
-            }
-            '''
+        }'''
+            
+            if idx == last_index:
+                f_dist = f_dist + '''
+        }'''
