@@ -26,21 +26,21 @@ class MarchingCube(object):
     #define BOX_DIM_Y 128
     #define BOX_DIM_Z 128
 
-    struct vec3f { 
+    struct Vec3f { 
         float x;
         float y;
         float z;
     };
-    struct triangle {
-        vec3f c;
-        vec3f b;
-        vec3f a;
+    struct Triangle {
+        Vec3f c;
+        Vec3f b;
+        Vec3f a;
         float d;
     };
 
     layout(local_size_x=LOCAL_X,local_size_y=LOCAL_Y,local_size_z=LOCAL_Z) in;
     layout(binding=0) buffer inout_0 { uint count; };
-    layout(binding=1) writeonly buffer out_0 { triangle outp[]; };
+    layout(binding=1) writeonly buffer out_0 { Triangle output[]; };
     layout(binding=2) readonly buffer in_1 { uint edge[]; };
     layout(binding=3) readonly buffer in_2 { int triangulation[][16]; };
     layout(binding=4) readonly buffer in_3 { uint cornerIndexAFromEdge[]; };
@@ -124,9 +124,9 @@ class MarchingCube(object):
             uint b2 = cornerIndexBFromEdge[triangulation[cubeIndex][i+2]];
             
             uint index = atomicAdd(count,1);
-            outp[index].c = vecn2vecnf(interpolateVerts(cubeCorners[a0], cubeCorners[b0]));
-            outp[index].b = vecn2vecnf(interpolateVerts(cubeCorners[a1], cubeCorners[b1]));
-            outp[index].a = vecn2vecnf(interpolateVerts(cubeCorners[a2], cubeCorners[b2]));
+            output[index].c = vecn2vecnf(interpolateVerts(cubeCorners[a0], cubeCorners[b0]));
+            output[index].b = vecn2vecnf(interpolateVerts(cubeCorners[a1], cubeCorners[b1]));
+            output[index].a = vecn2vecnf(interpolateVerts(cubeCorners[a2], cubeCorners[b2]));
         }
     } 
     '''

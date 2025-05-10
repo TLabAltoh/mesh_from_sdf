@@ -187,10 +187,10 @@ class Raymarching(bpy.types.Operator):
                                 dist = sdCappedCone(samplpos, 1.0, 0.1, 0.75);
                                 break;
                             case TRI_PRISM:
-                                dist = sdTriPrism(samplpos, 0.5, 0.8);
+                                dist = sdTriPrism(samplpos, 0.8, 0.5);
                                 break;
                             case NGON_PRISM:
-                                dist = sdNgonPrism(samplpos, 0.5, 8, 0.8);
+                                dist = sdNgonPrism(samplpos, 0.8, 0.5, 8);
                                 break;
                         }
                         dist *= scale;
@@ -210,7 +210,7 @@ class Raymarching(bpy.types.Operator):
     def get_vert(cls):
         # generate vertex shader
         vert_ = '''
-        in vec3 position;
+        in vec3 in_pos;
         out vec3 pos;
         out vec3 orthoRayDir;
         out vec3 orthoCameraOffset;
@@ -222,11 +222,11 @@ class Raymarching(bpy.types.Operator):
         ''' + cls.include_ + '''
         
         void main() {
-            pos = position;
+            pos = in_pos;
             vec4 viewMatrixAppliedPos = mulVec(u_ViewMatrix, pos);
             orthoCameraOffset = mulVec(u_CameraRotationMatrix, vec3(viewMatrixAppliedPos.xy, 0)).xyz;
             orthoRayDir = mulVec(u_CameraRotationMatrix, vec3(0, 0, -1)).xyz;
-            gl_Position = mulVec(u_PerspectiveMatrix, position);
+            gl_Position = mulVec(u_PerspectiveMatrix, in_pos);
         }
         '''
         return vert_
@@ -237,16 +237,16 @@ class Raymarching(bpy.types.Operator):
         # generate fragment shader
         frag_ = sc.frag_include_ + '''
         
-        // layout(binding=0) readonly buffer in_prop_object { SDFObjectProperty objectPropertys[]; };
+        // layout(binding=0) readonly buffer in_prop_object { SDFObjectProp sdfObjectProps[]; };
         layout(binding=0) readonly buffer in_prop_object { float testValue0; float testValue1; };
-        layout(binding=1) readonly buffer in_prop_box { SDFBoxProperty boxPropertys[]; };
-        layout(binding=2) readonly buffer in_prop_sphere { SDfSphereProperty spherePropertys[]; };
-        layout(binding=3) readonly buffer in_prop_cylinder { SDFCylinderProperty cylinderPropertys[]; };
-        layout(binding=4) readonly buffer in_prop_torus { SDFTorusProperty torusPropertys; };
-        layout(binding=5) readonly buffer in_prop_hex_prism { SDFPrismProperty hexPrismPropertys[]; };
-        layout(binding=6) readonly buffer in_prop_tri_prism { SDFPrismProperty triPrismPropertys[]; };
-        layout(binding=7) readonly buffer in_prop_ngon_prism { SDFNGonPrismProperty ngonPrismPropertys[]; };
-        layout(binding=8) readonly buffer in_prop_cone { SDFConeProperty conePropertys[]; };
+        layout(binding=1) readonly buffer in_prop_box { SDFBoxProp sdfBoxProps[]; };
+        layout(binding=2) readonly buffer in_prop_sphere { SDfSphereProp sdfSphereProps[]; };
+        layout(binding=3) readonly buffer in_prop_cylinder { SDFCylinderProp sdfCylinderProps[]; };
+        layout(binding=4) readonly buffer in_prop_torus { SDFTorusProp sdfTorusProps; };
+        layout(binding=5) readonly buffer in_prop_cone { SDFConeProp sdfConeProps[]; };
+        layout(binding=6) readonly buffer in_prop_hex_prism { SDFPrismProp sdfHexPrismProps[]; };
+        layout(binding=7) readonly buffer in_prop_tri_prism { SDFPrismProp sdfTriPrismProps[]; };
+        layout(binding=8) readonly buffer in_prop_ngon_prism { SDFNgonPrismProp sdfNgonPrismProps[]; };
         
         in vec3 pos;
         in vec3 orthoRayDir;
@@ -390,7 +390,7 @@ class Raymarching(bpy.types.Operator):
         test_buf = cls.ctx.buffer(np.array([0.5, 0.5], dtype='float32'))
         test_buf.bind_to_storage_buffer(0)
         
-        batch = batch_for_shader(cls.shader, 'TRIS', {"position": cls.config["vertices"]}, indices=cls.indices,)
+        batch = batch_for_shader(cls.shader, 'TRIS', {"in_pos": cls.config["vertices"]}, indices=cls.indices,)
         gpu.state.blend_set("ALPHA") 
         gpu.state.depth_test_set('LESS_EQUAL')
         gpu.state.depth_mask_set(True)
