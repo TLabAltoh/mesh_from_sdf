@@ -137,8 +137,6 @@ class ShaderFactory(object):
                 '''
             elif primitive_type == 'GLSL':
                 pass
-            elif primitive_type == 'Empty':
-                pass
                 
             f_dist = f_dist + f_merge + '''
         }'''

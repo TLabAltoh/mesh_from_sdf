@@ -36,9 +36,8 @@ class SDFObjectProperty(PropertyGroup):
             ('Torus','Torus',''),
             ('Hexagonal Prism', 'Hexagonal Prism', ''),
             ('Triangular Prism', 'Triangular Prism', ''),
-            ('NGon Prism','NGon Prism',''),
-            ('GLSL','GLSL',''),
-            ('Empty','Empty',''),)
+            ('Ngon Prism','Ngon Prism',''),
+            ('GLSL','GLSL',''),)
              
     boolean_types = (('Union', 'Union', ''),
             ('Difference', 'Difference', ''),
@@ -132,14 +131,12 @@ class SDFObjectProperty(PropertyGroup):
                 elif (primitive_type == 'Triangular Prism') and (SDFObjectProperty.contains_in_list(context.scene.sdf_tri_prism_pointer_list, prv_pointer.object) == False):
                     bpy.ops.mesh.primitive_cylinder_add(vertices=3, radius=1, depth=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
                     blist = context.scene.sdf_tri_prism_pointer_list
-                elif (primitive_type == 'NGon Prism') and (SDFObjectProperty.contains_in_list(context.scene.sdf_ngon_prism_pointer_list, prv_pointer.object) == False):
+                elif (primitive_type == 'Ngon Prism') and (SDFObjectProperty.contains_in_list(context.scene.sdf_ngon_prism_pointer_list, prv_pointer.object) == False):
                     bpy.ops.mesh.primitive_cylinder_add(vertices=prv_pointer.object.sdf_object.prop_prism.nsides, radius=1, depth=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
                     blist = context.scene.sdf_ngon_prism_pointer_list
                 elif (primitive_type == 'GLSL') and (SDFObjectProperty.contains_in_list(context.scene.sdf_glsl_pointer_list, prv_pointer.object) == False):
                     bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
                     blist = context.scene.sdf_glsl_pointer_list
-                elif (primitive_type == 'Empty') and (SDFObjectProperty.contains_in_list(context.scene.sdf_empty_pointer_list, prv_pointer.object) == False):
-                    blist = context.scene.sdf_empty_pointer_list
 
                 if blist != None:
                     new_pointer = blist.add()
@@ -390,7 +387,6 @@ class SDF2MESH_OT_List_Reload(Operator):
         SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_tri_prism_pointer_list)
         SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_ngon_prism_pointer_list)
         SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_glsl_pointer_list)
-        SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_empty_pointer_list)
         
         bpy.ops.ed.undo_push(message='mesh_from_sdf.hierarchy_reload')
         return {'FINISHED'}
@@ -477,12 +473,10 @@ class SDF2MESH_OT_List_Remove(Operator):
                 blist = context.scene.sdf_hex_prism_pointer_list
             elif primitive_type == 'Triangular Prism':
                 blist = context.scene.sdf_tri_prism_pointer_list
-            elif primitive_type == 'NGon Prism':
+            elif primitive_type == 'Ngon Prism':
                 blist = context.scene.sdf_ngon_prism_pointer_list
             elif primitive_type == 'GLSL':
                 blist = context.scene.sdf_glsl_prism_pointer_list
-            elif primitive_type == 'Empty':
-                blist = context.scene.sdf_empty_prism_pointer_list
                 
             SDFOBJECT_UTILITY.recalc_sub_index_without_sort(blist)
             ShaderBufferFactory.generate_buffer(ry.Raymarching.get_context(), primitive_type, len(blist))
@@ -544,12 +538,10 @@ class SDF2MESH_OT_List_Reorder(Operator):
                 blist = context.scene.sdf_hex_prism_pointer_list
             elif primitive_type == 'Triangular Prism':
                 blist = context.scene.sdf_tri_prism_pointer_list
-            elif primitive_type == 'NGon Prism':
+            elif primitive_type == 'Ngon Prism':
                 blist = context.scene.sdf_ngon_prism_pointer_list
             elif primitive_type == 'GLSL':
                 blist = context.scene.sdf_glsl_prism_pointer_list
-            elif primitive_type == 'Empty':
-                blist = context.scene.sdf_empty_prism_pointer_list
             
             blist.move(item0.sub_index, item1.sub_index)
             tmp = int(item0.sub_index)
@@ -673,10 +665,10 @@ class SDFOBJECT_PT_Panel(Panel):
                 col.prop(item, 'prop_cylinder_radius')
             elif item.primitive_type == 'Torus':
                 col.prop(item, 'prop_torus_radiuss')
-            elif (item.primitive_type == 'Hexagonal Prism') or (item.primitive_type == 'Triangular Prism') or (item.primitive_type == 'NGon Prism'):
+            elif (item.primitive_type == 'Hexagonal Prism') or (item.primitive_type == 'Triangular Prism') or (item.primitive_type == 'Ngon Prism'):
                 col.prop(item, 'prop_prism_radius')
                 col.prop(item, 'prop_prism_height')
-                if (item.primitive_type == 'NGon Prism'):
+                if (item.primitive_type == 'Ngon Prism'):
                     col.prop(item, 'prop_prism_nsides')
             elif item.primitive_type == 'Cone':
                 col.prop(item, 'prop_cone_height')
@@ -684,8 +676,6 @@ class SDFOBJECT_PT_Panel(Panel):
             elif item.primitive_type == 'GLSL':
                 col.prop(item, 'prop_glsl_shader_path')
                 col.prop(item, 'prop_glsl_bounding')
-            elif item.primitive_type == 'Empty':
-                pass
             
             col.prop(item, 'boolean_type')
             col.prop(item, 'blend_type')
@@ -862,12 +852,10 @@ class SDFOBJECT_UTILITY(object):
             cls.__refresh_list(context.scene.sdf_hex_prism_pointer_list, target)
         elif primitive_type == 'Triangular Prism':
             cls.__refresh_list(context.scene.sdf_tri_prism_pointer_list, target)
-        elif primitive_type == 'NGon Prism':
+        elif primitive_type == 'Ngon Prism':
             cls.__refresh_list(context.scene.sdf_ngon_prism_pointer_list, target)
         elif primitive_type == 'GLSL':
             cls.__refresh_list(context.scene.sdf_glsl_pointer_list)
-        elif primitive_type == 'Empty':
-            cls.__refresh_list(context.scene.sdf_empty_pointer_list)
             
     @classmethod
     def refresh_lists(cls, context, primitive_types):
@@ -903,12 +891,10 @@ class SDFOBJECT_UTILITY(object):
             cls.__delete_from_sub_list(context.scene.sdf_hex_prism_pointer_list, target)
         elif primitive_type == 'Triangular Prism':
             cls.__delete_from_sub_list(context.scene.sdf_tri_prism_pointer_list, target)
-        elif primitive_type == 'NGon Prism':
+        elif primitive_type == 'Ngon Prism':
             cls.__delete_from_sub_list(context.scene.sdf_ngon_prism_pointer_list, target)
         elif primitive_type == 'GLSL':
             cls.__delete_from_sub_list(context.scene.sdf_glsl_pointer_list, target)
-        elif primitive_type == 'Empty':
-            cls.__delete_from_sub_list(context.scene.sdf_empty_pointer_list, target)
 
 
 def sdf_object_delete_func(self, context):
@@ -975,7 +961,6 @@ def register():
     bpy.types.Scene.sdf_tri_prism_pointer_list = CollectionProperty(type = SDFObjectPointerProperty)
     bpy.types.Scene.sdf_ngon_prism_pointer_list = CollectionProperty(type = SDFObjectPointerProperty)
     bpy.types.Scene.sdf_glsl_pointer_list = CollectionProperty(type = SDFObjectPointerProperty)
-    bpy.types.Scene.sdf_empty_pointer_list = CollectionProperty(type = SDFObjectPointerProperty)
 
 
 def unregister():
