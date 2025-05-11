@@ -81,6 +81,9 @@ class SDFObjectProperty(PropertyGroup):
         pass
 
     def property_event_on_primitive_type_changed(self, context):
+        
+        global ctx
+        
         # Undo works for this operation
         prev_primitive_type = self.prev_primitive_type
         primitive_type = self.primitive_type
@@ -142,10 +145,14 @@ class SDFObjectProperty(PropertyGroup):
                     new_pointer = blist.add()
                     new_pointer.object = prv_pointer.object
                     SDFOBJECT_UTILITY.recalc_sub_index(blist)
-                    ShaderBufferFactory.generate_buffer(ry.Raymarching.get_context(), primitive_type, len(blist))
+                    ShaderBufferFactory.generate_buffer(ctx, primitive_type, len(blist))
                  
                 object.sdf_object.prev_primitive_type = object.sdf_object.primitive_type
                 bpy.ops.object.mode_set(mode=prev_mode)
+                
+                # Generate shaders according to the current hierarchy
+                f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
+                print(f_dist)
         
     enabled: BoolProperty(
         description='Whether this object is treated as an SDF Object.',
@@ -924,11 +931,11 @@ Raymarching.set_context(ctx)
 MarchingCube.set_context(ctx)
 
 
-def init_shader_buffer():
+def init_shader_factory():
     pass
 
 
-def deinit_shader_buffer():
+def deinit_shader_factory():
     ShaderBufferFactory.release_all()
 
 
@@ -936,7 +943,7 @@ def register():
     for c in classes:
         bpy.utils.register_class(c)
 
-    init_shader_buffer()
+    init_shader_factory()
     raymarching.register()
     marching_cube.register()
 
@@ -974,7 +981,7 @@ def unregister():
 
     marching_cube.unregister()
     raymarching.unregister()
-    deinit_shader_buffer()
+    deinit_shader_factory()
     
     for c in classes:
         bpy.utils.unregister_class(c)

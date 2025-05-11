@@ -2,6 +2,60 @@ import moderngl
 
 # Class for generating and updating shaders based on SDF Object Property list
 class ShaderFactory(object):
+    
+    # Concatenate distance function snippets that match the primitive_type of the SDFObject
+    @classmethod
+    def __generate_distance_function_by_primitive_type(cls, primitive_type):
+        if primitive_type == 'Box':
+            return '''
+                sdfBoxProp = sdfBoxProps[sdfBoxPropIdx++];
+                dist = sdBox(samplpos, sdfBoxProp.br.xyz, sdfBoxProp.br.w);
+            '''
+        elif primitive_type == 'Sphere':
+            return '''
+                sdfSphereProp = sdfSphereProps[sdfSpherePropIdx++];
+                dist = sdSphere(samplpos, sdfSphereProp.r);
+            '''
+        elif primitive_type == 'Cylinder':
+            return '''
+                sdfCylinderProp = sdfCylinderProps[sdfCylinderPropIdx++];
+                dist = sdCylinder(samplpos, sdfCylinderProp.h, sdfCylinderProp.ra);
+                dist = rounding(dist, sdfCylinderProp.rd);
+            '''
+        elif primitive_type == 'Cone':
+            return '''
+                sdfConeProp = sdfConeProps[sdfConePropIdx++];
+                dist = sdCappedCone(samplpos, sdfConeProp.h, sdfConeProp.r0, sdfConeProp.r1);
+                dist = rounding(dist, sdfConeProp.rd);
+            '''
+        elif primitive_type == 'Torus':
+            return '''
+                sdfTorusProp = sdfTorusProps[sdfTorusPropIdx++];
+                dist = sdTorus(samplpos, sdfTorusProp.r0, sdfTorusProp.r1);
+                dist = rounding(dist, sdfTorusProp.rd);
+            '''
+        elif primitive_type == 'Hexagonal Prism':
+            return '''
+                sdfHexPrismProp = sdfHexPrismProps[sdfHexPrismPropIdx++];
+                dist = sdHexPrism(samplpos, sdfHexPrismProp.h);
+                dist = rounding(dist, sdfHexPrismProp.rd);
+            '''
+        elif primitive_type == 'Triangular Prism':
+            return '''
+                sdfTriPrismProp = sdfTriPrismProps[sdfTriPrismPropIdx++];
+                dist = sdTriPrism(samplpos, sdfTriPrismProp.h, sdfTriPrismProp.ra);
+                dist = rounding(dist, sdfTriPrismProp.rd);
+            '''
+        elif primitive_type == 'Ngon Prism':
+            return '''
+                sdfNgonPrismProp = sdfNgonPrismProps[sdfNgonPrismPropIdx++];
+                dist = sdNgonPrism(samplpos, sdfNgonPrismProp.h, sdfNgonPrismProp.ra, sdfNgonPrismProp.n);
+                dist = rounding(dist, sdfNgonPrismProp.rd);
+            '''
+        elif primitive_type == 'GLSL':
+            # TODO: 
+            return '{dist = 1000000000}'
+    
     # Generate distance function for shaders based on SDF Object Property list
     @classmethod
     def generate_distance_function(cls, alist):
@@ -17,136 +71,154 @@ class ShaderFactory(object):
             SDFNgonPrismProp sdfNgonPrismProp; uint sdfNgonPrismPropIdx = 0;
             
             vec3 position, samplpos;
-            float scale, dist, k0, k1;
             mat4 rotation;
+            float scale, dist, minDist0, minDist1, k0, k1;
         '''
         
-        f_no_blend_merge = (('Union', 'minDist = opUnion(dist, minDist);'),
-                            ('Diffrence', 'minDist = opDiffrence(dist, minDist);'),
-                            ('Intersection', 'minDist = opIntersection(dist, minDist);'))
-                            
-        f_smooth_merge = (('Union', 'minDist = opSmoothUnion(dist, minDist, k0);'),
-                          ('Diffrence', 'minDist = opSmoothDiffrence(dist, minDist, k0);'),
-                          ('Intersection', 'minDist = opSmoothIntersection(dist, minDist, k0);'))
-        
-        f_champfer_merge = (('Union', 'minDist = opChampferUnion(dist, minDist, k0);'),
-                            ('Diffrence', 'minDist = opChampferDiffrence(dist, minDist, k0);'),
-                            ('Intersection', 'minDist = opChampferIntersection(dist, minDist, k0);'))
-        
-        f_steps_merge = (('Union', 'minDist = opStairsUnion(dist, minDist, k0, k1);'),
-                         ('Diffrence', 'minDist = opStairsDiffrence(dist, minDist, k0, k1);'),
-                         ('Intersection', 'minDist = opStairsIntersection(dist, minDist, k0, k1);'))
-        
-        f_round_merge = (('Union', 'minDist = opRoundUnion(dist, minDist, k0);'),
-                         ('Diffrence', 'minDist = opRoundDiffrence(dist, minDist, k0);'),
-                         ('Intersection', 'minDist = opRoundIntersection(dist, minDist, k0);'))
-        
-        f_blend = (('No Blending', f_no_blend_merge),
-                   ('Smooth', f_smooth_merge),
-                   ('Champfer', f_champfer_merge),
-                   ('Steps', f_steps_merge),
-                   ('Round', f_round_merge))
-
-        is_this_first_elem = True
-        last_index = len(alist) - 1
+        f_common = '''
+                sdfObjectProp = sdfObjectProps[sdfObjectPropIdx++];
+                position = sdfObjectProp.ps.xyz;
+                samplpos = p - position;
+                rotation = sdfObjectProp.ro;
+                scale = sdfObjectProp.ps.w;
+                samplpos = mulVec(rotation, samplpos).xyz;
+                samplpos /= scale;
                 
-        for idx, pointer in enumerate(alist):
+                k0 = sdfObjectProp.bl.x;
+                k1 = sdfObjectProp.bl.y;'''
+        
+        f_no_blend_merge_1 = {'Union' : 'minDist1 = opUnion(dist, minDist1);',
+                              'Diffrence' : 'minDist1 = opDiffrence(dist, minDist1);',
+                              'Intersection' : 'minDist1 = opIntersection(dist, minDist1);'}
+                            
+        f_smooth_merge_1 = {'Union' : 'minDist1 = opSmoothUnion(dist, minDist1, k0);',
+                            'Diffrence' : 'minDist1 = opSmoothDiffrence(dist, minDist1, k0);',
+                            'Intersection' : 'minDist1 = opSmoothIntersection(dist, minDist1, k0);'}
+        
+        f_champfer_merge_1 = {'Union' : 'minDist1 = opChampferUnion(dist, minDist1, k0);',
+                              'Diffrence' : 'minDist1 = opChampferDiffrence(dist, minDist1, k0);',
+                              'Intersection' : 'minDist1 = opChampferIntersection(dist, minDist1, k0);'}
+        
+        f_steps_merge_1 = {'Union' : 'minDist1 = opStairsUnion(dist, minDist1, k0, k1);',
+                           'Diffrence' : 'minDist1 = opStairsDiffrence(dist, minDist1, k0, k1);',
+                           'Intersection' : 'minDist1 = opStairsIntersection(dist, minDist1, k0, k1);'}
+        
+        f_round_merge_1 = {'Union' : 'minDist1 = opRoundUnion(dist, minDist1, k0);',
+                           'Diffrence' : 'minDist1 = opRoundDiffrence(dist, minDist1, k0);',
+                           'Intersection' : 'minDist1 = opRoundIntersection(dist, minDist1, k0);'}
 
-            f_dist = f_dist + '''
-            sdfObjectProp = sdfObjectProps[sdfObjectPropIdx++];
-            '''
-            
+        f_blend_1 = {'No Blending': f_no_blend_merge_1,
+                     'Smooth' : f_smooth_merge_1,
+                     'Champfer' : f_champfer_merge_1,
+                     'Steps' : f_steps_merge_1,
+                     'Round' : f_round_merge_1}
+
+        f_no_blend_merge_0 = {'Union' : 'minDist0 = opUnion(minDist1, minDist0);',
+                              'Diffrence' : 'minDist0 = opDiffrence(minDist1, minDist0);',
+                              'Intersection' : 'minDist0 = opIntersection(minDist1, minDist0);'}
+                            
+        f_smooth_merge_0 = {'Union' : 'minDist0 = opSmoothUnion(minDist1, minDist0, k0);',
+                            'Diffrence' : 'minDist0 = opSmoothDiffrence(minDist1, minDist0, k0);',
+                            'Intersection' : 'minDist0 = opSmoothIntersection(minDist1, minDist0, k0);'}
+        
+        f_champfer_merge_0 = {'Union' : 'minDist0 = opChampferUnion(minDist1, minDist0, k0);',
+                              'Diffrence' : 'minDist0 = opChampferDiffrence(minDist1, minDist0, k0);',
+                              'Intersection' : 'minDist0 = opChampferIntersection(minDist1, minDist0, k0);'}
+        
+        f_steps_merge_0 = {'Union' : 'minDist0 = opStairsUnion(minDist1, minDist0, k0, k0);',
+                           'Diffrence' : 'minDist0 = opStairsDiffrence(minDist1, minDist0, k0, k0);',
+                           'Intersection' : 'minDist0 = opStairsIntersection(minDist1, minDist0, k0, k0);'}
+        
+        f_round_merge_0 = {'Union' : 'minDist0 = opRoundUnion(minDist1, minDist0, k0);',
+                           'Diffrence' : 'minDist0 = opRoundDiffrence(minDist1, minDist0, k0);',
+                           'Intersection' : 'minDist0 = opRoundIntersection(minDist1, minDist0, k0);'}
+        
+        f_blend_0 = {'No Blending' : f_no_blend_merge_0,
+                     'Smooth' : f_smooth_merge_0,
+                     'Champfer' : f_champfer_merge_0,
+                     'Steps' : f_steps_merge_0,
+                     'Round' : f_round_merge_0}
+
+        # When the first dist is obtained, minDist1 is still undetermined, so assign the dist directly to minDist1
+        pointer = alist[0]
+        sdf_object = pointer.object.sdf_object
+        primitive_type = sdf_object.primitive_type
+        boolean_type = sdf_object.boolean_type
+        blend_type = sdf_object.blend_type
+        nest = sdf_object.nest
+        
+        f_merge_0 = ''
+        f_merge_1 = ''
+        
+        f_dist = f_dist + '''
+            {
+        ''' + f_common +  cls.__generate_distance_function_by_primitive_type(primitive_type) + '''
+                minDist1 = dist;'''
+
+        idx_offset = 0
+
+        # When the first SDF object group operation is completed, minDist0 is not yet determined, so minDist1 is directly assigned.
+        for idx in range(1, len(alist)):
+            pointer = alist[idx]
             sdf_object = pointer.object.sdf_object
             primitive_type = sdf_object.primitive_type
             boolean_type = sdf_object.boolean_type
             blend_type = sdf_object.blend_type
-            indent = sdf_object.indent
+            nest = sdf_object.nest
             
-            f_merge = f_blend[blend_type][boolean_type]
-            
-            """
-        {
-            //
-        }
-        {
-            //
-        }
-            """
-            
-            if idx == 0:
-                f_dist = f_dist + '''
-        {'''
-            else:
-                if indent == 1:
-                    f_dist = f_dist + '''
-        }
-        {'''
-            
-            f_dist = f_dist + '''
-                {
-                    position = sdfObjectProp.ps.xyz;
-                    samplpos = p - position;
-                    rotation = sdfObjectProp.ro;
-                    scale = sdfObjectProp.ps.w;
-                    samplpos = mulVec(rotation, samplpos).xyz;
-                    samplpos /= scale;
-                    
-                    k0 = sdfObjectProp.bl.x;
-                    k1 = sdfObjectProp.bl.y;
-                '''
-            
-            if primitive_type == 'Box':
-                f_dist = f_dist + '''
-                    sdfBoxProp = sdfBoxProps[sdfBoxPropIdx++];
-                    dist = sdBox(samplpos, sdfBoxProp.br.xyz, sdfBoxProp.br.w);
-                '''
-            elif primitive_type == 'Sphere':
-                f_dist = f_dist + '''
-                    sdfSphereProp = sdfSphereProps[sdfSpherePropIdx++];
-                    dist = sdSphere(samplpos, sdfSphereProp.r);
-                '''
-            elif primitive_type == 'Cylinder':
-                f_dist = f_dist + '''
-                    sdfCylinderProp = sdfCylinderProps[sdfCylinderPropIdx++];
-                    dist = sdCylinder(samplpos, sdfCylinderProp.h, sdfCylinderProp.ra);
-                    dist = rounding(dist, sdfCylinderProp.rd);
-                '''
-            elif primitive_type == 'Cone':
-                f_dist = f_dist + '''
-                    sdfConeProp = sdfConeProps[sdfConePropIdx++];
-                    dist = sdCappedCone(samplpos, sdfConeProp.h, sdfConeProp.r0, sdfConeProp.r1);
-                    dist = rounding(dist, sdfConeProp.rd);
-                '''
-            elif primitive_type == 'Torus':
-                f_dist = f_dist + '''
-                    sdfTorusProp = sdfTorusProps[sdfTorusPropIdx++];
-                    dist = sdTorus(samplpos, sdfTorusProp.r0, sdfTorusProp.r1);
-                    dist = rounding(dist, sdfTorusProp.rd);
-                '''
-            elif primitive_type == 'Hexagonal Prism':
-                f_dist = f_dist + '''
-                    sdfHexPrismProp = sdfHexPrismProps[sdfHexPrismPropIdx++];
-                    dist = sdHexPrism(samplpos, sdfHexPrismProp.h);
-                    dist = rounding(dist, sdfHexPrismProp.rd);
-                '''
-            elif primitive_type == 'Triangular Prism':
-                f_dist = f_dist + '''
-                    sdfTriPrismProp = sdfTriPrismProps[sdfTriPrismPropIdx++];
-                    dist = sdTriPrism(samplpos, sdfTriPrismProp.h, sdfTriPrismProp.ra);
-                    dist = rounding(dist, sdfTriPrismProp.rd);
-                '''
-            elif primitive_type == 'Ngon Prism':
-                f_dist = f_dist + '''
-                    sdfNgonPrismProp = sdfNgonPrismProps[sdfNgonPrismPropIdx++];
-                    dist = sdNgonPrism(samplpos, sdfNgonPrismProp.h, sdfNgonPrismProp.ra, sdfNgonPrismProp.n);
-                    dist = rounding(dist, sdfNgonPrismProp.rd);
-                '''
-            elif primitive_type == 'GLSL':
-                pass
+            break_loop = False
+            if nest == False:
+                idx_offset = idx
+                break_loop = True
                 
-            f_dist = f_dist + f_merge + '''
-        }'''
-            
-            if idx == last_index:
                 f_dist = f_dist + '''
-        }'''
+                minDist0 = minDist1;
+            }
+            {
+                ''' + f_common + '''
+                    ''' + cls.__generate_distance_function_by_primitive_type(primitive_type) + '''
+                minDist1 = dist;'''
+                
+                f_merge_0 = f_blend_0[blend_type][boolean_type]
+            else:            
+                f_merge_1 = f_blend_1[blend_type][boolean_type]
+                # To align the indentation of the generated shaders, a tab-only string is inserted between them.
+                f_dist = f_dist + f_common + '''
+                    ''' + cls.__generate_distance_function_by_primitive_type(primitive_type) + '''
+                    ''' + f_merge_1
+                
+            if break_loop:
+                break
+                
+        # Concatenate the distance numbers to the end while rotating the loop
+        for idx in range(idx_offset + 1, len(alist)):
+            pointer = alist[idx]
+            sdf_object = pointer.object.sdf_object
+            primitive_type = sdf_object.primitive_type
+            boolean_type = sdf_object.boolean_type
+            blend_type = sdf_object.blend_type
+            nest = sdf_object.nest
+
+            if nest == False:
+                f_dist = f_dist + '''
+                ''' + f_merge_0 + '''
+            }
+            {
+                '''
+
+                f_dist = f_dist + f_common + '''
+                    ''' + cls.__generate_distance_function_by_primitive_type(primitive_type) + '''
+                minDist1 = dist;'''
+                
+                f_merge_0 = f_blend_0[blend_type][boolean_type]
+            else:
+                f_merge_1 = f_blend_1[blend_type][boolean_type]
+                f_dist = f_dist + f_common + '''
+                    ''' + cls.__generate_distance_function_by_primitive_type(primitive_type) + '''
+                    ''' + f_merge_1
+        
+        # Remember to close the trailing scope
+        f_dist = f_dist + '''
+                ''' + f_merge_0 + '''
+            }'''
+        return f_dist
