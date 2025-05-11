@@ -193,15 +193,13 @@ include_ = '''
 # A library of fragment shader
 frag_include_ = '''
         struct SDFObjectProp {
-            vec4 ps; // position_scale
-            mat4 r;  // rotation
-            vec2 bl; // blend
-            float rd;// round
-            float dm;// dummy
+            vec4 ps;  // position and scale
+            mat4 ro;  // rotation
+            vec2 bl;  // blend
         };
         
         struct SDFBoxProp {
-            vec4 b; // bounding
+            vec4 br; // bound and round
         };
         
         struct SDfSphereProp {
@@ -209,31 +207,35 @@ frag_include_ = '''
         };
         
         struct SDFCylinderProp {
-            float h; // height
-            float r;
+            float h;  // height
+            float ra; // radius
+            float rd; // round
+            float dm; // dummy
         };
         
         struct SDFTorusProp {
-            float r0;
-            float r1;
+            float r0; // radius 0
+            float r1; // radius 1
         };
         
         struct SDFConeProp {
-            float h;
-            float r0;
-            float r1;
-            float dm;
+            float h;  // height
+            float r0; // radius 0
+            float r1; // radius 1
+            float rd; // round
         };
         
         struct SDFPrismProp {
-            float h;
-            float r;
+            float h;  // height
+            float ra; // radius
+            float rd; // round
+            float dm; // dummy
         };
         
         struct SDFNgonPrismProp {
-            float h;
-            float r;
-            uint n; // nsideds
-            float dm;
+            float h;  // height
+            float ra; // radius
+            float rd; // round
+            uint n;   // nsideds
         };
 '''

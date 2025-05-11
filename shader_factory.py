@@ -86,7 +86,7 @@ class ShaderFactory(object):
                 {
                     position = sdfObjectProp.ps.xyz;
                     samplpos = p - position;
-                    rotation = sdfObjectProp.r;
+                    rotation = sdfObjectProp.ro;
                     scale = sdfObjectProp.ps.w;
                     samplpos = mulVec(rotation, samplpos).xyz;
                     samplpos /= scale;
@@ -98,7 +98,7 @@ class ShaderFactory(object):
             if primitive_type == 'Box':
                 f_dist = f_dist + '''
                     sdfBoxProp = sdfBoxProps[sdfBoxPropIdx++];
-                    dist = sdBox(samplpos, sdfBoxProp.b.xyz, 0);
+                    dist = sdBox(samplpos, sdfBoxProp.br.xyz, sdfBoxProp.br.w);
                 '''
             elif primitive_type == 'Sphere':
                 f_dist = f_dist + '''
@@ -108,32 +108,38 @@ class ShaderFactory(object):
             elif primitive_type == 'Cylinder':
                 f_dist = f_dist + '''
                     sdfCylinderProp = sdfCylinderProps[sdfCylinderPropIdx++];
-                    dist = sdCylinder(samplpos, sdfCylinderProp.h, sdfCylinderProp.r);
+                    dist = sdCylinder(samplpos, sdfCylinderProp.h, sdfCylinderProp.ra);
+                    dist = rounding(dist, sdfCylinderProp.rd);
                 '''
             elif primitive_type == 'Cone':
                 f_dist = f_dist + '''
                     sdfConeProp = sdfConeProps[sdfConePropIdx++];
                     dist = sdCappedCone(samplpos, sdfConeProp.h, sdfConeProp.r0, sdfConeProp.r1);
+                    dist = rounding(dist, sdfConeProp.rd);
                 '''
             elif primitive_type == 'Torus':
                 f_dist = f_dist + '''
                     sdfTorusProp = sdfTorusProps[sdfTorusPropIdx++];
                     dist = sdTorus(samplpos, sdfTorusProp.r0, sdfTorusProp.r1);
+                    dist = rounding(dist, sdfTorusProp.rd);
                 '''
             elif primitive_type == 'Hexagonal Prism':
                 f_dist = f_dist + '''
                     sdfHexPrismProp = sdfHexPrismProps[sdfHexPrismPropIdx++];
                     dist = sdHexPrism(samplpos, sdfHexPrismProp.h);
+                    dist = rounding(dist, sdfHexPrismProp.rd);
                 '''
             elif primitive_type == 'Triangular Prism':
                 f_dist = f_dist + '''
                     sdfTriPrismProp = sdfTriPrismProps[sdfTriPrismPropIdx++];
-                    dist = sdTriPrism(samplpos, sdfTriPrismProp.h, sdfTriPrismProp.r);
+                    dist = sdTriPrism(samplpos, sdfTriPrismProp.h, sdfTriPrismProp.ra);
+                    dist = rounding(dist, sdfTriPrismProp.rd);
                 '''
             elif primitive_type == 'Ngon Prism':
                 f_dist = f_dist + '''
                     sdfNgonPrismProp = sdfNgonPrismProps[sdfNgonPrismPropIdx++];
-                    dist = sdNgonPrism(samplpos, sdfNgonPrismProp.h, sdfNgonPrismProp.r, sdfNgonPrismProp.n);
+                    dist = sdNgonPrism(samplpos, sdfNgonPrismProp.h, sdfNgonPrismProp.ra, sdfNgonPrismProp.n);
+                    dist = rounding(dist, sdfNgonPrismProp.rd);
                 '''
             elif primitive_type == 'GLSL':
                 pass
