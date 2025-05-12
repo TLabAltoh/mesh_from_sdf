@@ -413,6 +413,8 @@ class SDF2MESH_OT_List_Add(Operator):
         return context.scene
     
     def execute(self, context):
+        global ctx
+        
         pointer = context.scene.sdf_object_pointer_list.add()
         bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='CURSOR', location=(0,0,0), rotation=(0,0,0), scale=(1,1,1))
         pointer.name = context.active_object.name
@@ -427,8 +429,12 @@ class SDF2MESH_OT_List_Add(Operator):
         box_pointer.object = pointer.object
         pointer.object.sdf_object.sub_index = len(context.scene.sdf_box_pointer_list) - 1
 
+        # Generate shaders according to the current hierarchy
+        f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
+        print(f_dist)
+
         # Generate compute buffer
-        ShaderBufferFactory.generate_buffer(ry.Raymarching.get_context(), 'Box', len(context.scene.sdf_box_pointer_list))
+        ShaderBufferFactory.generate_buffer(ctx, 'Box', len(context.scene.sdf_box_pointer_list))
         
         bpy.ops.ed.undo_push(message='mesh_from_sdf.hierarchy_add')
         return {'FINISHED'}
@@ -445,6 +451,8 @@ class SDF2MESH_OT_List_Remove(Operator):
         return (context.scene and context.scene.sdf_object_pointer_list and (len(context.scene.sdf_object_pointer_list) > context.scene.sdf_object_pointer_list_index) and (context.scene.sdf_object_pointer_list_index >= 0))
     
     def execute(self, context):
+        global ctx
+        
         alist = context.scene.sdf_object_pointer_list
         index = context.scene.sdf_object_pointer_list_index
         deleted_index = index
@@ -489,8 +497,15 @@ class SDF2MESH_OT_List_Remove(Operator):
             elif primitive_type == 'GLSL':
                 blist = context.scene.sdf_glsl_prism_pointer_list
                 
+            # Reassign sub-indexes
             SDFOBJECT_UTILITY.recalc_sub_index_without_sort(blist)
-            ShaderBufferFactory.generate_buffer(ry.Raymarching.get_context(), primitive_type, len(blist))
+            
+            # Generate shaders according to the current hierarchy
+            f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
+            print(f_dist)
+            
+            # Generate compute buffer
+            ShaderBufferFactory.generate_buffer(ctx, primitive_type, len(blist))
                 
             bpy.ops.ed.undo_push(message='mesh_from_sdf.hierarchy_remove')
         return {'FINISHED'}
