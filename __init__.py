@@ -573,6 +573,10 @@ class SDF2MESH_OT_List_Reorder(Operator):
             tmp = int(item0.sub_index)
             item0.sub_index = int(item1.sub_index)
             item1.sub_index = tmp
+            
+        # Generate shaders according to the current hierarchy
+        f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
+        print(f_dist)
         
         bpy.ops.ed.undo_push(message='mesh_from_sdf.hierarchy_reorder')
         return {'FINISHED'}
