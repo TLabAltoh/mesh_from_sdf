@@ -1,7 +1,7 @@
 
 # A library of distance functions and mathematical utilities.
 include_ = '''
-        mat4 rotmat(vec3 axis, float angle) {
+        mat4 rotmat(vec3 axis, in float angle) {
             axis = normalize(axis);
             float s = sin(angle);
             float c = cos(angle);
@@ -11,6 +11,17 @@ include_ = '''
                         oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
                         oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
                         0.0,                                0.0,                                0.0,                                1.0);
+        }
+        
+        // https://qiita.com/ukonpower/items/ebafd19fcb33f37ed273
+        mat4 qua2mat( in vec4 q ){
+            mat4 m = mat4(
+                1.0 - 2.0 * pow( q.y, 2.0 ) - 2.0 * pow( q.z, 2.0 ), 2.0 * q.x * q.y + 2.0 * q.w * q.z, 2.0 * q.x * q.z - 2.0 * q.w * q.y, 0.0,
+                2.0 * q.x * q.y - 2.0 * q.w * q.z, 1.0 - 2.0 * pow( q.x, 2.0 ) - 2.0 * pow( q.z, 2.0 ), 2.0 * q.y * q.z + 2.0 * q.w * q.x, 0.0,
+                2.0 * q.x * q.z + 2.0 * q.w * q.y, 2.0 * q.y * q.z - 2.0 * q.w * q.x, 1.0 - 2.0 * pow( q.x, 2.0 ) - 2.0 * pow( q.y, 2.0 ), 0.0,
+                0.0, 0.0, 0.0, 1.0
+            );
+            return m;
         }
 
         float dot2( in vec2 v ) { return dot(v,v); }
@@ -194,7 +205,7 @@ include_ = '''
 frag_include_ = '''
         struct SDFObjectProp {
             vec4 ps;  // position and scale
-            mat4 ro;  // rotation
+            vec4 qu;  // quaternion
             vec2 bl;  // blend
         };
         

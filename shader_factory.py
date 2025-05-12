@@ -78,7 +78,7 @@ class ShaderFactory(object):
                 sdfObjectProp = sdfObjectProps[sdfObjectPropIdx++];
                 position = sdfObjectProp.ps.xyz;
                 samplpos = p - position;
-                rotation = sdfObjectProp.ro;
+                rotation = qua2mat(sdfObjectProp.qu);
                 scale = sdfObjectProp.ps.w;
                 samplpos = mulVec(rotation, samplpos).xyz;
                 samplpos /= scale;

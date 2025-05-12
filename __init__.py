@@ -57,7 +57,7 @@ class SDFObjectProperty(PropertyGroup):
         return False
 
     def property_event_on_object_prop_updated(self, context):
-        pass
+        ShaderBufferFactory.generate_object_common_buffer(context)
 
     def property_event_on_box_prop_updated(self, context):
         pass
@@ -75,6 +75,10 @@ class SDFObjectProperty(PropertyGroup):
         pass
     
     def property_event_on_prism_prop_updated(self, context):
+        # Determine how many angles you are with an if statement.
+        pass
+    
+    def property_event_on_ngon_prism_prop_updated(self, context):
         pass
     
     def property_event_on_glsl_prop_updated(self, context):
@@ -298,7 +302,7 @@ class SDFObjectProperty(PropertyGroup):
         description='',
         min=3,
         default=6,
-        update=property_event_on_prism_prop_updated)
+        update=property_event_on_ngon_prism_prop_updated)
     
     # cone
     prop_cone_radiuss: bpy.props.FloatVectorProperty(

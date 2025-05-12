@@ -1,4 +1,5 @@
 import moderngl
+import numpy as np
 
 # Class for generating and updating Compute Buffer to be bound to shaders
 class ShaderBufferFactory(object):
@@ -6,6 +7,7 @@ class ShaderBufferFactory(object):
     # Holds the buffer object and the buffer size of its elements
     buffers = {}
     
+    # Generate a ComputeBuffer with any key
     @classmethod
     def generate_buffer(cls, ctx, key, size, item_size = 1):
         size = size * item_size
@@ -16,6 +18,7 @@ class ShaderBufferFactory(object):
             buffer = ctx.buffer(reserve=size, dynamic=True)
             cls.buffers[key] = (buffer, item_size)
     
+    # Update buffer at specified index
     @classmethod
     def update_buffer(cls, key, data, index, offset = 0):
         if key in cls.buffers:
@@ -24,6 +27,7 @@ class ShaderBufferFactory(object):
             imsize = touple[1]
             buffer.write(data, index * imsize + offset)
             
+    # Releases the buffer associated with the specified key
     @classmethod
     def release_buffer(cls, key):
         if key in cls.buffers:
@@ -31,11 +35,64 @@ class ShaderBufferFactory(object):
             buffre.release()
             del cls.buffres[key]
     
+    # Free all buffers
     @classmethod
     def release_all(cls):
         for touple in cls.buffers:
             touple[0].release()
         cls.buffers.clear()
+    
+    # Pack elements of SDFObjectProperty into a touple
+    @classmethod
+    def pack_sdf_object_common_property(cls, object):
+        mat = object.matrix_world
+        p = mat.to_translation()
+        r = mat.to_quaternion()
+        s = mat.to_scale()
+        return p[0], p[1], p[2], s[0], r[0], r[1], r[2], r[3]
+    
+    @classmethod
+    def generate_object_common_buffer(cls, context):
+        alist = context.scene.sdf_object_pointer_list
+        blist = [cls.pack_sdf_object_common_property(p.object) for p in alist]
+        print('blist:', blist)
+        pass
+
+    @classmethod
+    def generate_box_buffer(cls, context):
+        pass
+    
+    @classmethod
+    def generate_sphere_buffer(cls, context):
+        pass
+    
+    @classmethod
+    def gemerate_cylinder_buffer(cls, context):
+        pass
+    
+    @classmethod
+    def gemerate_cone_buffer(cls, context):
+        pass
+    
+    @classmethod
+    def gemerate_torus_buffer(cls, context):
+        pass
+    
+    @classmethod
+    def gemerate_hex_prism_buffer(cls, context):
+        pass
+    
+    @classmethod
+    def gemerate_tri_prism_buffer(cls, context):
+        pass
+    
+    @classmethod
+    def gemerate_ngon_prism_buffer(cls, context):
+        pass
+    
+    @classmethod
+    def gemerate_glsl_buffer(cls, context):
+        pass
         
     
 #    count_buf = cls.ctx.buffer(data=b'\x00\x00\x00\x00')
