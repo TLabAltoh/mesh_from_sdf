@@ -395,6 +395,10 @@ class SDF2MESH_OT_List_Reload(Operator):
         SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_ngon_prism_pointer_list)
         SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_glsl_pointer_list)
         
+        # Generate shaders according to the current hierarchy
+        f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
+        print(f_dist)
+        
         bpy.ops.ed.undo_push(message='mesh_from_sdf.hierarchy_reload')
         return {'FINISHED'}
 

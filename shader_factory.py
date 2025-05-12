@@ -2,7 +2,6 @@ import moderngl
 
 # Class for generating and updating shaders based on SDF Object Property list
 class ShaderFactory(object):
-    
     # Concatenate distance function snippets that match the primitive_type of the SDFObject
     @classmethod
     def __generate_distance_function_by_primitive_type(cls, primitive_type):
