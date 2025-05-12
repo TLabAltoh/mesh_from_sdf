@@ -92,6 +92,7 @@ class SDFObjectProperty(PropertyGroup):
             mesh = object.data
             if mesh:
                 prev_mode = context.object.mode
+                # Move to Edit mode to manipulate Mesh primitives
                 bpy.ops.object.mode_set(mode='EDIT')
                 bpy.ops.mesh.select_all(action='SELECT')
                 bpy.ops.mesh.delete(type='FACE')
@@ -141,12 +142,14 @@ class SDFObjectProperty(PropertyGroup):
                     bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
                     blist = context.scene.sdf_glsl_pointer_list
 
+                # Rebuild Compute Buffer
                 if blist != None:
                     new_pointer = blist.add()
                     new_pointer.object = prv_pointer.object
                     SDFOBJECT_UTILITY.recalc_sub_index(blist)
                     ShaderBufferFactory.generate_buffer(ctx, primitive_type, len(blist))
-                 
+                    
+                # Return from Edit mode to the previous mode
                 object.sdf_object.prev_primitive_type = object.sdf_object.primitive_type
                 bpy.ops.object.mode_set(mode=prev_mode)
                 
@@ -173,7 +176,8 @@ class SDFObjectProperty(PropertyGroup):
         description='',
         default=False,
         update=property_event_on_object_prop_updated)
-                 
+    
+    # common
     boolean_type: EnumProperty(
         name='Boolean',
         description='',
@@ -219,6 +223,7 @@ class SDFObjectProperty(PropertyGroup):
        name='Rounding',
        description='',
        min=0.0,
+       max=1.0,
        default=0.0,
        update=property_event_on_object_prop_updated)
            
@@ -677,22 +682,21 @@ class SDFOBJECT_PT_Panel(Panel):
 
     def draw(self, context):
         object = context.active_object
-        row = self.layout.row()
-        row.alignment = 'CENTER'
         if object.sdf_object.enabled:
-            col = row.column(align=True)
-            row = self.layout.row()
             item = object.sdf_object
             col = self.layout.column()
             col.prop(item, 'primitive_type')
             
             if item.primitive_type == 'Box':
                 col.prop(item, 'prop_box_bounding')
+                col.prop(item, 'rounding')
             elif item.primitive_type == 'Sphere':
                 col.prop(item, 'prop_sphere_radius')
+                col.prop(item, 'rounding')
             elif item.primitive_type == 'Cylinder':
                 col.prop(item, 'prop_cylinder_height')
                 col.prop(item, 'prop_cylinder_radius')
+                col.prop(item, 'rounding')
             elif item.primitive_type == 'Torus':
                 col.prop(item, 'prop_torus_radiuss')
             elif (item.primitive_type == 'Hexagonal Prism') or (item.primitive_type == 'Triangular Prism') or (item.primitive_type == 'Ngon Prism'):
@@ -700,13 +704,16 @@ class SDFOBJECT_PT_Panel(Panel):
                 col.prop(item, 'prop_prism_height')
                 if (item.primitive_type == 'Ngon Prism'):
                     col.prop(item, 'prop_prism_nsides')
+                col.prop(item, 'rounding')
             elif item.primitive_type == 'Cone':
                 col.prop(item, 'prop_cone_height')
                 col.prop(item, 'prop_cone_radiuss')
+                col.prop(item, 'rounding')
             elif item.primitive_type == 'GLSL':
                 col.prop(item, 'prop_glsl_shader_path')
                 col.prop(item, 'prop_glsl_bounding')
-            
+
+            col.separator()            
             col.prop(item, 'boolean_type')
             col.prop(item, 'blend_type')
             
@@ -720,11 +727,10 @@ class SDFOBJECT_PT_Panel(Panel):
             elif item.blend_type == 'Round':
                 col.prop(item, 'blend_radius')
             
-            col.prop(item, 'rounding')
             col.separator()
             col.operator('mesh_from_sdf.select_on_the_hierarchy', text='Select on the hierarchy')
         else:
-            col = row.column(align=True)
+            col = self.layout.column()
             col.label(text='This object is not an SDF object')
 
 

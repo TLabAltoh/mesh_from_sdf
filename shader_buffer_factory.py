@@ -3,35 +3,38 @@ import moderngl
 # Class for generating and updating Compute Buffer to be bound to shaders
 class ShaderBufferFactory(object):
     
+    # Holds the buffer object and the buffer size of its elements
     buffers = {}
     
     @classmethod
     def generate_buffer(cls, ctx, key, size, item_size = 1):
         size = size * item_size
         if key in cls.buffers:
-            buffer = cls.buffers[key]
+            buffer = cls.buffers[key][0]
             buffer.orphan(size)
         else:
             buffer = ctx.buffer(reserve=size, dynamic=True)
-            cls.buffers[key] = buffer
+            cls.buffers[key] = (buffer, item_size)
     
     @classmethod
-    def update_buffer(cls, key, offset, data):
+    def update_buffer(cls, key, data, index, offset = 0):
         if key in cls.buffers:
-            buffer = cls.buffers[key]
-            buffer.write(data, offset)
+            touple = cls.buffers[key]
+            buffer = touple[0]
+            imsize = touple[1]
+            buffer.write(data, index * imsize + offset)
             
     @classmethod
     def release_buffer(cls, key):
         if key in cls.buffers:
-            buffer = cls.buffers[key]
+            buffer = cls.buffers[key][0]
             buffre.release()
             del cls.buffres[key]
     
     @classmethod
     def release_all(cls):
-        for buffer in cls.buffers:
-            buffre.release()
+        for touple in cls.buffers:
+            touple[0].release()
         cls.buffers.clear()
         
     
