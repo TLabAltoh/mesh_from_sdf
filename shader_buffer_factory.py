@@ -11,10 +11,15 @@ class ShaderBufferFactory(object):
     @classmethod
     def release_all(cls):
         cls.release_object_common_buffer()
+
+    # Get object_common_buffer regardless of whether the value is None or not
+    @classmethod
+    def get_object_common_buffer(cls):
+        return cls.object_common_buffer
     
     # Generate buffer for SDFObjectProperty
     @classmethod
-    def generate_object_common_buffer(cls, context):
+    def generate_object_common_buffer(cls, ctx, context):
         
         dsize = 8 # position (3), scale (1), quaternion (4)
         alist = context.scene.sdf_object_pointer_list
@@ -37,13 +42,19 @@ class ShaderBufferFactory(object):
             narray[offset + 5] = r[1]
             narray[offset + 6] = r[2]
             narray[offset + 7] = r[3]
-            
+
+        # Generate a buffer to bind to the shader using np.array as source
+        cls.object_common_buffer = ctx.buffer(narray)
         print('[generate_object_common_buffer] object_common:', narray)
-        pass
+        return cls.object_common_buffer
     
     # Reflects the specified element of the SDFObjectProperty list in the buffer
     @classmethod
-    def update_object_common_buffer(cls, context, i):
+    def update_object_common_buffer(cls, ctx, context, i):
+        
+        # If buffer is set to None for some reason, a new buffer is created here.
+        if cls.object_common_buffer == None:
+            return cls.generate_object_common_buffer(ctx, context)
         
         dsize = 8 # position (3), scale (1), quaternion (4)
         alist = context.scene.sdf_object_pointer_list
@@ -56,8 +67,12 @@ class ShaderBufferFactory(object):
         r = mat.to_quaternion()
         s = mat.to_scale()
         
+        touple = (p[0], p[1], p[2], s[0], r[0], r[1], r[2], r[3])
         buf = cls.object_common_buffer
-        buf.write(np.array((p[0], p[1], p[2], s[0], r[0], r[1], r[2], r[3]), dtype=np.float32).tobytes())
+        buf.write(np.array(touple, dtype=np.float32).tobytes())
+        
+        print('[update_object_common_buffer] index:', i, 'touple:', touple)
+        return cls.object_common_buffer
     
     # Release buffer used for SDFObjectProperty
     @classmethod

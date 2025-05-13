@@ -57,7 +57,8 @@ class SDFObjectProperty(PropertyGroup):
         return False
 
     def property_event_on_object_prop_updated(self, context):
-        ShaderBufferFactory.generate_object_common_buffer(context)
+        global ctx
+        ShaderBufferFactory.update_object_common_buffer(ctx, context, self.index)
 
     def property_event_on_box_prop_updated(self, context):
         pass
@@ -118,7 +119,7 @@ class SDFObjectProperty(PropertyGroup):
                 if (primitive_type == 'Box') and (SDFObjectProperty.contains_in_list(context.scene.sdf_box_pointer_list, prv_pointer.object) == False):
                     bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
                     blist = context.scene.sdf_box_pointer_list
-                    alloc = lambda: ShaderBufferFactory.generate_object_common_buffer(context)
+                    alloc = lambda: ShaderBufferFactory.generate_object_common_buffer(ctx, context)
                 elif (primitive_type == 'Sphere') and (SDFObjectProperty.contains_in_list(context.scene.sdf_sphere_pointer_list, prv_pointer.object) == False):
                     bpy.ops.mesh.primitive_uv_sphere_add(radius=1, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
                     blist = context.scene.sdf_sphere_pointer_list
@@ -967,7 +968,6 @@ global ctx
 ctx = moderngl_util.create_context()
 Raymarching.set_context(ctx)
 MarchingCube.set_context(ctx)
-
 
 def init_shader_factory():
     pass
