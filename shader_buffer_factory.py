@@ -4,59 +4,67 @@ import numpy as np
 # Class for generating and updating Compute Buffer to be bound to shaders
 class ShaderBufferFactory(object):
     
-    # Holds the buffer object and the buffer size of its elements
-    buffers = {}
-    
-    # Generate a ComputeBuffer with any key
-    @classmethod
-    def generate_buffer(cls, ctx, key, size, item_size = 1):
-        size = size * item_size
-        if key in cls.buffers:
-            buffer = cls.buffers[key][0]
-            buffer.orphan(size)
-        else:
-            buffer = ctx.buffer(reserve=size, dynamic=True)
-            cls.buffers[key] = (buffer, item_size)
-    
-    # Update buffer at specified index
-    @classmethod
-    def update_buffer(cls, key, data, index, offset = 0):
-        if key in cls.buffers:
-            touple = cls.buffers[key]
-            buffer = touple[0]
-            imsize = touple[1]
-            buffer.write(data, index * imsize + offset)
-            
-    # Releases the buffer associated with the specified key
-    @classmethod
-    def release_buffer(cls, key):
-        if key in cls.buffers:
-            buffer = cls.buffers[key][0]
-            buffre.release()
-            del cls.buffres[key]
+    # Buffer used for SDFObjectProperty
+    object_common_buffer = None
     
     # Free all buffers
     @classmethod
     def release_all(cls):
-        for touple in cls.buffers:
-            touple[0].release()
-        cls.buffers.clear()
+        cls.release_object_common_buffer()
     
-    # Pack elements of SDFObjectProperty into a touple
+    # Generate buffer for SDFObjectProperty
     @classmethod
-    def pack_sdf_object_common_property(cls, object):
+    def generate_object_common_buffer(cls, context):
+        
+        dsize = 8 # position (3), scale (1), quaternion (4)
+        alist = context.scene.sdf_object_pointer_list
+        narray = np.empty(len(alist) * dsize, dtype=np.float32)
+        
+        for i, pointer in enumerate(alist):
+            object = pointer.object
+            
+            mat = object.matrix_world
+            p = mat.to_translation()
+            r = mat.to_quaternion()
+            s = mat.to_scale()
+            
+            offset = i * dsize
+            narray[offset + 0] = p[0]
+            narray[offset + 1] = p[1]
+            narray[offset + 2] = p[2]
+            narray[offset + 3] = s[0]
+            narray[offset + 4] = r[0]
+            narray[offset + 5] = r[1]
+            narray[offset + 6] = r[2]
+            narray[offset + 7] = r[3]
+            
+        print('[generate_object_common_buffer] object_common:', narray)
+        pass
+    
+    # Reflects the specified element of the SDFObjectProperty list in the buffer
+    @classmethod
+    def update_object_common_buffer(cls, context, i):
+        
+        dsize = 8 # position (3), scale (1), quaternion (4)
+        alist = context.scene.sdf_object_pointer_list
+        
+        pointer = alist[i]
+        object = pointer.object
+        
         mat = object.matrix_world
         p = mat.to_translation()
         r = mat.to_quaternion()
         s = mat.to_scale()
-        return p[0], p[1], p[2], s[0], r[0], r[1], r[2], r[3]
+        
+        buf = cls.object_common_buffer
+        buf.write(np.array((p[0], p[1], p[2], s[0], r[0], r[1], r[2], r[3]), dtype=np.float32).tobytes())
     
+    # Release buffer used for SDFObjectProperty
     @classmethod
-    def generate_object_common_buffer(cls, context):
-        alist = context.scene.sdf_object_pointer_list
-        blist = [cls.pack_sdf_object_common_property(p.object) for p in alist]
-        print('blist:', blist)
-        pass
+    def release_object_common_buffer(cls):
+        if cls.object_common_buffer != None:
+            cls.object_common_buffer.release()
+        cls.object_comon_buffer = None
 
     @classmethod
     def generate_box_buffer(cls, context):

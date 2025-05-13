@@ -114,9 +114,11 @@ class SDFObjectProperty(PropertyGroup):
                 # CollectionProperty does not have an alternative to the append function; the add function must be used.
                 # Sorts the list of SDF Objects according to the order of the hierarchy.
                 blist = None
+                alloc = None
                 if (primitive_type == 'Box') and (SDFObjectProperty.contains_in_list(context.scene.sdf_box_pointer_list, prv_pointer.object) == False):
                     bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
                     blist = context.scene.sdf_box_pointer_list
+                    alloc = lambda: ShaderBufferFactory.generate_object_common_buffer(context)
                 elif (primitive_type == 'Sphere') and (SDFObjectProperty.contains_in_list(context.scene.sdf_sphere_pointer_list, prv_pointer.object) == False):
                     bpy.ops.mesh.primitive_uv_sphere_add(radius=1, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
                     blist = context.scene.sdf_sphere_pointer_list
@@ -151,7 +153,8 @@ class SDFObjectProperty(PropertyGroup):
                     new_pointer = blist.add()
                     new_pointer.object = prv_pointer.object
                     SDFOBJECT_UTILITY.recalc_sub_index(blist)
-                    ShaderBufferFactory.generate_buffer(ctx, primitive_type, len(blist))
+                    if alloc != None:
+                        alloc()
                     
                 # Return from Edit mode to the previous mode
                 object.sdf_object.prev_primitive_type = object.sdf_object.primitive_type
@@ -443,7 +446,7 @@ class SDF2MESH_OT_List_Add(Operator):
         print(f_dist)
 
         # Generate compute buffer
-        ShaderBufferFactory.generate_buffer(ctx, 'Box', len(context.scene.sdf_box_pointer_list))
+        # ShaderBufferFactory.generate_box_buffer()
         
         bpy.ops.ed.undo_push(message='mesh_from_sdf.hierarchy_add')
         return {'FINISHED'}
@@ -487,6 +490,7 @@ class SDF2MESH_OT_List_Remove(Operator):
                 
             # Update the order of CollectionProperty(type=SDFObjectRefPointerProperty).
             blist = None
+            alloc = None
             if primitive_type == 'Box':
                 blist = context.scene.sdf_box_pointer_list
             elif primitive_type == 'Sphere':
@@ -509,12 +513,13 @@ class SDF2MESH_OT_List_Remove(Operator):
             # Reassign sub-indexes
             SDFOBJECT_UTILITY.recalc_sub_index_without_sort(blist)
             
+            # Regenerate compute buffer
+            if alloc != None:
+                alloc()
+            
             # Generate shaders according to the current hierarchy
             f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
             print(f_dist)
-            
-            # Generate compute buffer
-            ShaderBufferFactory.generate_buffer(ctx, primitive_type, len(blist))
                 
             bpy.ops.ed.undo_push(message='mesh_from_sdf.hierarchy_remove')
         return {'FINISHED'}
