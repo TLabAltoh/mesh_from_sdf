@@ -4,6 +4,13 @@ import numpy as np
 # Class for generating and updating Compute Buffer to be bound to shaders
 class ShaderBufferFactory(object):
     
+    # List to get blend properties of shaders...seems like using dictionary is faster than if else?
+    __get_blend_props = {'No Blending': lambda sdf_object: (0, 0),
+                         'Smooth' : lambda sdf_object: (sdf_object.blend_smooth, 0),
+                         'Champfer' : lambda sdf_object: (sdf_object.blend_champfer_size, 0),
+                         'Steps' : lambda sdf_object: (sdf_object.blend_champfer_size, sdf_object.blend_step),
+                         'Round' : lambda sdf_object: (sdf_object.blend_radius, 0)}
+    
     # Buffer used for SDFObjectProperty
     object_common_buffer = None
     
@@ -21,17 +28,19 @@ class ShaderBufferFactory(object):
     @classmethod
     def generate_object_common_buffer(cls, ctx, context):
         
-        dsize = 8 # position (3), scale (1), quaternion (4)
+        dsize = 10 # position (3), scale (1), quaternion (4), blend (2)
         alist = context.scene.sdf_object_pointer_list
         narray = np.empty(len(alist) * dsize, dtype=np.float32)
         
         for i, pointer in enumerate(alist):
             object = pointer.object
+            sdf_object = object.sdf_object
             
             mat = object.matrix_world
             p = mat.to_translation()
             r = mat.to_quaternion()
             s = mat.to_scale()
+            bl_0, bl_1 = cls.__get_blend_props[sdf_object.blend_type](sdf_object)
             
             offset = i * dsize
             narray[offset + 0] = p[0]
@@ -42,6 +51,8 @@ class ShaderBufferFactory(object):
             narray[offset + 5] = r[1]
             narray[offset + 6] = r[2]
             narray[offset + 7] = r[3]
+            narray[offset + 8] = bl_0
+            narray[offset + 9] = bl_1
 
         # Generate a buffer to bind to the shader using np.array as source
         cls.object_common_buffer = ctx.buffer(narray)
@@ -58,18 +69,31 @@ class ShaderBufferFactory(object):
         
         dsize = 8 # position (3), scale (1), quaternion (4)
         alist = context.scene.sdf_object_pointer_list
+        narray = np.empty(len(alist) * dsize, dtype=np.float32)
         
         pointer = alist[i]
         object = pointer.object
+        sdf_object = object.sdf_object
         
         mat = object.matrix_world
         p = mat.to_translation()
         r = mat.to_quaternion()
         s = mat.to_scale()
+        bl_0, bl_1 = cls.__get_blend_props[sdf_object.blend_type](sdf_object)
         
-        touple = (p[0], p[1], p[2], s[0], r[0], r[1], r[2], r[3])
+        narray[0] = p[0]
+        narray[1] = p[1]
+        narray[2] = p[2]
+        narray[3] = s[0]
+        narray[4] = r[0]
+        narray[5] = r[1]
+        narray[6] = r[2]
+        narray[7] = r[3]
+        narray[8] = bl_0
+        narray[9] = bl_1
+        
         buf = cls.object_common_buffer
-        buf.write(np.array(touple, dtype=np.float32).tobytes())
+        buf.write(narray.tobytes())
         
         print('[update_object_common_buffer] index:', i, 'touple:', touple)
         return cls.object_common_buffer

@@ -212,8 +212,8 @@ class SDFObjectProperty(PropertyGroup):
         default=1,
         update=property_event_on_object_prop_updated)
 
-    blend_radius: FloatProperty(
-        name='Radius',
+    blend_round: FloatProperty(
+        name='Round',
         description='',
         min=0.0,
         default=0.0,
@@ -227,8 +227,8 @@ class SDFObjectProperty(PropertyGroup):
         default=0.5,
         update=property_event_on_object_prop_updated)
            
-    rounding: FloatProperty(
-       name='Rounding',
+    round: FloatProperty(
+       name='Round',
        description='',
        min=0.0,
        max=1.0,
@@ -246,8 +246,8 @@ class SDFObjectProperty(PropertyGroup):
         update=property_event_on_primitive_type_changed)
 
     # box    
-    prop_box_bounding: bpy.props.FloatVectorProperty(
-        name='Bounding',
+    prop_box_bound: bpy.props.FloatVectorProperty(
+        name='Bound',
         description='Radius',
         size=3,
         min=0.0,
@@ -325,8 +325,8 @@ class SDFObjectProperty(PropertyGroup):
         update=property_event_on_cone_prop_updated)
     
     # glsl
-    prop_glsl_bounding: bpy.props.FloatVectorProperty(
-        name='Bounding',
+    prop_glsl_bound: bpy.props.FloatVectorProperty(
+        name='Bound',
         description='',
         size=3,
         min=0.0,
@@ -441,6 +441,9 @@ class SDF2MESH_OT_List_Add(Operator):
         box_pointer = context.scene.sdf_box_pointer_list.add()
         box_pointer.object = pointer.object
         pointer.object.sdf_object.sub_index = len(context.scene.sdf_box_pointer_list) - 1
+
+        # 
+        # ShaderBufferFactory.generate_object_common_buffer(ctx, context)
 
         # Generate shaders according to the current hierarchy
         f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
@@ -698,15 +701,15 @@ class SDFOBJECT_PT_Panel(Panel):
             col.prop(item, 'primitive_type')
             
             if item.primitive_type == 'Box':
-                col.prop(item, 'prop_box_bounding')
-                col.prop(item, 'rounding')
+                col.prop(item, 'prop_box_bound')
+                col.prop(item, 'round')
             elif item.primitive_type == 'Sphere':
                 col.prop(item, 'prop_sphere_radius')
-                col.prop(item, 'rounding')
+                col.prop(item, 'round')
             elif item.primitive_type == 'Cylinder':
                 col.prop(item, 'prop_cylinder_height')
                 col.prop(item, 'prop_cylinder_radius')
-                col.prop(item, 'rounding')
+                col.prop(item, 'round')
             elif item.primitive_type == 'Torus':
                 col.prop(item, 'prop_torus_radiuss')
             elif (item.primitive_type == 'Hexagonal Prism') or (item.primitive_type == 'Triangular Prism') or (item.primitive_type == 'Ngon Prism'):
@@ -714,14 +717,14 @@ class SDFOBJECT_PT_Panel(Panel):
                 col.prop(item, 'prop_prism_height')
                 if (item.primitive_type == 'Ngon Prism'):
                     col.prop(item, 'prop_prism_nsides')
-                col.prop(item, 'rounding')
+                col.prop(item, 'round')
             elif item.primitive_type == 'Cone':
                 col.prop(item, 'prop_cone_height')
                 col.prop(item, 'prop_cone_radiuss')
-                col.prop(item, 'rounding')
+                col.prop(item, 'round')
             elif item.primitive_type == 'GLSL':
                 col.prop(item, 'prop_glsl_shader_path')
-                col.prop(item, 'prop_glsl_bounding')
+                col.prop(item, 'prop_glsl_bound')
 
             col.separator()            
             col.prop(item, 'boolean_type')
@@ -735,7 +738,7 @@ class SDFOBJECT_PT_Panel(Panel):
                 col.prop(item, 'blend_step')
                 col.prop(item, 'blend_champfer_size')
             elif item.blend_type == 'Round':
-                col.prop(item, 'blend_radius')
+                col.prop(item, 'blend_round')
             
             col.separator()
             col.operator('mesh_from_sdf.select_on_the_hierarchy', text='Select on the hierarchy')

@@ -2,58 +2,48 @@ import moderngl
 
 # Class for generating and updating shaders based on SDF Object Property list
 class ShaderFactory(object):
-    # Concatenate distance function snippets that match the primitive_type of the SDFObject
-    @classmethod
-    def __generate_distance_function_by_primitive_type(cls, primitive_type):
-        if primitive_type == 'Box':
-            return '''
+
+    # Concatenate distance function snippets that match the primitive_type of the SDFObject    
+    __distance_function_by_primitive_type = {'Box':'''
                 sdfBoxProp = sdfBoxProps[sdfBoxPropIdx++];
                 dist = sdBox(samplpos, sdfBoxProp.br.xyz, sdfBoxProp.br.w);
-            '''
-        elif primitive_type == 'Sphere':
-            return '''
+            ''',
+            'Sphere':'''
                 sdfSphereProp = sdfSphereProps[sdfSpherePropIdx++];
                 dist = sdSphere(samplpos, sdfSphereProp.r);
-            '''
-        elif primitive_type == 'Cylinder':
-            return '''
+            ''',
+            'Cylinder':'''
                 sdfCylinderProp = sdfCylinderProps[sdfCylinderPropIdx++];
                 dist = sdCylinder(samplpos, sdfCylinderProp.h, sdfCylinderProp.ra);
                 dist = rounding(dist, sdfCylinderProp.rd);
-            '''
-        elif primitive_type == 'Cone':
-            return '''
+            ''',
+            'Cone':'''
                 sdfConeProp = sdfConeProps[sdfConePropIdx++];
                 dist = sdCappedCone(samplpos, sdfConeProp.h, sdfConeProp.r0, sdfConeProp.r1);
                 dist = rounding(dist, sdfConeProp.rd);
-            '''
-        elif primitive_type == 'Torus':
-            return '''
+            ''',
+            'Torus':'''
                 sdfTorusProp = sdfTorusProps[sdfTorusPropIdx++];
                 dist = sdTorus(samplpos, sdfTorusProp.r0, sdfTorusProp.r1);
                 dist = rounding(dist, sdfTorusProp.rd);
-            '''
-        elif primitive_type == 'Hexagonal Prism':
-            return '''
+            ''',
+            'Hexagonal Prism':'''
                 sdfHexPrismProp = sdfHexPrismProps[sdfHexPrismPropIdx++];
                 dist = sdHexPrism(samplpos, sdfHexPrismProp.h);
                 dist = rounding(dist, sdfHexPrismProp.rd);
-            '''
-        elif primitive_type == 'Triangular Prism':
-            return '''
+            ''',
+            'Triangular Prism':'''
                 sdfTriPrismProp = sdfTriPrismProps[sdfTriPrismPropIdx++];
                 dist = sdTriPrism(samplpos, sdfTriPrismProp.h, sdfTriPrismProp.ra);
                 dist = rounding(dist, sdfTriPrismProp.rd);
-            '''
-        elif primitive_type == 'Ngon Prism':
-            return '''
+            ''',
+            'Ngon Prism':'''
                 sdfNgonPrismProp = sdfNgonPrismProps[sdfNgonPrismPropIdx++];
                 dist = sdNgonPrism(samplpos, sdfNgonPrismProp.h, sdfNgonPrismProp.ra, sdfNgonPrismProp.n);
                 dist = rounding(dist, sdfNgonPrismProp.rd);
-            '''
-        elif primitive_type == 'GLSL':
-            # TODO: 
-            return '{dist = 1000000000}'
+            ''',
+            'GLSL':'{dist = 1000000000}'}
+
     
     # Generate distance function for shaders based on SDF Object Property list
     @classmethod
@@ -124,9 +114,9 @@ class ShaderFactory(object):
                               'Diffrence' : 'minDist0 = opChampferDiffrence(minDist1, minDist0, k0);',
                               'Intersection' : 'minDist0 = opChampferIntersection(minDist1, minDist0, k0);'}
         
-        f_steps_merge_0 = {'Union' : 'minDist0 = opStairsUnion(minDist1, minDist0, k0, k0);',
-                           'Diffrence' : 'minDist0 = opStairsDiffrence(minDist1, minDist0, k0, k0);',
-                           'Intersection' : 'minDist0 = opStairsIntersection(minDist1, minDist0, k0, k0);'}
+        f_steps_merge_0 = {'Union' : 'minDist0 = opStairsUnion(minDist1, minDist0, k0, k1);',
+                           'Diffrence' : 'minDist0 = opStairsDiffrence(minDist1, minDist0, k0, k1);',
+                           'Intersection' : 'minDist0 = opStairsIntersection(minDist1, minDist0, k0, k1);'}
         
         f_round_merge_0 = {'Union' : 'minDist0 = opRoundUnion(minDist1, minDist0, k0);',
                            'Diffrence' : 'minDist0 = opRoundDiffrence(minDist1, minDist0, k0);',
@@ -151,7 +141,7 @@ class ShaderFactory(object):
         
         f_dist = f_dist + '''
             {
-        ''' + f_common +  cls.__generate_distance_function_by_primitive_type(primitive_type) + '''
+        ''' + f_common +  cls.__distance_function_by_primitive_type[primitive_type] + '''
                 minDist1 = dist;'''
 
         idx_offset = 0
@@ -175,7 +165,7 @@ class ShaderFactory(object):
             }
             {
                 ''' + f_common + '''
-                    ''' + cls.__generate_distance_function_by_primitive_type(primitive_type) + '''
+                    ''' + cls.__distance_function_by_primitive_type[primitive_type] + '''
                 minDist1 = dist;'''
                 
                 f_merge_0 = f_blend_0[blend_type][boolean_type]
@@ -206,14 +196,14 @@ class ShaderFactory(object):
                 '''
 
                 f_dist = f_dist + f_common + '''
-                    ''' + cls.__generate_distance_function_by_primitive_type(primitive_type) + '''
+                    ''' + cls.__distance_function_by_primitive_type[primitive_type] + '''
                 minDist1 = dist;'''
                 
                 f_merge_0 = f_blend_0[blend_type][boolean_type]
             else:
                 f_merge_1 = f_blend_1[blend_type][boolean_type]
                 f_dist = f_dist + f_common + '''
-                    ''' + cls.__generate_distance_function_by_primitive_type(primitive_type) + '''
+                    ''' + cls.__distance_function_by_primitive_type[primitive_type] + '''
                     ''' + f_merge_1
         
         # Remember to close the trailing scope
