@@ -95,7 +95,7 @@ class ShaderBufferFactory(object):
         buf = cls.object_common_buffer
         buf.write(narray.tobytes())
         
-        print('[update_object_common_buffer] index:', i, 'touple:', touple)
+        print('[update_object_common_buffer] index:', i, 'narray:', narray)
         return cls.object_common_buffer
     
     # Release buffer used for SDFObjectProperty

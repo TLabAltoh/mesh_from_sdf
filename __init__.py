@@ -59,6 +59,27 @@ class SDFObjectProperty(PropertyGroup):
     def property_event_on_object_prop_updated(self, context):
         global ctx
         ShaderBufferFactory.update_object_common_buffer(ctx, context, self.index)
+        
+    def property_event_on_object_nest_prop_updated(self, context):
+        global ctx
+        
+        pointer = context.scene.sdf_object_pointer_list[self.index]
+        if (self.index == 0) or (self.nest == False):
+            pointer.object.parent = None
+            print('nest: ', False)
+        else:
+            for index in reversed(range(0, self.index)):
+                parent_pointer = context.scene.sdf_object_pointer_list[index]
+                if parent_pointer.object.sdf_object.nest == False:
+                    pointer.object.parent = parent_pointer.object
+                    print('nest: ', True)
+                    break
+        
+        ShaderBufferFactory.update_object_common_buffer(ctx, context, self.index)
+        
+        # Generate shaders according to the current hierarchy
+        f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
+        print(f_dist)
 
     def property_event_on_box_prop_updated(self, context):
         pass
@@ -183,7 +204,7 @@ class SDFObjectProperty(PropertyGroup):
         name='Nest',
         description='',
         default=False,
-        update=property_event_on_object_prop_updated)
+        update=property_event_on_object_nest_prop_updated)
     
     # common
     boolean_type: EnumProperty(
