@@ -467,7 +467,7 @@ class SDF2MESH_OT_List_Remove(Operator):
         return (context.scene and context.scene.sdf_object_pointer_list and (len(context.scene.sdf_object_pointer_list) > context.scene.sdf_object_pointer_list_index) and (context.scene.sdf_object_pointer_list_index >= 0))
     
     def execute(self, context):
-        global ctx
+        global ctx, object_pointer_list_by_primitive_type
         
         alist = context.scene.sdf_object_pointer_list
         index = context.scene.sdf_object_pointer_list_index
@@ -493,26 +493,8 @@ class SDF2MESH_OT_List_Remove(Operator):
                 context.scene.sdf_object_pointer_list_index = -1
                 
             # Update the order of CollectionProperty(type=SDFObjectRefPointerProperty).
-            blist = None
+            blist = object_pointer_list_by_primitive_type[primitive_type]
             alloc = None
-            if primitive_type == 'Box':
-                blist = context.scene.sdf_box_pointer_list
-            elif primitive_type == 'Sphere':
-                blist = context.scene.sdf_sphere_pointer_list
-            elif primitive_type == 'Cylinder':
-                blist = context.scene.sdf_cylinder_pointer_list
-            elif primitive_type == 'Cone':
-                blist = context.scene.sdf_cone_pointer_list
-            elif primitive_type == 'Torus':
-                blist = context.scene.sdf_torus_pointer_list
-            elif primitive_type == 'Hexagonal Prism':
-                blist = context.scene.sdf_hex_prism_pointer_list
-            elif primitive_type == 'Triangular Prism':
-                blist = context.scene.sdf_tri_prism_pointer_list
-            elif primitive_type == 'Ngon Prism':
-                blist = context.scene.sdf_ngon_prism_pointer_list
-            elif primitive_type == 'GLSL':
-                blist = context.scene.sdf_glsl_prism_pointer_list
                 
             # Reassign sub-indexes
             SDFOBJECT_UTILITY.recalc_sub_index_without_sort(blist)
@@ -552,6 +534,8 @@ class SDF2MESH_OT_List_Reorder(Operator):
         bpy.context.scene.sdf_object_pointer_list_index = max(0, min(new_index, list_length))
 
     def execute(self, context):
+        global object_pointer_list_by_primitive_type
+        
         alist = context.scene.sdf_object_pointer_list
         index = context.scene.sdf_object_pointer_list_index
 
@@ -568,24 +552,7 @@ class SDF2MESH_OT_List_Reorder(Operator):
             blist = None
             
             primitive_type = alist[neighbor].object.sdf_object.primitive_type
-            if primitive_type == 'Box':
-                blist = context.scene.sdf_box_pointer_list
-            elif primitive_type == 'Sphere':
-                blist = context.scene.sdf_sphere_pointer_list
-            elif primitive_type == 'Cylinder':
-                blist = context.scene.sdf_cylinder_pointer_list
-            elif primitive_type == 'Cone':
-                blist = context.scene.sdf_cone_pointer_list
-            elif primitive_type == 'Torus':
-                blist = context.scene.sdf_torus_pointer_list
-            elif primitive_type == 'Hexagonal Prism':
-                blist = context.scene.sdf_hex_prism_pointer_list
-            elif primitive_type == 'Triangular Prism':
-                blist = context.scene.sdf_tri_prism_pointer_list
-            elif primitive_type == 'Ngon Prism':
-                blist = context.scene.sdf_ngon_prism_pointer_list
-            elif primitive_type == 'GLSL':
-                blist = context.scene.sdf_glsl_prism_pointer_list
+            blist = object_pointer_list_by_primitive_type[primitive_type]
             
             blist.move(item0.sub_index, item1.sub_index)
             tmp = int(item0.sub_index)
@@ -685,6 +652,51 @@ class SDF2MESH_PT_Panel(Panel):
             col_r.operator('mesh_from_sdf.hierarchy_reload', text='', icon='FILE_REFRESH')
 
 
+# I changed the property drawing process from if else to lambda + dictionary approach. 
+# For the same n elements, the lambda + dictionary approach is expected to reduce the 
+# computational complexity to n / 2 (supposedly ...).
+
+draw_sdf_object_property_by_primitive_type = {'Box': lambda col, item: (
+                                                col.prop(item, 'prop_box_bound'),
+                                                col.prop(item, 'round')),
+                                              'Sphere': lambda col, item: (
+                                                col.prop(item, 'prop_sphere_radius'),
+                                                col.prop(item, 'round')),
+                                              'Cylinder': lambda col, item: (
+                                                col.prop(item, 'prop_cylinder_height'),
+                                                col.prop(item, 'prop_cylinder_radius'),
+                                                col.prop(item, 'round')),
+                                              'Torus': lambda col, item: (
+                                                col.prop(item, 'prop_torus_radiuss')),
+                                              'Hexagonal Prism': lambda col, item: (
+                                                col.prop(item, 'prop_prism_radius'),
+                                                col.prop(item, 'prop_prism_height')),
+                                              'Triangular Prism': lambda col, item: (
+                                                col.prop(item, 'prop_prism_radius'),
+                                                col.prop(item, 'prop_prism_height'),
+                                                col.prop(item, 'round')),
+                                              'Ngon Prism': lambda col, prop: (
+                                                col.prop(item, 'prop_prism_radius'),
+                                                col.prop(item, 'prop_prism_height'),
+                                                col.prop(item, 'prop_prism_nsides'),
+                                                col.prop(item, 'round')),
+                                              'Cone': lambda col, prop: (
+                                                col.prop(item, 'prop_cone_height'),
+                                                col.prop(item, 'prop_cone_radiuss'),
+                                                col.prop(item, 'round')),
+                                              'GLSL': lambda col, prop: (
+                                                col.prop(item, 'prop_glsl_shader_path'),
+                                                col.prop(item, 'prop_glsl_bound'))}
+                                                
+draw_blend_property_by_blend_type = {'No Blending': lambda col, item: (),
+                                     'Smooth': lambda col, item: col.prop(item, 'blend_smooth'),
+                                     'Champfer': lambda col, item: col.prop(item, 'blend_champfer_size'),
+                                     'Steps': lambda col, item: (
+                                        col.prop(item, 'blend_step'),
+                                        col.prop(item, 'blend_champfer_size')),
+                                     'Round': lambda col, item: col.prop(item, 'blend_round')}                                                    
+
+
 class SDFOBJECT_PT_Panel(Panel):
     bl_label = 'SDF Object'
     bl_idname = 'SDFOBJECT_PT_Panel'
@@ -694,51 +706,21 @@ class SDFOBJECT_PT_Panel(Panel):
     bl_description = 'When the object is an SDF Object, each property for defining the shape is displayed.'
 
     def draw(self, context):
+        global draw_sdf_object_property_by_primitive_type, draw_blend_property_by_blend_type
+        
         object = context.active_object
         if object.sdf_object.enabled:
             item = object.sdf_object
             col = self.layout.column()
             col.prop(item, 'primitive_type')
             
-            if item.primitive_type == 'Box':
-                col.prop(item, 'prop_box_bound')
-                col.prop(item, 'round')
-            elif item.primitive_type == 'Sphere':
-                col.prop(item, 'prop_sphere_radius')
-                col.prop(item, 'round')
-            elif item.primitive_type == 'Cylinder':
-                col.prop(item, 'prop_cylinder_height')
-                col.prop(item, 'prop_cylinder_radius')
-                col.prop(item, 'round')
-            elif item.primitive_type == 'Torus':
-                col.prop(item, 'prop_torus_radiuss')
-            elif (item.primitive_type == 'Hexagonal Prism') or (item.primitive_type == 'Triangular Prism') or (item.primitive_type == 'Ngon Prism'):
-                col.prop(item, 'prop_prism_radius')
-                col.prop(item, 'prop_prism_height')
-                if (item.primitive_type == 'Ngon Prism'):
-                    col.prop(item, 'prop_prism_nsides')
-                col.prop(item, 'round')
-            elif item.primitive_type == 'Cone':
-                col.prop(item, 'prop_cone_height')
-                col.prop(item, 'prop_cone_radiuss')
-                col.prop(item, 'round')
-            elif item.primitive_type == 'GLSL':
-                col.prop(item, 'prop_glsl_shader_path')
-                col.prop(item, 'prop_glsl_bound')
+            draw_sdf_object_property_by_primitive_type[item.primitive_type](col, item)
 
             col.separator()            
             col.prop(item, 'boolean_type')
             col.prop(item, 'blend_type')
             
-            if item.blend_type == 'Smooth':
-                col.prop(item, 'blend_smooth')
-            elif item.blend_type == 'Champfer':
-                col.prop(item, 'blend_champfer_size')
-            elif item.blend_type == 'Steps':
-                col.prop(item, 'blend_step')
-                col.prop(item, 'blend_champfer_size')
-            elif item.blend_type == 'Round':
-                col.prop(item, 'blend_round')
+            draw_blend_property_by_blend_type[item.blend_type](col, item)
             
             col.separator()
             col.operator('mesh_from_sdf.select_on_the_hierarchy', text='Select on the hierarchy')
@@ -887,24 +869,8 @@ class SDFOBJECT_UTILITY(object):
 
     @classmethod
     def refresh_list(cls, context, primitive_type):
-        if primitive_type == 'Box':
-            cls.__refresh_list(context.scene.sdf_box_pointer_list)
-        elif primitive_type == 'Sphere':
-            cls.__refresh_list(context.scene.sdf_sphere_pointer_list)
-        elif primitive_type == 'Cylinder':
-            cls.__refresh_list(context.scene.sdf_cylinder_pointer_list)
-        elif primitive_type == 'Cone':
-            cls.__refresh_list(context.scene.sdf_cone_pointer_list)
-        elif primitive_type == 'Torus':
-            cls.__refresh_list(context.scene.sdf_torus_pointer_list)
-        elif primitive_type == 'Hexagonal Prism':
-            cls.__refresh_list(context.scene.sdf_hex_prism_pointer_list, target)
-        elif primitive_type == 'Triangular Prism':
-            cls.__refresh_list(context.scene.sdf_tri_prism_pointer_list, target)
-        elif primitive_type == 'Ngon Prism':
-            cls.__refresh_list(context.scene.sdf_ngon_prism_pointer_list, target)
-        elif primitive_type == 'GLSL':
-            cls.__refresh_list(context.scene.sdf_glsl_pointer_list)
+        global object_pointer_list_by_primitive_type
+        cls.__refresh_list(object_pointer_list_by_primitive_type[primitive_type](context))
             
     @classmethod
     def refresh_lists(cls, context, primitive_types):
@@ -925,25 +891,9 @@ class SDFOBJECT_UTILITY(object):
 
     @classmethod
     def delete_from_sub_list(cls, context, target):
+        global object_pointer_list_by_primitive_type
         primitive_type = target.sdf_object.prev_primitive_type
-        if primitive_type == 'Box':
-            cls.__delete_from_sub_list(context.scene.sdf_box_pointer_list, target)
-        elif primitive_type == 'Sphere':
-            cls.__delete_from_sub_list(context.scene.sdf_sphere_pointer_list, target)
-        elif primitive_type == 'Cylinder':
-            cls.__delete_from_sub_list(context.scene.sdf_cylinder_pointer_list, target)
-        elif primitive_type == 'Cone':
-            cls.__delete_from_sub_list(context.scene.sdf_cone_pointer_list, target)
-        elif primitive_type == 'Torus':
-            cls.__delete_from_sub_list(context.scene.sdf_torus_pointer_list, target)
-        elif primitive_type == 'Hexagonal Prism':
-            cls.__delete_from_sub_list(context.scene.sdf_hex_prism_pointer_list, target)
-        elif primitive_type == 'Triangular Prism':
-            cls.__delete_from_sub_list(context.scene.sdf_tri_prism_pointer_list, target)
-        elif primitive_type == 'Ngon Prism':
-            cls.__delete_from_sub_list(context.scene.sdf_ngon_prism_pointer_list, target)
-        elif primitive_type == 'GLSL':
-            cls.__delete_from_sub_list(context.scene.sdf_glsl_pointer_list, target)
+        cls.__delete_from_sub_list(object_pointer_list_by_primitive_type[primitive_type](context), target)
 
 
 def sdf_object_delete_func(self, context):
@@ -965,6 +915,19 @@ classes = [
     SDFOBJECT_PT_Panel,
     OBJECT_OT_Delete_SDF,
 ]
+
+
+# List of SDFObjectProperty primitives, keyed by primitive_type
+# example: alist = object_pointer_list_by_primitive_type[primitive_type](context)
+global object_pointer_list_by_primitive_type
+object_pointer_list_by_primitive_type = {'Box': lambda context: context.scene.sdf_box_pointer_list,
+                                         'Sphere': lambda context: context.scene.sdf_sphere_pointer_list,
+                                         'Cylinder': lambda context: context.scene.sdf_cylinder_pointer_list,
+                                         'Torus': lambda context: context.scene.sdf_torus_pointer_list,
+                                         'Hexagonal Prism': lambda context: context.scene.sdf_hex_prism_pointer_list,
+                                         'Triangular Prism': lambda context: context.scene.sdf_tri_prism_pointer_list,
+                                         'Ngon Prism': lambda context: context.scene.sdf_ngon_prism_pointer_list,
+                                         'GLSL': lambda context: context.scene.sdf_glsl_prism_pointer_list}
 
 
 global ctx
