@@ -58,7 +58,13 @@ class SDFObjectProperty(PropertyGroup):
 
     def property_event_on_object_prop_updated(self, context):
         global ctx
+        
+        # Updateing Storage Buffre Objects
         ShaderBufferFactory.update_object_common_buffer(ctx, context, self.index)
+        
+        # Generate shaders according to the current hierarchy
+        f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
+        print(f_dist)
 
     @classmethod
     def update_nest_prop(cls, context, self_index, self_nest):
@@ -77,7 +83,11 @@ class SDFObjectProperty(PropertyGroup):
                     break
         
     def property_event_on_object_nest_prop_updated(self, context):
+        global ctx
+        
         SDFObjectProperty.update_nest_prop(context, self.index, self.nest)
+        
+        # Updateing Storage Buffre Objects
         ShaderBufferFactory.update_object_common_buffer(ctx, context, self.index)
         
         # Generate shaders according to the current hierarchy
@@ -85,7 +95,14 @@ class SDFObjectProperty(PropertyGroup):
         print(f_dist)
 
     def property_event_on_box_prop_updated(self, context):
-        pass
+        global ctx
+        
+        # Updateing Storage Buffre Objects
+        ShaderBufferFactory.update_box_buffer(ctx, context, self.index, self.sub_index)
+        
+        # Generate shaders according to the current hierarchy
+        f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
+        print(f_dist)
     
     def property_event_on_sphere_prop_updated(self, context):
         pass

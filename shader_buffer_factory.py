@@ -94,7 +94,7 @@ class ShaderBufferFactory(object):
         
         dsize = 8 # position (3), scale (1), quaternion (4)
         alist = context.scene.sdf_object_pointer_list
-        narray = np.empty(len(alist) * dsize, dtype=np.float32)
+        narray = np.empty(dsize, dtype=np.float32)
         
         pointer = alist[i]
         object = pointer.object
@@ -118,7 +118,7 @@ class ShaderBufferFactory(object):
         narray[9] = bl_1
         
         buf = cls.object_common_buffer
-        buf.write(narray.tobytes())
+        buf.write(narray.tobytes(), i * dsize)
         
         print('[update_object_common_buffer] index:', i, 'narray:', narray)
         return cls.object_common_buffer
@@ -140,15 +140,63 @@ class ShaderBufferFactory(object):
     
     @classmethod
     def generate_box_buffer(cls, ctx, context):
-        pass
+        
+        dsize = 4 # bound (3), round (1)
+        alist = context.scene.sdf_box_pointer_list
+        narray = np.empty(len(alist) * dsize, dtype=np.float32)
+        
+        for i, pointer in enumerate(alist):
+            object = pointer.object
+            sdf_object = object.sdf_object
+            
+            bound = sdf_object.prop_box_bound
+            round = min(bound) * sdf_object.round * 0.5
+            
+            offset = i * dsize
+            narray[offset + 0] = bound[0]
+            narray[offset + 1] = bound[1]
+            narray[offset + 2] = bound[2]
+            narray[offset + 3] = round
+
+        # Generate a buffer to bind to the shader using np.array as source
+        cls.box_buffer = ctx.buffer(narray)
+        print('[generate_box_buffer] box:', narray)
+        return cls.box_buffer
     
     @classmethod
     def update_box_buffer(cls, ctx, context, i, sub_i):
-        pass
+        
+        # If buffer is set to None for some reason, a new buffer is created here.
+        if cls.box_buffer == None:
+            return cls.generate_box_buffer(ctx, context)
+        
+        dsize = 4 # bound (3), round (1)
+        alist = context.scene.sdf_box_pointer_list
+        narray = np.empty(dsize, dtype=np.float32)
+        
+        pointer = alist[sub_i]
+        object = pointer.object
+        sdf_object = object.sdf_object
+        
+        bound = sdf_object.prop_box_bound
+        round = min(bound) * sdf_object.round * 0.5
+        
+        narray[0] = bound[0]
+        narray[1] = bound[1]
+        narray[2] = bound[2]
+        narray[3] = round
+        
+        buf = cls.box_buffer
+        buf.write(narray.tobytes(), sub_i * dsize)
+        
+        print('[generate_box_buffer] index:', i, 'narray:', narray)
+        return cls.box_buffer
     
     @classmethod
     def release_box_buffer(cls, context):
-        pass
+        if cls.box_buffer != None:
+            cls.box_buffer.release()
+        cls.box_buffer = None
 
     # ----------------------------------------------------------
     # Storage Buffer Objects of Sphere Primitive
