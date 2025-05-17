@@ -1,7 +1,7 @@
 import moderngl
 import numpy as np
 
-# Class for generating and updating Compute Buffer to be bound to shaders
+# Class for generating and updating Storage Buffer Objects to be bound to shaders
 class ShaderBufferFactory(object):
     
     # List to get blend properties of shaders...seems like using dictionary is faster than if else?
@@ -13,11 +13,36 @@ class ShaderBufferFactory(object):
     
     # Buffer used for SDFObjectProperty
     object_common_buffer = None
+    box_buffer = None
+    sphere_buffer = None
+    cylinder_buffer = None
+    torus_buffer = None
+    hex_prism_buffer = None
+    tri_prism_buffer = None
+    ngon_prism_buffer = None
+    glsl_buffer = None
     
     # Free all buffers
     @classmethod
     def release_all(cls):
         cls.release_object_common_buffer()
+
+    # Build all buffers
+    @classmethod
+    def generate_all(cls, ctx, context):
+        cls.generate_box_buffer(ctx, context)
+        cls.generate_sphere_buffer(ctx, context)
+        cls.generate_cylinder_buffer(ctx, context)
+        cls.generate_torus_buffer(ctx, context)
+        cls.generate_hex_prism_buffer(ctx, context)
+        cls.generate_tri_prism_buffer(ctx, context)
+        cls.generate_ngon_prism_buffer(ctx, context)
+        cls.generate_glsl_buffer(ctx, context)
+        cls.generate_object_common_buffer(ctx, context)
+
+    # ----------------------------------------------------------
+    # Storage Buffer Objects of Common Propertys
+    #
 
     # Get object_common_buffer regardless of whether the value is None or not
     @classmethod
@@ -105,40 +130,184 @@ class ShaderBufferFactory(object):
             cls.object_common_buffer.release()
         cls.object_comon_buffer = None
 
+    # ----------------------------------------------------------
+    # Storage Buffer Objects of Box Primitive
+    #
+
     @classmethod
-    def generate_box_buffer(cls, context):
+    def get_box_buffer(cls):
+        return cls.box_buffer
+    
+    @classmethod
+    def generate_box_buffer(cls, ctx, context):
         pass
     
     @classmethod
-    def generate_sphere_buffer(cls, context):
+    def update_box_buffer(cls, ctx, context, i, sub_i):
         pass
     
     @classmethod
-    def gemerate_cylinder_buffer(cls, context):
+    def release_box_buffer(cls, context):
+        pass
+
+    # ----------------------------------------------------------
+    # Storage Buffer Objects of Sphere Primitive
+    #
+
+    @classmethod
+    def get_sphere_buffer(cls):
+        return cls.sphere_buffer
+    
+    @classmethod
+    def generate_sphere_buffer(cls, ctx, context):
+        pass
+
+    @classmethod
+    def update_sphere_buffer(cls, ctx, context, i, sub_i):
         pass
     
     @classmethod
-    def gemerate_cone_buffer(cls, context):
+    def release_sphere_buffer(cls, context):
+        pass
+    
+    # ----------------------------------------------------------
+    # Storage Buffer Objects of Cylinder Primitive
+    #
+    
+    @classmethod
+    def get_cylinder_buffer(cls):
+        return cls.cylinder_buffer
+    
+    @classmethod
+    def generate_cylinder_buffer(cls, ctx, context):
+        pass
+
+    @classmethod
+    def update_cylinder_buffer(cls, ctx, context, i, sub_i):
         pass
     
     @classmethod
-    def gemerate_torus_buffer(cls, context):
+    def release_cylinder_buffer(cls, context):
+        pass
+    
+    # ----------------------------------------------------------
+    # Storage Buffer Objects of Cone Primitive
+    #
+    
+    @classmethod
+    def get_cone_buffer(cls):
+        return cls.cone_buffer
+    
+    @classmethod
+    def generate_cone_buffer(cls, ctx, context):
+        pass
+
+    @classmethod
+    def update_cone_buffer(cls, ctx, context, i, sub_i):
         pass
     
     @classmethod
-    def gemerate_hex_prism_buffer(cls, context):
+    def release_cone_buffer(cls, context):
+        pass
+    
+    # ----------------------------------------------------------
+    # Storage Buffer Objects of Torus Primitive
+    #
+    
+    @classmethod
+    def get_torus_buffer(cls):
+        return cls.torus_buffer
+    
+    @classmethod
+    def generate_torus_buffer(cls, ctx, context):
+        pass
+
+    @classmethod
+    def update_torus_buffer(cls, ctx, context, i, sub_i):
         pass
     
     @classmethod
-    def gemerate_tri_prism_buffer(cls, context):
+    def release_torus_buffer(cls, context):
+        pass
+    
+    # ----------------------------------------------------------
+    # Storage Buffer Objects of Hex Prism Primitive
+    #
+    
+    @classmethod
+    def get_hex_prism_buffer(cls):
+        return cls.hex_prism_buffer
+    
+    @classmethod
+    def generate_hex_prism_buffer(cls, ctx, context):
+        pass
+
+    @classmethod
+    def update_hex_prism_buffer(cls, ctx, context, i, sub_i):
         pass
     
     @classmethod
-    def gemerate_ngon_prism_buffer(cls, context):
+    def release_hex_prism_buffer(cls, context):
+        pass
+    
+    # ----------------------------------------------------------
+    # Storage Buffer Objects of Tri Prism Primitive
+    #
+    
+    @classmethod
+    def get_tri_prism_buffer(cls):
+        return cls.tri_prism_buffer
+    
+    @classmethod
+    def generate_tri_prism_buffer(cls, ctx, context):
+        pass
+
+    @classmethod
+    def update_tri_prism_buffer(cls, ctx, context, i, sub_i):
         pass
     
     @classmethod
-    def gemerate_glsl_buffer(cls, context):
+    def release_tri_prism_buffer(cls, context):
+        pass
+    
+    # ----------------------------------------------------------
+    # Storage Buffer Objects of Ngon Prism Primitive
+    #
+    
+    @classmethod
+    def get_ngon_prism_buffer(cls):
+        return cls.ngon_prism_buffer
+    
+    @classmethod
+    def generate_ngon_prism_buffer(cls, ctx, context):
+        pass
+
+    @classmethod
+    def update_ngon_prism_buffer(cls, ctx, context, i, sub_i):
+        pass
+    
+    @classmethod
+    def release_ngon_prism_buffer(cls, context):
+        pass
+    
+    # ----------------------------------------------------------
+    # Storage Buffer Objects of GLSL Primitive
+    #
+    
+    @classmethod
+    def get_glsl_buffer(cls):
+        return cls.glsl_buffer
+    
+    @classmethod
+    def generate_glsl_buffer(cls, ctx, context):
+        pass
+
+    @classmethod
+    def update_glsl_buffer(cls, ctx, context, i, sub_i):
+        pass
+    
+    @classmethod
+    def release_glsl_buffer(cls, context):
         pass
         
     

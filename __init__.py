@@ -59,22 +59,25 @@ class SDFObjectProperty(PropertyGroup):
     def property_event_on_object_prop_updated(self, context):
         global ctx
         ShaderBufferFactory.update_object_common_buffer(ctx, context, self.index)
-        
-    def property_event_on_object_nest_prop_updated(self, context):
+
+    @classmethod
+    def update_nest_prop(cls, context, self_index, self_nest):
         global ctx
         
-        pointer = context.scene.sdf_object_pointer_list[self.index]
-        if (self.index == 0) or (self.nest == False):
+        pointer = context.scene.sdf_object_pointer_list[self_index]
+        if (self_index == 0) or (self_nest == False):
             pointer.object.parent = None
             print('nest: ', False)
         else:
-            for index in reversed(range(0, self.index)):
+            for index in reversed(range(0, self_index)):
                 parent_pointer = context.scene.sdf_object_pointer_list[index]
                 if parent_pointer.object.sdf_object.nest == False:
                     pointer.object.parent = parent_pointer.object
                     print('nest: ', True)
                     break
         
+    def property_event_on_object_nest_prop_updated(self, context):
+        SDFObjectProperty.update_nest_prop(context, self.index, self.nest)
         ShaderBufferFactory.update_object_common_buffer(ctx, context, self.index)
         
         # Generate shaders according to the current hierarchy
@@ -106,10 +109,8 @@ class SDFObjectProperty(PropertyGroup):
     def property_event_on_glsl_prop_updated(self, context):
         pass
 
-    def property_event_on_primitive_type_changed(self, context):
-        
+    def property_event_on_primitive_type_changed(self, context):        
         global ctx
-        
         # Undo works for this operation
         prev_primitive_type = self.prev_primitive_type
         primitive_type = self.primitive_type
@@ -140,16 +141,19 @@ class SDFObjectProperty(PropertyGroup):
                 if (primitive_type == 'Box') and (SDFObjectProperty.contains_in_list(context.scene.sdf_box_pointer_list, prv_pointer.object) == False):
                     bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
                     blist = context.scene.sdf_box_pointer_list
-                    alloc = lambda: ShaderBufferFactory.generate_object_common_buffer(ctx, context)
+                    alloc = lambda: ShaderBufferFactory.generate_box_buffer(ctx, context)
                 elif (primitive_type == 'Sphere') and (SDFObjectProperty.contains_in_list(context.scene.sdf_sphere_pointer_list, prv_pointer.object) == False):
                     bpy.ops.mesh.primitive_uv_sphere_add(radius=1, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
                     blist = context.scene.sdf_sphere_pointer_list
+                    alloc = lambda: ShaderBufferFactory.generate_sphere_buffer(ctx, context)
                 elif (primitive_type == 'Cylinder') and (SDFObjectProperty.contains_in_list(context.scene.sdf_cylinder_pointer_list, prv_pointer.object) == False):
                     bpy.ops.mesh.primitive_cylinder_add(radius=1, depth=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
                     blist = context.scene.sdf_cylinder_pointer_list
+                    alloc = lambda: ShaderBufferFactory.generate_cylinder_buffer(ctx, context)
                 elif (primitive_type == 'Cone') and (SDFObjectProperty.contains_in_list(context.scene.sdf_cone_pointer_list, prv_pointer.object) == False):
                     bpy.ops.mesh.primitive_cone_add(radius1=1, radius2=0, depth=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
                     blist = context.scene.sdf_cone_pointer_list
+                    alloc = lambda: ShaderBufferFactory.generate_cone_buffer(ctx, context)
                 elif (primitive_type == 'Torus') and (SDFObjectProperty.contains_in_list(context.scene.sdf_torus_pointer_list, prv_pointer.object) == False):
                     # Torus has no argument to scale with primitive_add. Scaling is applied manually.
                     prv_scale = (object.scale[0], object.scale[1], object.scale[2])
@@ -157,26 +161,32 @@ class SDFObjectProperty(PropertyGroup):
                     bpy.ops.mesh.primitive_torus_add(major_radius=1, minor_radius=0.25, abso_major_rad=1.25, abso_minor_rad=0.75, align='CURSOR', location=object.location, rotation=object.rotation_euler)
                     object.scale = prv_scale
                     blist = context.scene.sdf_torus_pointer_list
+                    alloc = lambda: ShaderBufferFactory.generate_torus_buffer(ctx, context)
                 elif (primitive_type == 'Hexagonal Prism') and (SDFObjectProperty.contains_in_list(context.scene.sdf_hex_prism_pointer_list, prv_pointer.object) == False):
                     bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=1, depth=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
                     blist = context.scene.sdf_hex_prism_pointer_list
+                    alloc = lambda: ShaderBufferFactory.generate_hex_prism_buffer(ctx, context)
                 elif (primitive_type == 'Triangular Prism') and (SDFObjectProperty.contains_in_list(context.scene.sdf_tri_prism_pointer_list, prv_pointer.object) == False):
                     bpy.ops.mesh.primitive_cylinder_add(vertices=3, radius=1, depth=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
                     blist = context.scene.sdf_tri_prism_pointer_list
+                    alloc = lambda: ShaderBufferFactory.generate_tri_prism_buffer(ctx, context)
                 elif (primitive_type == 'Ngon Prism') and (SDFObjectProperty.contains_in_list(context.scene.sdf_ngon_prism_pointer_list, prv_pointer.object) == False):
                     bpy.ops.mesh.primitive_cylinder_add(vertices=prv_pointer.object.sdf_object.prop_prism.nsides, radius=1, depth=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
                     blist = context.scene.sdf_ngon_prism_pointer_list
+                    alloc = lambda: ShaderBufferFactory.generate_ngon_prism_buffer(ctx, context)
                 elif (primitive_type == 'GLSL') and (SDFObjectProperty.contains_in_list(context.scene.sdf_glsl_pointer_list, prv_pointer.object) == False):
                     bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
                     blist = context.scene.sdf_glsl_pointer_list
+                    alloc = lambda: ShaderBufferFactory.generate_glsl_buffer(ctx, context)
 
-                # Rebuild Compute Buffer
+                # Add new pointer to list
                 if blist != None:
                     new_pointer = blist.add()
                     new_pointer.object = prv_pointer.object
-                    SDFOBJECT_UTILITY.recalc_sub_index(blist)
-                    if alloc != None:
-                        alloc()
+                    SDFOBJECT_UTILITY.recalc_sub_index(blist)                    
+                    # Rebuild Storage Buffer Objects
+                    alloc(ctx, context)
+                    ShaderBufferFactory.generate_object_common_buffer(ctx, context)
                     
                 # Return from Edit mode to the previous mode
                 object.sdf_object.prev_primitive_type = object.sdf_object.primitive_type
@@ -413,10 +423,11 @@ class SDF2MESH_OT_List_Reload(Operator):
         return context.scene
     
     def execute(self, context):
+        global ctx
         # Fix index properties.
         alist = context.scene.sdf_object_pointer_list
         for i, pointer in enumerate(alist):
-            alist[i].object.sdf_object.index = i
+            pointer.object.sdf_object.index = i
         
         # Fix sub_index properties.
         SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_box_pointer_list)
@@ -428,6 +439,15 @@ class SDF2MESH_OT_List_Reload(Operator):
         SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_tri_prism_pointer_list)
         SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_ngon_prism_pointer_list)
         SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_glsl_pointer_list)
+
+        # Update the parental relationship of an object
+        for i, pointer in enumerate(alist):
+            index = pointer.object.sdf_object.index
+            nest = pointer.object.sdf_object.nest
+            SDFObjectProperty.update_nest_prop(context, index, nest)
+            
+        # Update Storage Buffre Objects
+        ShaderBufferFactory.generate_all(ctx, context)
         
         # Generate shaders according to the current hierarchy
         f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
@@ -463,15 +483,18 @@ class SDF2MESH_OT_List_Add(Operator):
         box_pointer.object = pointer.object
         pointer.object.sdf_object.sub_index = len(context.scene.sdf_box_pointer_list) - 1
 
-        # 
-        # ShaderBufferFactory.generate_object_common_buffer(ctx, context)
+        # Update the parental relationship of an object
+        index = pointer.object.sdf_object.index
+        nest = pointer.object.sdf_object.nest
+        SDFObjectProperty.update_nest_prop(context, index, nest)
+
+        # Updating Storage Buffer Objects
+        ShaderBufferFactory.generate_box_buffer(ctx, context)
+        ShaderBufferFactory.generate_object_common_buffer(ctx, context)
 
         # Generate shaders according to the current hierarchy
         f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
         print(f_dist)
-
-        # Generate compute buffer
-        # ShaderBufferFactory.generate_box_buffer()
         
         bpy.ops.ed.undo_push(message='mesh_from_sdf.hierarchy_add')
         return {'FINISHED'}
@@ -488,7 +511,7 @@ class SDF2MESH_OT_List_Remove(Operator):
         return (context.scene and context.scene.sdf_object_pointer_list and (len(context.scene.sdf_object_pointer_list) > context.scene.sdf_object_pointer_list_index) and (context.scene.sdf_object_pointer_list_index >= 0))
     
     def execute(self, context):
-        global ctx, object_pointer_list_by_primitive_type
+        global ctx, object_pointer_list_by_primitive_type, generate_storage_buffer_by_primitive_type
         
         alist = context.scene.sdf_object_pointer_list
         index = context.scene.sdf_object_pointer_list_index
@@ -515,14 +538,14 @@ class SDF2MESH_OT_List_Remove(Operator):
                 
             # Update the order of CollectionProperty(type=SDFObjectRefPointerProperty).
             blist = object_pointer_list_by_primitive_type[primitive_type]
-            alloc = None
+            alloc = generate_storage_buffer_by_primitive_type[primitive_type]
                 
             # Reassign sub-indexes
             SDFOBJECT_UTILITY.recalc_sub_index_without_sort(blist)
             
-            # Regenerate compute buffer
-            if alloc != None:
-                alloc()
+            # Rebuild Storage Buffer Objects
+            alloc(ctx, context)
+            ShaderBufferFactory.generate_object_common_buffer(ctx, context)
             
             # Generate shaders according to the current hierarchy
             f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
@@ -555,7 +578,7 @@ class SDF2MESH_OT_List_Reorder(Operator):
         bpy.context.scene.sdf_object_pointer_list_index = max(0, min(new_index, list_length))
 
     def execute(self, context):
-        global object_pointer_list_by_primitive_type
+        global ctx, object_pointer_list_by_primitive_type, update_storage_buffer_by_primitive_type
         
         alist = context.scene.sdf_object_pointer_list
         index = context.scene.sdf_object_pointer_list_index
@@ -567,9 +590,9 @@ class SDF2MESH_OT_List_Reorder(Operator):
         self.move_index()
         
         # Update the order of CollectionProperty(type=SDFObjectRefPointerProperty).
-        item0 = alist[neighbor].object.sdf_object
-        item1 = alist[index].object.sdf_object
-        if item0.primitive_type == item1.primitive_type:
+        item_0 = alist[neighbor].object.sdf_object
+        item_1 = alist[index].object.sdf_object
+        if item_0.primitive_type == item_1.primitive_type:
             blist = None
             
             primitive_type = alist[neighbor].object.sdf_object.primitive_type
@@ -577,8 +600,22 @@ class SDF2MESH_OT_List_Reorder(Operator):
             
             blist.move(item0.sub_index, item1.sub_index)
             tmp = int(item0.sub_index)
-            item0.sub_index = int(item1.sub_index)
-            item1.sub_index = tmp
+            item_0.sub_index = int(item1.sub_index)
+            item_1.sub_index = tmp
+
+        # Update the parental relationship of an object
+        index_0, index_1 = item_0.index, item_1.index
+        nest_0, nest_1 = item_0.nest, item_1.nest
+        SDFObjectProperty.update_nest_prop(context, index_0, nest_0)
+        SDFObjectProperty.update_nest_prop(context, index_1, nest_1)
+
+        # Updating Storage Buffer Objects
+        sub_index_0, sub_index_1 = item_0.sub_index, item_1.sub_index
+        alloc_0, alloc_1 = update_storage_buffer_by_primitive_type[item_0.primitive_type], update_storage_buffer_by_primitive_type[item_1.primitive_type]
+        alloc_0(ctx, context, index_0, sub_index_0)
+        alloc_1(ctx, context, index_1, sub_index_1)
+        ShaderBufferFactory.update_object_common_buffer(ctx, context, index_0)
+        ShaderBufferFactory.update_object_common_buffer(ctx, context, index_1)
             
         # Generate shaders according to the current hierarchy
         f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
@@ -656,7 +693,7 @@ class SDF2MESH_PT_Panel(Panel):
                 col_r_0.operator('mesh_from_sdf.hierarchy_reorder', text='', icon='TRIA_UP').direction = 'UP'
                     
                 col_r_1 = col_r.column()
-                col_r_1.enabled = (context.scene.sdf_object_pointer_list_index > 0) and (context.scene.sdf_object_pointer_list_index < len(context.scene.sdf_object_pointer_list) - 1)
+                col_r_1.enabled = (context.scene.sdf_object_pointer_list_index > -1) and (context.scene.sdf_object_pointer_list_index < len(context.scene.sdf_object_pointer_list) - 1)
                 col_r_1.operator('mesh_from_sdf.hierarchy_reorder', text='', icon='TRIA_DOWN').direction = 'DOWN'
                     
                 if SDF2MESH_PT_Panel.is_pointer_list_index_validity(scene):
@@ -938,7 +975,7 @@ classes = [
 ]
 
 
-# List of SDFObjectProperty primitives, keyed by primitive_type
+# List of SDFObjectProperty, keyed by primitive_type
 # example: alist = object_pointer_list_by_primitive_type[primitive_type](context)
 global object_pointer_list_by_primitive_type
 object_pointer_list_by_primitive_type = {'Box': lambda context: context.scene.sdf_box_pointer_list,
@@ -950,11 +987,36 @@ object_pointer_list_by_primitive_type = {'Box': lambda context: context.scene.sd
                                          'Ngon Prism': lambda context: context.scene.sdf_ngon_prism_pointer_list,
                                          'GLSL': lambda context: context.scene.sdf_glsl_prism_pointer_list}
 
+# List of lambda functions to build Storage Buffer Objects, keyed by primitive_type
+# example: alloc = generate_storage_buffer_by_primitive_type[primitive_type](ctx, context)
+global generate_storage_buffer_by_primitive_type
+generate_storage_buffer_by_primitive_type = {'Box': lambda ctx, context: ShaderBufferFactory.generate_box_buffer(ctx, context),
+                                             'Sphere': lambda ctx, context: ShaderBufferFactory.generate_sphere_buffer(ctx, context),
+                                             'Cylinder': lambda ctx, context: ShaderBufferFactory.generate_cylinder_buffer(ctx, context),
+                                             'Torus': lambda ctx, context: ShaderBufferFactory.generate_torus_buffer(ctx, context),
+                                             'Hexagonal Prism': lambda ctx, context: ShaderBufferFactory.generate_hex_prism_buffer(ctx, context),
+                                             'Triangular Prism': lambda ctx, context: ShaderBufferFactory.generate_tri_prism_buffer(ctx, context),
+                                             'Ngon Prism': lambda ctx, context: ShaderBufferFactory.generate_ngon_prism_buffer(ctx, context),
+                                             'GLSL': lambda context: lambda ctx, context: ShaderBufferFactory.generate_glsl_buffer(ctx, context)}
+                                             
+# List of lambda functions to update Storage Buffer Objects, keyed by primitive_type
+# example: alloc = update_storage_buffer_by_primitive_type[primitive_type](ctx, context, index, sub_index)
+global update_storage_buffer_by_primitive_type
+update_storage_buffer_by_primitive_type = {'Box': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_box_buffer(ctx, context, index, sub_index),
+                                           'Sphere': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_sphere_buffer(ctx, context, index, sub_index),
+                                           'Cylinder': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_cylinder_buffer(ctx, context, index, sub_index),
+                                           'Torus': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_torus_buffer(ctx, context, index, sub_index),
+                                           'Hexagonal Prism': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_hex_prism_buffer(ctx, context, index, sub_index),
+                                           'Triangular Prism': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_tri_prism_buffer(ctx, context, index, sub_index),
+                                           'Ngon Prism': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_ngon_prism_buffer(ctx, context, index, sub_index),
+                                           'GLSL': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_glsl_buffer(ctx, context, index, sub_index)}
+
 
 global ctx
 ctx = moderngl_util.create_context()
 Raymarching.set_context(ctx)
 MarchingCube.set_context(ctx)
+
 
 def init_shader_factory():
     pass

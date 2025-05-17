@@ -173,7 +173,7 @@ class ShaderFactory(object):
                 f_merge_1 = f_blend_1[blend_type][boolean_type]
                 # To align the indentation of the generated shaders, a tab-only string is inserted between them.
                 f_dist = f_dist + f_common + '''
-                    ''' + cls.__generate_distance_function_by_primitive_type(primitive_type) + '''
+                    ''' + cls.__distance_function_by_primitive_type[primitive_type] + '''
                 ''' + f_merge_1
                 
             if break_loop:
