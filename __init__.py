@@ -537,7 +537,7 @@ class SDF2MESH_OT_List_Remove(Operator):
                 context.scene.sdf_object_pointer_list_index = -1
                 
             # Update the order of CollectionProperty(type=SDFObjectRefPointerProperty).
-            blist = object_pointer_list_by_primitive_type[primitive_type]
+            blist = object_pointer_list_by_primitive_type[primitive_type](context)
             alloc = generate_storage_buffer_by_primitive_type[primitive_type]
                 
             # Reassign sub-indexes
@@ -596,11 +596,11 @@ class SDF2MESH_OT_List_Reorder(Operator):
             blist = None
             
             primitive_type = alist[neighbor].object.sdf_object.primitive_type
-            blist = object_pointer_list_by_primitive_type[primitive_type]
+            blist = object_pointer_list_by_primitive_type[primitive_type](context)
             
-            blist.move(item0.sub_index, item1.sub_index)
-            tmp = int(item0.sub_index)
-            item_0.sub_index = int(item1.sub_index)
+            blist.move(item_0.sub_index, item_1.sub_index)
+            tmp = int(item_0.sub_index)
+            item_0.sub_index = int(item_1.sub_index)
             item_1.sub_index = tmp
 
         # Update the parental relationship of an object
@@ -847,6 +847,13 @@ class OBJECT_OT_Delete_SDF(Operator):
             context.scene.sdf_object_pointer_list_index = -1
         else:
             context.scene.sdf_object_pointer_list_index = indexed_object.object.sdf_object.index
+
+        # Updating Storage Buffer Objects
+        ShaderBufferFactory.generate_all(ctx, context)
+            
+        # Generate shaders according to the current hierarchy
+        f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
+        print(f_dist)
             
         bpy.ops.ed.undo_push(message='object.delete_sdf')
         return {'FINISHED'}
