@@ -543,7 +543,7 @@ class SDFObjectProperty(PropertyGroup):
         name='Radius',
         description='',
         min=0.0,
-        default=0.5,
+        default=1.0,
         update=property_event_on_prism_prop_updated)
         
     prop_prism_height: bpy.props.FloatProperty(
