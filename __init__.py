@@ -49,6 +49,7 @@ class SDFObjectProperty(PropertyGroup):
             ('Steps', 'Steps', ''),
             ('Round', 'Round', ''),)
 
+    # Determine if an SDF object exists in the list
     @classmethod
     def contains_in_list(cls, list, object):
         for p in list:
@@ -56,16 +57,7 @@ class SDFObjectProperty(PropertyGroup):
                 return True
         return False
 
-    def property_event_on_object_prop_updated(self, context):
-        global ctx
-        
-        # Updateing Storage Buffre Objects
-        ShaderBufferFactory.update_object_common_buffer(ctx, context, self.index)
-        
-        # Generate shaders according to the current hierarchy
-        f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
-        print(f_dist)
-
+    # Update parentage relationships in the hierarchy according to the current state of nesting of SDF objects
     @classmethod
     def update_nest_prop(cls, context, self_index, self_nest):
         global ctx
@@ -81,11 +73,26 @@ class SDFObjectProperty(PropertyGroup):
                     pointer.object.parent = parent_pointer.object
                     print('nest: ', True)
                     break
+
+    # -----------------------------------------------------
+    # Callback process called when a property is changed
+    # 
+
+    def property_event_on_object_prop_updated(self, context):
+        global ctx
+        
+        # Updateing Storage Buffre Objects
+        ShaderBufferFactory.update_object_common_buffer(ctx, context, self.index)
+        
+        # Generate shaders according to the current hierarchy
+        f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
+        print(f_dist)
         
     def property_event_on_object_nest_prop_updated(self, context):
         global ctx
         
-        SDFObjectProperty.update_nest_prop(context, self.index, self.nest)
+        # Update the parent-child relationship based on the current nesting properties of the SDFObject
+        self.__class__.update_nest_prop(context, self.index, self.nest)
         
         # Updateing Storage Buffre Objects
         ShaderBufferFactory.update_object_common_buffer(ctx, context, self.index)
@@ -96,6 +103,11 @@ class SDFObjectProperty(PropertyGroup):
 
     def property_event_on_box_prop_updated(self, context):
         global ctx
+
+        # Update mesh for primitive interactions
+        prev_mode = self.__class__.update_primitive_mesh_begin(context)
+        self.__class__.update_box_mesh(context.scene.sdf_object_pointer_list[self.index])
+        self.__class__.update_primitive_mesh_end(prev_mode)
         
         # Updateing Storage Buffre Objects
         ShaderBufferFactory.update_box_buffer(ctx, context, self.index, self.sub_index)
@@ -105,26 +117,206 @@ class SDFObjectProperty(PropertyGroup):
         print(f_dist)
     
     def property_event_on_sphere_prop_updated(self, context):
-        pass
+        global ctx
+
+        # Update mesh for primitive interactions
+        prev_mode = self.__class__.update_primitive_mesh_begin(context)
+        self.__class__.update_sphere_mesh(context.scene.sdf_object_pointer_list[self.index])
+        self.__class__.update_primitive_mesh_end(prev_mode)
+        
+        # Updateing Storage Buffre Objects
+        ShaderBufferFactory.update_sphere_buffer(ctx, context, self.index, self.sub_index)
+        
+        # Generate shaders according to the current hierarchy
+        f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
+        print(f_dist)
     
     def property_event_on_cylinder_prop_updated(self, context):
-        pass
+        global ctx
+        
+        # Update mesh for primitive interactions
+        prev_mode = self.__class__.update_primitive_mesh_begin(context)
+        self.__class__.update_cylinder_mesh(context.scene.sdf_object_pointer_list[self.index])
+        self.__class__.update_primitive_mesh_end(prev_mode)
+        
+        # Updateing Storage Buffre Objects
+        ShaderBufferFactory.update_cylinder_buffer(ctx, context, self.index, self.sub_index)
+        
+        # Generate shaders according to the current hierarchy
+        f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
+        print(f_dist)
     
     def property_event_on_cone_prop_updated(self, context):
-        pass
+        global ctx
+
+        # Update mesh for primitive interactions
+        prev_mode = self.__class__.update_primitive_mesh_begin(context)
+        self.__class__.update_cone_mesh(context.scene.sdf_object_pointer_list[self.index])
+        self.__class__.update_primitive_mesh_end(prev_mode)
+        
+        # Updateing Storage Buffre Objects
+        ShaderBufferFactory.update_cone_buffer(ctx, context, self.index, self.sub_index)
+        
+        # Generate shaders according to the current hierarchy
+        f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
+        print(f_dist)
     
     def property_event_on_torus_prop_updated(self, context):
-        pass
+        global ctx
+
+        # Update mesh for primitive interactions
+        prev_mode = self.__class__.update_primitive_mesh_begin(context)
+        self.__class__.update_torus_mesh(context.scene.sdf_object_pointer_list[self.index])
+        self.__class__.update_primitive_mesh_end(prev_mode)
+        
+        # Updateing Storage Buffre Objects
+        ShaderBufferFactory.update_torus_buffer(ctx, context, self.index, self.sub_index)
+        
+        # Generate shaders according to the current hierarchy
+        f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
+        print(f_dist)
+
+    # List of SDFObjectProperty.update_{nsides}_mesh and ShaderBufferFactory.update_{nsides_prism}_buffer, keyed by prism_type
+    # example: update = update_prism_mesh_and_buffer_by_prism_type[primitive_type]
+    #          update(ctx, context, self.index, self.sub_index) # execute
+    global update_prism_mesh_and_buffer_by_prism_type
+    update_prism_mesh_and_buffer_by_prism_type = {'Hexagonal Prism': lambda ctx, context, index, sub_index: (
+                                                SDFObjectProperty.update_hex_prism_mesh(context.scene.sdf_object_pointer_list[index]),
+                                                ShaderBufferFactory.update_hex_prism_buffer(ctx, context, index, sub_index)),
+                                                  'Triangular Prism': lambda ctx, context, index, sub_index: (
+                                                SDFObjectProperty.update_tri_prism_mesh(context.scene.sdf_object_pointer_list[index]),
+                                                ShaderBufferFactory.update_tri_prism_buffer(ctx, context, index, sub_index)),
+                                                  'Ngon Prism': lambda ctx, context, index, sub_index: (
+                                                SDFObjectProperty.update_ngon_prism_mesh(context.scene.sdf_object_pointer_list[index]),
+                                                ShaderBufferFactory.update_ngon_prism_buffer(ctx, context, index, sub_index))}
     
     def property_event_on_prism_prop_updated(self, context):
-        # Determine how many angles you are with an if statement.
-        pass
+        global ctx, update_prism_mesh_and_buffer_by_prism_type
+        
+        # Updateing Prism Mesh and Storage Buffre Objects
+        # Determine how many angles you are with an if statement.    
+        prev_mode = self.__class__.update_primitive_mesh_begin(context)
+        update_prism_mesh_and_buffer_by_prism_type[self.primitive_type](ctx, context, self.index, self.sub_index)
+        self.__class__.update_primitive_mesh_end(prev_mode)
+        
+        # Generate shaders according to the current hierarchy
+        f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
+        print(f_dist)
     
     def property_event_on_ngon_prism_prop_updated(self, context):
-        pass
+        global ctx
+        
+        # Update mesh for primitive interactions
+        prev_mode = self.__class__.update_primitive_mesh_begin(context)
+        self.__class__.update_ngon_prism_mesh(context.scene.sdf_object_pointer_list[self.index])
+        self.__class__.update_primitive_mesh_end(prev_mode)
+        
+        # Updateing Storage Buffre Objects
+        ShaderBufferFactory.update_ngon_prism_buffer(ctx, context, self.index, self.sub_index)
+        
+        # Generate shaders according to the current hierarchy
+        f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
+        print(f_dist)
     
     def property_event_on_glsl_prop_updated(self, context):
         pass
+
+    # -----------------------------------------------------
+    # Update mesh for editing SDF objects
+    # 
+
+    @classmethod
+    def update_box_mesh(cls, pointer):
+        object = pointer.object
+        sdf_object = pointer.object.sdf_object
+        
+        bound = sdf_object.prop_box_bound
+        bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=(bound[0], bound[1], bound[2]))
+
+    @classmethod
+    def update_sphere_mesh(cls, pointer):
+        object = pointer.object
+        sdf_object = pointer.object.sdf_object
+        
+        radius = sdf_object.prop_sphere_radius
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=radius, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+
+    @classmethod
+    def update_cylinder_mesh(cls, pointer):
+        object = pointer.object
+        sdf_object = pointer.object.sdf_object
+        
+        height = sdf_object.prop_cylinder_height
+        radius = sdf_object.prop_cylinder_radius
+        bpy.ops.mesh.primitive_cylinder_add(radius=radius, depth=height, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+        
+    @classmethod
+    def update_cone_mesh(cls, pointer):
+        object = pointer.object
+        sdf_object = pointer.object.sdf_object
+        
+        height = sdf_object.prop_cone_height
+        radius = sdf_object.prop_cone_radius
+        bpy.ops.mesh.primitive_cone_add(radius1=radius[0], radius2=radius[1], depth=height, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+        
+    @classmethod
+    def update_torus_mesh(cls, pointer):
+        object = pointer.object
+        sdf_object = pointer.object.sdf_object
+        
+        prv_scale = (object.scale[0], object.scale[1], object.scale[2])
+        object.scale = (1,1,1)
+        radius = sdf_object.prop_torus_radius
+        bpy.ops.mesh.primitive_torus_add(major_radius=radius[0], minor_radius=radius[1], abso_major_rad=1.25, abso_minor_rad=0.75, align='CURSOR', location=object.location, rotation=object.rotation_euler)
+        object.scale = prv_scale
+        
+    @classmethod
+    def update_hex_prism_mesh(cls, pointer):
+        object = pointer.object
+        sdf_object = pointer.object.sdf_object
+        
+        height = sdf_object.prop_prism_height
+        radius = sdf_object.prop_prism_radius
+        bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=radius, depth=height, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+        
+    @classmethod
+    def update_tri_prism_mesh(cls, pointer):
+        object = pointer.object
+        sdf_object = pointer.object.sdf_object
+        
+        height = sdf_object.prop_prism_height
+        radius = sdf_object.prop_prism_radius
+        bpy.ops.mesh.primitive_cylinder_add(vertices=3, radius=radius, depth=height, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+        
+    @classmethod
+    def update_ngon_prism_mesh(cls, pointer):
+        object = pointer.object
+        sdf_object = pointer.object.sdf_object
+        
+        nsides = sdf_object.prop_prism_nsides
+        height = sdf_object.prop_prism_height
+        radius = sdf_object.prop_prism_radius
+        bpy.ops.mesh.primitive_cylinder_add(vertices=nsides, radius=radius, depth=height, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+        
+    @classmethod
+    def update_glsl_mesh(cls, pointer):
+        object = pointer.object
+        sdf_object = pointer.object.sdf_object
+        
+        bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+
+    @classmethod
+    def update_primitive_mesh_begin(cls, context):
+        prev_mode = context.object.mode
+        # Move to Edit mode to manipulate Mesh primitives
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.delete(type='FACE')
+        return prev_mode
+    
+    @classmethod
+    def update_primitive_mesh_end(cls, prev_mode):
+        bpy.ops.object.mode_set(mode=prev_mode)
 
     def property_event_on_primitive_type_changed(self, context):        
         global ctx
@@ -135,11 +327,8 @@ class SDFObjectProperty(PropertyGroup):
             object = context.object
             mesh = object.data
             if mesh:
-                prev_mode = context.object.mode
-                # Move to Edit mode to manipulate Mesh primitives
-                bpy.ops.object.mode_set(mode='EDIT')
-                bpy.ops.mesh.select_all(action='SELECT')
-                bpy.ops.mesh.delete(type='FACE')
+                # Cache the current mode and enter edit mode to clear the mesh
+                prev_mode = self.__class__.update_primitive_mesh_begin(context)
 
                 # Delete objects to be updated from the list in advance.
                 SDFOBJECT_UTILITY.delete_from_sub_list(context, object)
@@ -156,45 +345,42 @@ class SDFObjectProperty(PropertyGroup):
                 blist = None
                 alloc = None
                 if (primitive_type == 'Box') and (SDFObjectProperty.contains_in_list(context.scene.sdf_box_pointer_list, prv_pointer.object) == False):
-                    bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+                    self.__class__.update_box_mesh(prv_pointer)
                     blist = context.scene.sdf_box_pointer_list
-                    alloc = lambda: ShaderBufferFactory.generate_box_buffer(ctx, context)
+                    alloc = lambda ctx, context: ShaderBufferFactory.generate_box_buffer(ctx, context)
                 elif (primitive_type == 'Sphere') and (SDFObjectProperty.contains_in_list(context.scene.sdf_sphere_pointer_list, prv_pointer.object) == False):
-                    bpy.ops.mesh.primitive_uv_sphere_add(radius=1, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+                    self.__class__.update_sphere_mesh(prv_pointer)
                     blist = context.scene.sdf_sphere_pointer_list
-                    alloc = lambda: ShaderBufferFactory.generate_sphere_buffer(ctx, context)
+                    alloc = lambda ctx, context: ShaderBufferFactory.generate_sphere_buffer(ctx, context)
                 elif (primitive_type == 'Cylinder') and (SDFObjectProperty.contains_in_list(context.scene.sdf_cylinder_pointer_list, prv_pointer.object) == False):
-                    bpy.ops.mesh.primitive_cylinder_add(radius=1, depth=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+                    self.__class__.update_cylinder_mesh(prv_pointer)
                     blist = context.scene.sdf_cylinder_pointer_list
-                    alloc = lambda: ShaderBufferFactory.generate_cylinder_buffer(ctx, context)
+                    alloc = lambda ctx, context: ShaderBufferFactory.generate_cylinder_buffer(ctx, context)
                 elif (primitive_type == 'Cone') and (SDFObjectProperty.contains_in_list(context.scene.sdf_cone_pointer_list, prv_pointer.object) == False):
-                    bpy.ops.mesh.primitive_cone_add(radius1=1, radius2=0, depth=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+                    self.__class__.update_cone_mesh(prv_pointer)
                     blist = context.scene.sdf_cone_pointer_list
-                    alloc = lambda: ShaderBufferFactory.generate_cone_buffer(ctx, context)
+                    alloc = lambda ctx, context: ShaderBufferFactory.generate_cone_buffer(ctx, context)
                 elif (primitive_type == 'Torus') and (SDFObjectProperty.contains_in_list(context.scene.sdf_torus_pointer_list, prv_pointer.object) == False):
                     # Torus has no argument to scale with primitive_add. Scaling is applied manually.
-                    prv_scale = (object.scale[0], object.scale[1], object.scale[2])
-                    object.scale = (1,1,1)
-                    bpy.ops.mesh.primitive_torus_add(major_radius=1, minor_radius=0.25, abso_major_rad=1.25, abso_minor_rad=0.75, align='CURSOR', location=object.location, rotation=object.rotation_euler)
-                    object.scale = prv_scale
+                    self.__class__.update_torus_mesh(prv_pointer)
                     blist = context.scene.sdf_torus_pointer_list
-                    alloc = lambda: ShaderBufferFactory.generate_torus_buffer(ctx, context)
+                    alloc = lambda ctx, context: ShaderBufferFactory.generate_torus_buffer(ctx, context)
                 elif (primitive_type == 'Hexagonal Prism') and (SDFObjectProperty.contains_in_list(context.scene.sdf_hex_prism_pointer_list, prv_pointer.object) == False):
-                    bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=1, depth=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+                    self.__class__.update_hex_prism_mesh(prv_pointer)
                     blist = context.scene.sdf_hex_prism_pointer_list
-                    alloc = lambda: ShaderBufferFactory.generate_hex_prism_buffer(ctx, context)
+                    alloc = lambda ctx, context: ShaderBufferFactory.generate_hex_prism_buffer(ctx, context)
                 elif (primitive_type == 'Triangular Prism') and (SDFObjectProperty.contains_in_list(context.scene.sdf_tri_prism_pointer_list, prv_pointer.object) == False):
-                    bpy.ops.mesh.primitive_cylinder_add(vertices=3, radius=1, depth=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+                    self.__class__.update_tri_prism_mesh(prv_pointer)
                     blist = context.scene.sdf_tri_prism_pointer_list
-                    alloc = lambda: ShaderBufferFactory.generate_tri_prism_buffer(ctx, context)
+                    alloc = lambda ctx, context: ShaderBufferFactory.generate_tri_prism_buffer(ctx, context)
                 elif (primitive_type == 'Ngon Prism') and (SDFObjectProperty.contains_in_list(context.scene.sdf_ngon_prism_pointer_list, prv_pointer.object) == False):
-                    bpy.ops.mesh.primitive_cylinder_add(vertices=prv_pointer.object.sdf_object.prop_prism.nsides, radius=1, depth=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+                    self.__class__.update_ngon_prism_mesh(prv_pointer)
                     blist = context.scene.sdf_ngon_prism_pointer_list
-                    alloc = lambda: ShaderBufferFactory.generate_ngon_prism_buffer(ctx, context)
+                    alloc = lambda ctx, context: ShaderBufferFactory.generate_ngon_prism_buffer(ctx, context)
                 elif (primitive_type == 'GLSL') and (SDFObjectProperty.contains_in_list(context.scene.sdf_glsl_pointer_list, prv_pointer.object) == False):
-                    bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+                    self.__class__.update_glsl_mesh(prv_pointer)
                     blist = context.scene.sdf_glsl_pointer_list
-                    alloc = lambda: ShaderBufferFactory.generate_glsl_buffer(ctx, context)
+                    alloc = lambda ctx, context: ShaderBufferFactory.generate_glsl_buffer(ctx, context)
 
                 # Add new pointer to list
                 if blist != None:
@@ -207,7 +393,9 @@ class SDFObjectProperty(PropertyGroup):
                     
                 # Return from Edit mode to the previous mode
                 object.sdf_object.prev_primitive_type = object.sdf_object.primitive_type
-                bpy.ops.object.mode_set(mode=prev_mode)
+                
+                # Restore mode to previous mode
+                self.__class__.update_primitive_mesh_end(prev_mode)
                 
                 # Generate shaders according to the current hierarchy
                 f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
@@ -326,13 +514,29 @@ class SDFObjectProperty(PropertyGroup):
         update=property_event_on_cylinder_prop_updated)
     
     # torus
-    prop_torus_radiuss: bpy.props.FloatVectorProperty(
-        name='Radiuss',
+    prop_torus_radius: bpy.props.FloatVectorProperty(
+        name='Radius',
         description='',
         size=2,
         min=0.0,
         default=(1.00,0.25),
         update=property_event_on_torus_prop_updated)
+
+    # cone
+    prop_cone_height: bpy.props.FloatProperty(
+        name='Height',
+        description='',
+        min=0.0,
+        default=1.0,
+        update=property_event_on_cone_prop_updated)
+    
+    prop_cone_radius: bpy.props.FloatVectorProperty(
+        name='Radius',
+        description='',
+        size=2,
+        min=0.0,
+        default=(0.25,0.75),
+        update=property_event_on_cone_prop_updated)
     
     # prism
     prop_prism_radius: bpy.props.FloatProperty(
@@ -355,22 +559,6 @@ class SDFObjectProperty(PropertyGroup):
         min=3,
         default=6,
         update=property_event_on_ngon_prism_prop_updated)
-    
-    # cone
-    prop_cone_radiuss: bpy.props.FloatVectorProperty(
-        name='Radiuss',
-        description='',
-        size=2,
-        min=0.0,
-        default=(0.25,0.75),
-        update=property_event_on_cone_prop_updated)
-        
-    prop_cone_height: bpy.props.FloatProperty(
-        name='Height',
-        description='',
-        min=0.0,
-        default=1.0,
-        update=property_event_on_cone_prop_updated)
     
     # glsl
     prop_glsl_bound: bpy.props.FloatVectorProperty(
@@ -573,10 +761,7 @@ class SDF2MESH_OT_List_Remove(Operator):
 
 
 class SDF2MESH_OT_List_Reorder(Operator):
-    
-    # TODO: Updating Index Properties
-    # STATE: Not tested yet
-    
+        
     bl_idname = 'mesh_from_sdf.hierarchy_reorder'
     bl_label = 'Reorder'
     bl_description = 'Sort SDF Object in the specified direction.'
@@ -742,7 +927,7 @@ draw_sdf_object_property_by_primitive_type = {'Box': lambda col, item: (
                                                 col.prop(item, 'prop_cylinder_radius'),
                                                 col.prop(item, 'round')),
                                               'Torus': lambda col, item: (
-                                                col.prop(item, 'prop_torus_radiuss')),
+                                                col.prop(item, 'prop_torus_radius')),
                                               'Hexagonal Prism': lambda col, item: (
                                                 col.prop(item, 'prop_prism_radius'),
                                                 col.prop(item, 'prop_prism_height')),
@@ -750,16 +935,16 @@ draw_sdf_object_property_by_primitive_type = {'Box': lambda col, item: (
                                                 col.prop(item, 'prop_prism_radius'),
                                                 col.prop(item, 'prop_prism_height'),
                                                 col.prop(item, 'round')),
-                                              'Ngon Prism': lambda col, prop: (
+                                              'Ngon Prism': lambda col, item: (
                                                 col.prop(item, 'prop_prism_radius'),
                                                 col.prop(item, 'prop_prism_height'),
                                                 col.prop(item, 'prop_prism_nsides'),
                                                 col.prop(item, 'round')),
-                                              'Cone': lambda col, prop: (
+                                              'Cone': lambda col, item: (
                                                 col.prop(item, 'prop_cone_height'),
-                                                col.prop(item, 'prop_cone_radiuss'),
+                                                col.prop(item, 'prop_cone_radius'),
                                                 col.prop(item, 'round')),
-                                              'GLSL': lambda col, prop: (
+                                              'GLSL': lambda col, item: (
                                                 col.prop(item, 'prop_glsl_shader_path'),
                                                 col.prop(item, 'prop_glsl_bound'))}
                                                 
@@ -968,8 +1153,9 @@ class SDFOBJECT_UTILITY(object):
                 break
         if delete_index > -1:
             alist.remove(delete_index)
-        for i in range(delete_index, len(alist)):
-            alist[i].object.sdf_object.sub_index = alist[i].object.sdf_object.sub_index - 1
+            # After deleting an object, update the sub-indexes of the currently existing objects
+            for i in range(delete_index, len(alist)):
+                alist[i].object.sdf_object.sub_index = alist[i].object.sdf_object.sub_index - 1
 
     @classmethod
     def delete_from_sub_list(cls, context, target):
@@ -1006,6 +1192,7 @@ object_pointer_list_by_primitive_type = {'Box': lambda context: context.scene.sd
                                          'Sphere': lambda context: context.scene.sdf_sphere_pointer_list,
                                          'Cylinder': lambda context: context.scene.sdf_cylinder_pointer_list,
                                          'Torus': lambda context: context.scene.sdf_torus_pointer_list,
+                                         'Cone': lambda context: context.scene.sdf_cone_pointer_list,
                                          'Hexagonal Prism': lambda context: context.scene.sdf_hex_prism_pointer_list,
                                          'Triangular Prism': lambda context: context.scene.sdf_tri_prism_pointer_list,
                                          'Ngon Prism': lambda context: context.scene.sdf_ngon_prism_pointer_list,
@@ -1018,6 +1205,7 @@ generate_storage_buffer_by_primitive_type = {'Box': lambda ctx, context: ShaderB
                                              'Sphere': lambda ctx, context: ShaderBufferFactory.generate_sphere_buffer(ctx, context),
                                              'Cylinder': lambda ctx, context: ShaderBufferFactory.generate_cylinder_buffer(ctx, context),
                                              'Torus': lambda ctx, context: ShaderBufferFactory.generate_torus_buffer(ctx, context),
+                                             'Cone': lambda ctx, context: ShaderBufferFactory.generate_cone_buffer(ctx, context),
                                              'Hexagonal Prism': lambda ctx, context: ShaderBufferFactory.generate_hex_prism_buffer(ctx, context),
                                              'Triangular Prism': lambda ctx, context: ShaderBufferFactory.generate_tri_prism_buffer(ctx, context),
                                              'Ngon Prism': lambda ctx, context: ShaderBufferFactory.generate_ngon_prism_buffer(ctx, context),
@@ -1030,6 +1218,7 @@ update_storage_buffer_by_primitive_type = {'Box': lambda ctx, context, index, su
                                            'Sphere': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_sphere_buffer(ctx, context, index, sub_index),
                                            'Cylinder': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_cylinder_buffer(ctx, context, index, sub_index),
                                            'Torus': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_torus_buffer(ctx, context, index, sub_index),
+                                           'Cone': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_cone_buffer(ctx, context, index, sub_index),
                                            'Hexagonal Prism': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_hex_prism_buffer(ctx, context, index, sub_index),
                                            'Triangular Prism': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_tri_prism_buffer(ctx, context, index, sub_index),
                                            'Ngon Prism': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_ngon_prism_buffer(ctx, context, index, sub_index),

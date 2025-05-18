@@ -30,15 +30,60 @@ class ShaderBufferFactory(object):
     # Build all buffers
     @classmethod
     def generate_all(cls, ctx, context):
-        cls.generate_box_buffer(ctx, context)
-        cls.generate_sphere_buffer(ctx, context)
-        cls.generate_cylinder_buffer(ctx, context)
-        cls.generate_torus_buffer(ctx, context)
-        cls.generate_hex_prism_buffer(ctx, context)
-        cls.generate_tri_prism_buffer(ctx, context)
-        cls.generate_ngon_prism_buffer(ctx, context)
-        cls.generate_glsl_buffer(ctx, context)
-        cls.generate_object_common_buffer(ctx, context)
+        
+        # Box
+        if len(context.scene.sdf_box_pointer_list) > 0:
+            cls.generate_box_buffer(ctx, context)
+        else:
+            cls.release_box_buffer()
+        
+        # Sphere
+        if len(context.scene.sdf_sphere_pointer_list) > 0:
+            cls.generate_sphere_buffer(ctx, context)
+        else:
+            cls.release_sphere_buffer()
+        
+        # Cylinder
+        if len(context.scene.sdf_cylinder_pointer_list) > 0:
+            cls.generate_cylinder_buffer(ctx, context)
+        else:
+            cls.release_cylinder_buffer()
+        
+        # Torus
+        if len(context.scene.sdf_torus_pointer_list) > 0:
+            cls.generate_torus_buffer(ctx, context)
+        else:
+            cls.release_torus_buffer()
+        
+        # Hex Prism
+        if len(context.scene.sdf_hex_prism_pointer_list) > 0:
+            cls.generate_hex_prism_buffer(ctx, context)
+        else:
+            cls.release_hex_prism_buffer()
+        
+        # Tri Prism
+        if len(context.scene.sdf_tri_prism_pointer_list) > 0:
+            cls.generate_tri_prism_buffer(ctx, context)
+        else:
+            cls.release_tri_prism_buffer()
+        
+        # Ngon Prism
+        if len(context.scene.sdf_ngon_prism_pointer_list) > 0:
+            cls.generate_ngon_prism_buffer(ctx, context)
+        else:
+            cls.release_ngon_prism_buffer()
+        
+        # GLSL
+        if len(context.scene.sdf_glsl_pointer_list) > 0:
+            cls.generate_glsl_buffer(ctx, context)
+        else:
+            cls.release_glsl_buffer()
+        
+        # Common
+        if len(context.scene.sdf_object_pointer_list) > 0:
+            cls.generate_object_common_buffer(ctx, context)
+        else:
+            cls.release_object_common_buffer()
 
     # ----------------------------------------------------------
     # Storage Buffer Objects of Common Propertys
@@ -52,6 +97,9 @@ class ShaderBufferFactory(object):
     # Generate buffer for SDFObjectProperty
     @classmethod
     def generate_object_common_buffer(cls, ctx, context):
+        
+        # If the buffer has already been allocated, release it
+        cls.release_object_common_buffer()
         
         dsize = 10 # position (3), scale (1), quaternion (4), blend (2)
         alist = context.scene.sdf_object_pointer_list
@@ -87,7 +135,7 @@ class ShaderBufferFactory(object):
     # Reflects the specified element of the SDFObjectProperty list in the buffer
     @classmethod
     def update_object_common_buffer(cls, ctx, context, i):
-        
+
         # If buffer is set to None for some reason, a new buffer is created here.
         if cls.object_common_buffer == None:
             return cls.generate_object_common_buffer(ctx, context)
@@ -141,6 +189,9 @@ class ShaderBufferFactory(object):
     @classmethod
     def generate_box_buffer(cls, ctx, context):
         
+        # If the buffer has already been allocated, release it
+        cls.release_box_buffer()
+        
         dsize = 4 # bound (3), round (1)
         alist = context.scene.sdf_box_pointer_list
         narray = np.empty(len(alist) * dsize, dtype=np.float32)
@@ -159,8 +210,9 @@ class ShaderBufferFactory(object):
             narray[offset + 3] = round
 
         # Generate a buffer to bind to the shader using np.array as source
-        cls.box_buffer = ctx.buffer(narray)
-        print('[generate_box_buffer] box:', narray)
+        buf = ctx.buffer(narray)
+        cls.box_buffer = buf
+        print('[generate_box_buffer] narray:', narray, 'buf:', buf.read())
         return cls.box_buffer
     
     @classmethod
@@ -189,11 +241,11 @@ class ShaderBufferFactory(object):
         buf = cls.box_buffer
         buf.write(narray.tobytes(), sub_i * dsize)
         
-        print('[generate_box_buffer] index:', i, 'narray:', narray)
+        print('[generate_box_buffer] index:', i, 'narray:', narray, 'buf:', buf.read())
         return cls.box_buffer
     
     @classmethod
-    def release_box_buffer(cls, context):
+    def release_box_buffer(cls):
         if cls.box_buffer != None:
             cls.box_buffer.release()
         cls.box_buffer = None
@@ -208,15 +260,59 @@ class ShaderBufferFactory(object):
     
     @classmethod
     def generate_sphere_buffer(cls, ctx, context):
-        pass
+        
+        # If the buffer has already been allocated, release it
+        cls.release_sphere_buffer()
+        
+        dsize = 1 # radius (1)
+        alist = context.scene.sdf_sphere_pointer_list
+        narray = np.empty(len(alist) * dsize, dtype=np.float32)
+        
+        for i, pointer in enumerate(alist):
+            object = pointer.object
+            sdf_object = object.sdf_object
+            
+            radius = sdf_object.prop_sphere_radius
+            
+            offset = i * dsize
+            narray[offset + 0] = radius
+
+        # Generate a buffer to bind to the shader using np.array as source
+        buf = ctx.buffer(narray)
+        cls.sphere_buffer = buf
+        print('[generate_sphere_buffer] narray:', narray, 'buf:', buf.read())
+        return cls.sphere_buffer
 
     @classmethod
     def update_sphere_buffer(cls, ctx, context, i, sub_i):
-        pass
+        
+        # If buffer is set to None for some reason, a new buffer is created here.
+        if cls.sphere_buffer == None:
+            return cls.generate_sphere_buffer(ctx, context)
+        
+        dsize = 1 # radius (1)
+        alist = context.scene.sdf_sphere_pointer_list
+        narray = np.empty(dsize, dtype=np.float32)
+        
+        pointer = alist[sub_i]
+        object = pointer.object
+        sdf_object = object.sdf_object
+        
+        radius = sdf_object.prop_sphere_radius
+        
+        narray[0] = radius
+        
+        buf = cls.sphere_buffer
+        buf.write(narray.tobytes(), sub_i * dsize)
+        
+        print('[generate_sphere_buffer] index:', i, 'narray:', narray, 'buf:', buf.read())
+        return cls.sphere_buffer
     
     @classmethod
-    def release_sphere_buffer(cls, context):
-        pass
+    def release_sphere_buffer(cls):
+        if cls.sphere_buffer != None:
+            cls.sphere_buffer.release()
+        cls.sphere_buffer = None
     
     # ----------------------------------------------------------
     # Storage Buffer Objects of Cylinder Primitive
@@ -228,15 +324,69 @@ class ShaderBufferFactory(object):
     
     @classmethod
     def generate_cylinder_buffer(cls, ctx, context):
-        pass
+        
+        # If the buffer has already been allocated, release it
+        cls.release_cylinder_buffer()
+        
+        dsize = 4 # height (1), radius (1), round (1), dummy (1)
+        alist = context.scene.sdf_cylinder_pointer_list
+        narray = np.empty(len(alist) * dsize, dtype=np.float32)
+        
+        for i, pointer in enumerate(alist):
+            object = pointer.object
+            sdf_object = object.sdf_object
+            
+            height = sdf_object.prop_cylinder_height
+            radius = sdf_object.prop_cylinder_radius
+            round = min(radius, height * 0.5) * sdf_object.round
+            
+            offset = i * dsize
+            narray[offset + 0] = height
+            narray[offset + 1] = radius
+            narray[offset + 2] = round
+            # narray[offset + 3] = 0 # dummy
+
+        # Generate a buffer to bind to the shader using np.array as source
+        buf = ctx.buffer(narray)
+        cls.cylinder_buffer = buf
+        print('[generate_cylinder_buffer] narray:', narray, 'buf:', buf.read())
+        return cls.cylinder_buffer
 
     @classmethod
     def update_cylinder_buffer(cls, ctx, context, i, sub_i):
-        pass
+        
+        # If buffer is set to None for some reason, a new buffer is created here.
+        if cls.cylinder_buffer == None:
+            return cls.generate_cylinder_buffer(ctx, context)
+        
+        dsize = 4 # height (1), radius (1), round (1), dummy (1)
+        alist = context.scene.sdf_cylinder_pointer_list
+        narray = np.empty(dsize, dtype=np.float32)
+        
+        pointer = alist[sub_i]
+        object = pointer.object
+        sdf_object = object.sdf_object
+        
+        height = sdf_object.prop_cylinder_height
+        radius = sdf_object.prop_cylinder_radius
+        round = min(radius, height * 0.5) * sdf_object.round
+        
+        narray[0] = height
+        narray[1] = radius
+        narray[2] = round
+        # narray[3] = 0 # dummy
+        
+        buf = cls.cylinder_buffer
+        buf.write(narray.tobytes(), sub_i * dsize)
+        
+        print('[generate_cylinder_buffer] narray:', narray, 'buf:', buf.read())
+        return cls.cylinder_buffer
     
     @classmethod
-    def release_cylinder_buffer(cls, context):
-        pass
+    def release_cylinder_buffer(cls):
+        if cls.cylinder_buffer != None:
+            cls.cylinder_buffer.release()
+        cls.cylinder_buffer = None
     
     # ----------------------------------------------------------
     # Storage Buffer Objects of Cone Primitive
@@ -248,15 +398,69 @@ class ShaderBufferFactory(object):
     
     @classmethod
     def generate_cone_buffer(cls, ctx, context):
-        pass
+        
+        # If the buffer has already been allocated, release it
+        cls.release_cone_buffer()
+        
+        dsize = 4 # height (1), radius0 (1), radius1 (1), round (1)
+        alist = context.scene.sdf_cone_pointer_list
+        narray = np.empty(len(alist) * dsize, dtype=np.float32)
+        
+        for i, pointer in enumerate(alist):
+            object = pointer.object
+            sdf_object = object.sdf_object
+            
+            radius = sdf_object.prop_cone_radius
+            height = sdf_object.prop_cone_height
+            round = min(radius[0], radius[1], height * 0.5) * sdf_object.round
+            
+            offset = i * dsize
+            narray[offset + 0] = height
+            narray[offset + 1] = radius[0]
+            narray[offset + 2] = radius[1]
+            narray[offset + 3] = round
+
+        # Generate a buffer to bind to the shader using np.array as source
+        buf = ctx.buffer(narray)
+        cls.cone_buffer = buf
+        print('[generate_cone_buffer] narray:', narray, 'buf:', buf.read())
+        return cls.cone_buffer
 
     @classmethod
     def update_cone_buffer(cls, ctx, context, i, sub_i):
-        pass
+        
+        # If buffer is set to None for some reason, a new buffer is created here.
+        if cls.cone_buffer == None:
+            return cls.generate_cone_buffer(ctx, context)
+        
+        dsize = 4 # height (1), radius0 (1), radius1 (1), round (1)
+        alist = context.scene.sdf_cone_pointer_list
+        narray = np.empty(dsize, dtype=np.float32)
+        
+        pointer = alist[sub_i]
+        object = pointer.object
+        sdf_object = object.sdf_object
+        
+        radius = sdf_object.prop_cone_radius
+        height = sdf_object.prop_cone_height
+        round = min(radius[0], radius[1], height * 0.5) * sdf_object.round
+        
+        narray[0] = height
+        narray[1] = radius[0]
+        narray[2] = radius[1]
+        narray[3] = round
+        
+        buf = cls.cone_buffer
+        buf.write(narray.tobytes(), sub_i * dsize)
+        
+        print('[generate_cone_buffer] narray:', narray, 'buf:', buf.read())
+        return cls.cone_buffer
     
     @classmethod
-    def release_cone_buffer(cls, context):
-        pass
+    def release_cone_buffer(cls):
+        if cls.cone_buffer != None:
+            cls.cone_buffer.release()
+        cls.cone_buffer = None
     
     # ----------------------------------------------------------
     # Storage Buffer Objects of Torus Primitive
@@ -268,15 +472,61 @@ class ShaderBufferFactory(object):
     
     @classmethod
     def generate_torus_buffer(cls, ctx, context):
-        pass
+        
+        # If the buffer has already been allocated, release it
+        cls.release_torus_buffer()
+        
+        dsize = 2 # radius0 (1), radius1 (1)
+        alist = context.scene.sdf_torus_pointer_list
+        narray = np.empty(len(alist) * dsize, dtype=np.float32)
+        
+        for i, pointer in enumerate(alist):
+            object = pointer.object
+            sdf_object = object.sdf_object
+            
+            radius = sdf_object.prop_cone_radius
+            
+            offset = i * dsize
+            narray[offset + 0] = radius[0]
+            narray[offset + 1] = radius[1]
+
+        # Generate a buffer to bind to the shader using np.array as source
+        buf = ctx.buffer(narray)
+        cls.torus_buffer = buf
+        print('[generate_torus_buffer] narray:', narray, 'buf:', buf.read())
+        return cls.torus_buffer
 
     @classmethod
     def update_torus_buffer(cls, ctx, context, i, sub_i):
-        pass
+        
+        # If buffer is set to None for some reason, a new buffer is created here.
+        if cls.torus_buffer == None:
+            return cls.generate_torus_buffer(ctx, context)
+        
+        dsize = 2 # radius0 (1), radius1 (1)
+        alist = context.scene.sdf_torus_pointer_list
+        narray = np.empty(dsize, dtype=np.float32)
+        
+        pointer = alist[sub_i]
+        object = pointer.object
+        sdf_object = object.sdf_object
+        
+        radius = sdf_object.prop_torus_radius
+        
+        narray[0] = radius[0]
+        narray[1] = radius[1]
+        
+        buf = cls.torus_buffer
+        buf.write(narray.tobytes(), sub_i * dsize)
+        
+        print('[generate_torus_buffer] narray:', narray, 'buf:', buf.read())
+        return cls.torus_buffer
     
     @classmethod
-    def release_torus_buffer(cls, context):
-        pass
+    def release_torus_buffer(cls):
+        if cls.torus_buffer != None:
+            cls.torus_buffer.release()
+        cls.torus_buffer = None
     
     # ----------------------------------------------------------
     # Storage Buffer Objects of Hex Prism Primitive
@@ -288,15 +538,69 @@ class ShaderBufferFactory(object):
     
     @classmethod
     def generate_hex_prism_buffer(cls, ctx, context):
-        pass
+        
+        # If the buffer has already been allocated, release it
+        cls.release_hex_prism_buffer()
+        
+        dsize = 4 # height (1), radius (1), round (1), dummy (1)
+        alist = context.scene.sdf_hex_prism_pointer_list
+        narray = np.empty(len(alist) * dsize, dtype=np.float32)
+        
+        for i, pointer in enumerate(alist):
+            object = pointer.object
+            sdf_object = object.sdf_object
+            
+            height = sdf_object.prop_prism_height
+            radius = sdf_object.prop_prism_radius
+            round = min(radius, height * 0.5) * sdf_object.round
+            
+            offset = i * dsize
+            narray[offset + 0] = height
+            narray[offset + 1] = radius
+            narray[offset + 2] = round
+            # narray[offset + 3] = 0 # dummy
+
+        # Generate a buffer to bind to the shader using np.array as source
+        buf = ctx.buffer(narray)
+        cls.hex_prism_buffer = buf
+        print('[generate_hex_prism_buffer] narray:', narray, 'buf:', buf.read())
+        return cls.hex_prism_buffer
 
     @classmethod
     def update_hex_prism_buffer(cls, ctx, context, i, sub_i):
-        pass
+        
+        # If buffer is set to None for some reason, a new buffer is created here.
+        if cls.hex_prism_buffer == None:
+            return cls.generate_hex_prism_buffer(ctx, context)
+        
+        dsize = 4 # height (1), radius (1), round (1), dummy (1)
+        alist = context.scene.sdf_hex_prism_pointer_list
+        narray = np.empty(dsize, dtype=np.float32)
+        
+        pointer = alist[sub_i]
+        object = pointer.object
+        sdf_object = object.sdf_object
+        
+        height = sdf_object.prop_prism_height
+        radius = sdf_object.prop_prism_radius
+        round = min(radius, height * 0.5) * sdf_object.round
+        
+        narray[0] = height
+        narray[1] = radius
+        narray[2] = round
+        # narray[3] = 0 # dummy
+        
+        buf = cls.hex_prism_buffer
+        buf.write(narray.tobytes(), sub_i * dsize)
+        
+        print('[generate_hex_prism_buffer] narray:', narray, 'buf:', buf.read())
+        return cls.hex_prism_buffer
     
     @classmethod
-    def release_hex_prism_buffer(cls, context):
-        pass
+    def release_hex_prism_buffer(cls):
+        if cls.hex_prism_buffer != None:
+            cls.hex_prism_buffer.release()
+        cls.hex_prism_buffer = None
     
     # ----------------------------------------------------------
     # Storage Buffer Objects of Tri Prism Primitive
@@ -308,15 +612,69 @@ class ShaderBufferFactory(object):
     
     @classmethod
     def generate_tri_prism_buffer(cls, ctx, context):
-        pass
+        
+        # If the buffer has already been allocated, release it
+        cls.release_tri_prism_buffer()
+        
+        dsize = 4 # height (1), radius (1), round (1), dummy (1)
+        alist = context.scene.sdf_tri_prism_pointer_list
+        narray = np.empty(len(alist) * dsize, dtype=np.float32)
+        
+        for i, pointer in enumerate(alist):
+            object = pointer.object
+            sdf_object = object.sdf_object
+            
+            height = sdf_object.prop_prism_height
+            radius = sdf_object.prop_prism_radius
+            round = min(radius, height * 0.5) * sdf_object.round
+            
+            offset = i * dsize
+            narray[offset + 0] = height
+            narray[offset + 1] = radius
+            narray[offset + 2] = round
+            # narray[offset + 3] = 0 # dummy
+
+        # Generate a buffer to bind to the shader using np.array as source
+        buf = ctx.buffer(narray)
+        cls.tri_prism_buffer = buf
+        print('[generate_tri_prism_buffer] narray:', narray, 'buf:', buf.read())
+        return cls.tri_prism_buffer
 
     @classmethod
     def update_tri_prism_buffer(cls, ctx, context, i, sub_i):
-        pass
+        
+        # If buffer is set to None for some reason, a new buffer is created here.
+        if cls.tri_prism_buffer == None:
+            return cls.generate_tri_prism_buffer(ctx, context)
+        
+        dsize = 4 # height (1), radius (1), round (1), dummy (1)
+        alist = context.scene.sdf_tri_prism_pointer_list
+        narray = np.empty(dsize, dtype=np.float32)
+        
+        pointer = alist[sub_i]
+        object = pointer.object
+        sdf_object = object.sdf_object
+        
+        height = sdf_object.prop_prism_height
+        radius = sdf_object.prop_prism_radius
+        round = min(radius, height * 0.5) * sdf_object.round
+        
+        narray[0] = height
+        narray[1] = radius
+        narray[2] = round
+        # narray[3] = 0 # dummy
+        
+        buf = cls.tri_prism_buffer
+        buf.write(narray.tobytes(), sub_i * dsize)
+        
+        print('[generate_tri_prism_buffer] narray:', narray, 'buf:', buf.read())
+        return cls.tri_prism_buffer
     
     @classmethod
-    def release_tri_prism_buffer(cls, context):
-        pass
+    def release_tri_prism_buffer(cls):
+        if cls.tri_prism_buffer != None:
+            cls.tri_prism_buffer.release()
+        cls.tri_prism_buffer = None
     
     # ----------------------------------------------------------
     # Storage Buffer Objects of Ngon Prism Primitive
@@ -328,15 +686,71 @@ class ShaderBufferFactory(object):
     
     @classmethod
     def generate_ngon_prism_buffer(cls, ctx, context):
-        pass
+        
+        # If the buffer has already been allocated, release it
+        cls.release_ngon_prism_buffer()
+        
+        dsize = 4 # height (1), radius (1), round (1), nsides (1)
+        alist = context.scene.sdf_ngon_prism_pointer_list
+        narray = np.empty(len(alist) * dsize, dtype=np.float32)
+        
+        for i, pointer in enumerate(alist):
+            object = pointer.object
+            sdf_object = object.sdf_object
+            
+            height = sdf_object.prop_prism_height
+            radius = sdf_object.prop_prism_radius
+            round = min(radius, height * 0.5) * sdf_object.round
+            nsides = sdf_object.prop_prism_nsides
+            
+            offset = i * dsize
+            narray[offset + 0] = height
+            narray[offset + 1] = radius
+            narray[offset + 2] = round
+            narray[offset + 3] = nsides
+
+        # Generate a buffer to bind to the shader using np.array as source
+        buf = ctx.buffer(narray)
+        cls.ngon_prism_buffer = buf
+        print('[generate_ngon_prism_buffer] narray:', narray, 'buf:', buf.read())
+        return cls.ngon_prism_buffer
 
     @classmethod
     def update_ngon_prism_buffer(cls, ctx, context, i, sub_i):
-        pass
+        
+        # If buffer is set to None for some reason, a new buffer is created here.
+        if cls.ngon_prism_buffer == None:
+            return cls.generate_ngon_prism_buffer(ctx, context)
+        
+        dsize = 4 # height (1), radius (1), round (1), nsides (1)
+        alist = context.scene.sdf_ngon_prism_pointer_list
+        narray = np.empty(dsize, dtype=np.float32)
+        
+        pointer = alist[sub_i]
+        object = pointer.object
+        sdf_object = object.sdf_object
+        
+        height = sdf_object.prop_prism_height
+        radius = sdf_object.prop_prism_radius
+        round = min(radius, height * 0.5) * sdf_object.round
+        nsides = sdf_object.prop_prism_nsides
+        
+        narray[0] = height
+        narray[1] = radius
+        narray[2] = round
+        narray[3] = nsides
+        
+        buf = cls.ngon_prism_buffer
+        buf.write(narray.tobytes(), sub_i * dsize)
+        
+        print('[generate_ngon_prism_buffer] narray:', narray, 'buf:', buf.read())
+        return cls.ngon_prism_buffer
     
     @classmethod
-    def release_ngon_prism_buffer(cls, context):
-        pass
+    def release_ngon_prism_buffer(cls):
+        if cls.ngon_prism_buffer != None:
+            cls.ngon_prism_buffer.release()
+        cls.ngon_prism_buffer = None
     
     # ----------------------------------------------------------
     # Storage Buffer Objects of GLSL Primitive
@@ -355,7 +769,7 @@ class ShaderBufferFactory(object):
         pass
     
     @classmethod
-    def release_glsl_buffer(cls, context):
+    def release_glsl_buffer(cls):
         pass
         
     

@@ -247,6 +247,6 @@ frag_include_ = '''
             float h;  // height
             float ra; // radius
             float rd; // round
-            uint n;   // nsideds
+            uint n;   // nsides
         };
 '''
