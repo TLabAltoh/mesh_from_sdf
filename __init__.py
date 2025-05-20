@@ -15,6 +15,7 @@ bl_info = {
 }
 
 import bpy
+import bmesh
 import numpy as np
 from mesh_from_sdf.moderngl_util import *
 from mesh_from_sdf.raymarching import *
@@ -229,9 +230,17 @@ class SDFObjectProperty(PropertyGroup):
     def update_box_mesh(cls, pointer):
         object = pointer.object
         sdf_object = pointer.object.sdf_object
-        
+                
         bound = sdf_object.prop_box_bound
-        bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=(bound[0], bound[1], bound[2]))
+        bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+
+        mesh = object.data
+        bm = bmesh.from_edit_mesh(mesh)
+        for i, vert in enumerate(bm.verts):
+            vert.co[0] = vert.co[0] * bound[0]
+            vert.co[1] = vert.co[1] * bound[1]
+            vert.co[2] = vert.co[2] * bound[2]
+        bmesh.update_edit_mesh(mesh)
 
     @classmethod
     def update_sphere_mesh(cls, pointer):
@@ -308,10 +317,15 @@ class SDFObjectProperty(PropertyGroup):
     @classmethod
     def update_primitive_mesh_begin(cls, context):
         prev_mode = context.object.mode
+        prev_mesh = context.object.data
+
         # Move to Edit mode to manipulate Mesh primitives
         bpy.ops.object.mode_set(mode='EDIT')
-        bpy.ops.mesh.select_all(action='SELECT')
-        bpy.ops.mesh.delete(type='FACE')
+        
+        bm = bmesh.from_edit_mesh(prev_mesh)
+        bm.clear()
+        bmesh.update_edit_mesh(prev_mesh)
+
         return prev_mode
     
     @classmethod
