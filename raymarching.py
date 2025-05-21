@@ -74,6 +74,7 @@ class Raymarching(bpy.types.Operator):
                         if region.type == 'WINDOW':
                             region.tag_redraw()
 
+
     # A library of utilities for coordinate transformations and quaternions for both vertex and fragment shaders.
     include_ = '''
         vec4 mulVec(mat4 matrix, vec3 a) {
@@ -196,9 +197,9 @@ class Raymarching(bpy.types.Operator):
                         dist *= scale;
                         
                         k = 0.05;
+                        minDist = opRoundUnion(dist, minDist, k);
                         //minDist = opUnion(dist, minDist);
                         //minDist = opStairsUnion(dist, minDist, k, 3);
-                        minDist = opRoundUnion(dist, minDist, k);
                         //minDist = opSmoothUnion(dist, minDist, k);
                         //minDist = opChampferUnion(dist, minDist, k);
                     }
@@ -237,8 +238,7 @@ class Raymarching(bpy.types.Operator):
         # generate fragment shader
         frag_ = sc.frag_include_ + '''
         
-        // layout(binding=0) readonly buffer in_prop_object { SDFObjectProp sdfObjectProps[]; };
-        layout(binding=0) readonly buffer in_prop_object { float testValue0; float testValue1; };
+        layout(binding=0) readonly buffer in_prop_object { SDFObjectProp sdfObjectProps[]; };
         layout(binding=1) readonly buffer in_prop_box { SDFBoxProp sdfBoxProps[]; };
         layout(binding=2) readonly buffer in_prop_sphere { SDfSphereProp sdfSphereProps[]; };
         layout(binding=3) readonly buffer in_prop_cylinder { SDFCylinderProp sdfCylinderProps[]; };
@@ -291,7 +291,7 @@ class Raymarching(bpy.types.Operator):
             //return opIntersection(d0, d1);
             //return opXor(d0, d1);
             //return minDist;
-            return minDist * (testValue0 + testValue1);
+            return minDist;
         }
         vec2 raymarch(vec3 ro, vec3 rd) {
             float dO = 0;
@@ -331,7 +331,7 @@ class Raymarching(bpy.types.Operator):
             vec4 col = vec4(0, 0, 0, 0);
             
             if (d.x >= MAX_DIST) {
-                discard;        
+                discard;     
             } else {
                 vec3 p = ro + rd * d.x;
                 vec3 n = getNormal(p);
@@ -362,7 +362,8 @@ class Raymarching(bpy.types.Operator):
         cls.shader = gpu.types.GPUShader(cls.get_vert(), cls.get_frag())
 
     @classmethod
-    def update_sdf(cls):
+    def update_distance_function(cls, dist):
+        cls.dist_ = dist
         pass
 
     @classmethod
