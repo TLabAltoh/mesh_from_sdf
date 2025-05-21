@@ -9,13 +9,14 @@ from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
 from mathutils.geometry import intersect_line_plane
 from mesh_from_sdf import sdf_common as sc
-from mesh_from_sdf import marching_tables as mt
+from mesh_from_sdf.shader_buffer_factory import ShaderBufferFactory
 
 
 class Raymarching(bpy.types.Operator):
     
-    config = {}
-
+    # The function generates a mesh that covers the area (frustum) seen by the camera in the scene view. 
+    # The result of ray-marching is displayed on the mesh generated here. This function is used to 
+    # perform full-screen ray marching on the scene view.
     @classmethod
     def get_frustom_plane_from_view3d(cls,region,region3d,near):
         plane = []
@@ -40,7 +41,8 @@ class Raymarching(bpy.types.Operator):
                 plane.append(cp)
             return plane
 
-
+    # Update shader configuration (mesh vertices, camera position, view matrix)
+    config = {}
     @classmethod
     def update_config(cls):
         screen = bpy.context.window.screen
@@ -64,7 +66,7 @@ class Raymarching(bpy.types.Operator):
                                 clamp=10.0
                             )
 
-
+    # Force scene view redraw
     @classmethod
     def tag_redraw_all_3dviews(cls):
         for window in bpy.context.window_manager.windows:
@@ -73,7 +75,6 @@ class Raymarching(bpy.types.Operator):
                     for region in area.regions:
                         if region.type == 'WINDOW':
                             region.tag_redraw()
-
 
     # A library of utilities for coordinate transformations and quaternions for both vertex and fragment shaders.
     include_ = '''
@@ -232,7 +233,6 @@ class Raymarching(bpy.types.Operator):
         '''
         return vert_
 
-
     @classmethod
     def get_frag(cls):
         # generate fragment shader
@@ -281,16 +281,7 @@ class Raymarching(bpy.types.Operator):
             float minDist = MAX_DIST;
             
         ''' + cls.dist_ + '''
-            
-            //return opSmoothUnion(d0, d1, k);
-            //return opSmoothSubtraction(d0, d1, k);
-            //return opSmoothIntersection(d0, d1, k);
-            
-            //return opUnion(d0, d1);
-            //return opSubtraction(d0, d1);
-            //return opIntersection(d0, d1);
-            //return opXor(d0, d1);
-            //return minDist;
+        
             return minDist;
         }
         vec2 raymarch(vec3 ro, vec3 rd) {
@@ -348,28 +339,30 @@ class Raymarching(bpy.types.Operator):
         '''
         return frag_
     
-
     ctx = None
     pause = False
     shader = None
     recreate_shader_requested = False
     indices = np.array([[0,2,1],[0,3,2]], dtype='int32')
 
+    # If the shader instance does not exist, a new shader instance is created
     @classmethod
     def recreate_shader(cls):
         if cls.shader != None:
             del cls.shader
         cls.shader = gpu.types.GPUShader(cls.get_vert(), cls.get_frag())
 
+    # Update the distance function part of the shader
     @classmethod
     def update_distance_function(cls, dist):
         cls.dist_ = dist
-        pass
 
+    # Set the OpenGL context retrieved from ModernGL
     @classmethod
     def set_context(cls, ctx):
         cls.ctx = ctx
 
+    # Execution of drawing process. Register this method with drawing events
     @classmethod
     def draw(cls):
         
@@ -388,8 +381,10 @@ class Raymarching(bpy.types.Operator):
         cls.shader.uniform_float("u_CameraPosition", cls.config["u_CameraPosition"])
         cls.shader.uniform_float("u_CameraRotationMatrix", cls.config["u_CameraRotationMatrix"])
 
-        test_buf = cls.ctx.buffer(np.array([0.5, 0.5], dtype='float32'))
-        test_buf.bind_to_storage_buffer(0)
+#        test_buf = cls.ctx.buffer(np.array([0.5, 0.5], dtype='float32'))
+#        test_buf.bind_to_storage_buffer(0)
+
+        buf = ShaderBufferFactory.get_object_common_buffer()
         
         batch = batch_for_shader(cls.shader, 'TRIS', {"in_pos": cls.config["vertices"]}, indices=cls.indices,)
         gpu.state.blend_set("ALPHA") 
@@ -400,15 +395,16 @@ class Raymarching(bpy.types.Operator):
         gpu.state.blend_set("NONE")
         cls.tag_redraw_all_3dviews()
 
-
+    # Variable that holds the handler obtained when the drawing event is registered 
+    # (this handler is needed to cancel the drawing event)
     __handle = None
 
-
+    # Registration of drawing events
     @classmethod
     def start(cls):
         cls.__handle = bpy.types.SpaceView3D.draw_handler_add(cls.draw, (), 'WINDOW', 'POST_VIEW')
-        # cls.recreate_shader()
 
+    # Release drawing events
     @classmethod
     def stop(cls):
         bpy.types.SpaceView3D.draw_handler_remove(cls.__handle, 'WINDOW')
