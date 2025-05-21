@@ -517,7 +517,7 @@ class SDFObjectProperty(PropertyGroup):
         name='Height',
         description='',
         min=0.0,
-        default=1.0,
+        default=2.0,
         update=property_event_on_cylinder_prop_updated)
         
     prop_cylinder_radius: bpy.props.FloatProperty(
@@ -541,7 +541,7 @@ class SDFObjectProperty(PropertyGroup):
         name='Height',
         description='',
         min=0.0,
-        default=1.0,
+        default=2.0,
         update=property_event_on_cone_prop_updated)
     
     prop_cone_radius: bpy.props.FloatVectorProperty(
@@ -564,7 +564,7 @@ class SDFObjectProperty(PropertyGroup):
         name='Height',
         description='',
         min=0.0,
-        default=1.0,
+        default=3.0,
         update=property_event_on_prism_prop_updated)
         
     prop_prism_nsides: bpy.props.IntProperty(
