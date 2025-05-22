@@ -17,6 +17,7 @@ bl_info = {
 import bpy
 import bmesh
 import numpy as np
+from bpy.app.handlers import persistent
 from mesh_from_sdf.moderngl_util import *
 from mesh_from_sdf.raymarching import *
 from mesh_from_sdf.marching_cube import *
@@ -1239,25 +1240,34 @@ update_storage_buffer_by_primitive_type = {'Box': lambda ctx, context, index, su
                                            'GLSL': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_glsl_buffer(ctx, context, index, sub_index)}
 
 
-global ctx
-ctx = moderngl_util.create_context()
-Raymarching.set_context(ctx)
-MarchingCube.set_context(ctx)
-
-
-def init_shader_factory():
-    pass
-
-
-def deinit_shader_factory():
+def deinit_shader():
+    # Release Storage Buffer Objects
     ShaderBufferFactory.release_all()
 
 
+@persistent
+def on_depsgraph_update(scene):
+    global ctx
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    for update in depsgraph.updates:
+        if update.is_updated_transform:
+            for obj in bpy.context.selected_objects:
+                if obj.sdf_object.enabled:
+                    ShaderBufferFactory.update_object_common_buffer(ctx, bpy.context, obj.sdf_object.index)
+            print('[on_depsgraph_update] update transform')
+
+
+global ctx
 def register():
+    
+    global ctx
+    ctx = moderngl_util.create_context()
+    Raymarching.set_context(ctx)
+    MarchingCube.set_context(ctx)
+    
     for c in classes:
         bpy.utils.register_class(c)
 
-    init_shader_factory()
     raymarching.register()
     marching_cube.register()
 
@@ -1282,7 +1292,11 @@ def register():
     bpy.types.Scene.sdf_tri_prism_pointer_list = CollectionProperty(type = SDFObjectPointerProperty)
     bpy.types.Scene.sdf_ngon_prism_pointer_list = CollectionProperty(type = SDFObjectPointerProperty)
     bpy.types.Scene.sdf_glsl_pointer_list = CollectionProperty(type = SDFObjectPointerProperty)
-
+    
+    print('[mesh_from_sdf] The add-on has been activated.')
+    
+    bpy.app.handlers.depsgraph_update_post.append(on_depsgraph_update)
+    
 
 def unregister():
     del bpy.types.Object.sdf_object
@@ -1295,10 +1309,15 @@ def unregister():
 
     marching_cube.unregister()
     raymarching.unregister()
-    deinit_shader_factory()
     
     for c in classes:
         bpy.utils.unregister_class(c)
+    
+    deinit_shader()
+        
+    print('[mesh_from_sdf] Add-on has been disabled.')
+    
+    bpy.app.handlers.depsgraph_update_post.remove(on_depsgraph_update)
 
         
 if __name__ == '__main__':
