@@ -18,6 +18,7 @@ import bpy
 import bmesh
 import numpy as np
 from bpy.app.handlers import persistent
+from mesh_from_sdf.material_util import *
 from mesh_from_sdf.moderngl_util import *
 from mesh_from_sdf.raymarching import *
 from mesh_from_sdf.marching_cube import *
@@ -703,6 +704,13 @@ class SDF2MESH_OT_List_Add(Operator):
         box_pointer.object = pointer.object
         pointer.object.sdf_object.sub_index = len(context.scene.sdf_box_pointer_list) - 1
 
+        # In Solid View, objects drawn by ray-marching overlap with existing Blender 
+        # meshes. Therefore, use Render View or Material View. Apply a transparent 
+        # material to the object so that only the result of raymarting is rendered 
+        # in Render View or Material View.
+        confirm_to_transparent_mat_registed()
+        pointer.object.data.materials.append(bpy.data.materials[get_name_of_transparent_mat()])
+
         # Update the parental relationship of an object
         index = pointer.object.sdf_object.index
         nest = pointer.object.sdf_object.nest
@@ -1245,6 +1253,7 @@ def deinit_shader():
     ShaderBufferFactory.release_all()
 
 
+# When an object's transform is updated, it is reflected in the Shader Buffer.
 @persistent
 def on_depsgraph_update(scene):
     global ctx
@@ -1259,7 +1268,7 @@ def on_depsgraph_update(scene):
 
 global ctx
 def register():
-    
+        
     global ctx
     ctx = moderngl_util.create_context()
     Raymarching.set_context(ctx)
