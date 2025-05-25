@@ -128,13 +128,18 @@ class ShaderFactory(object):
                      'Steps' : f_steps_merge_0,
                      'Round' : f_round_merge_0}
 
+        # Generate a distance function that always returns MAX_DIST if there is no SDF object in the list
+        if len(alist) == 0:
+            f_dist = f_common + 'minDist0 = MAX_DIST'
+            return f_dist
+
         # When the first dist is obtained, minDist1 is still undetermined, so assign the dist directly to minDist1
         pointer = alist[0]
-        sdf_object = pointer.object.sdf_object
-        primitive_type = sdf_object.primitive_type
-        boolean_type = sdf_object.boolean_type
-        blend_type = sdf_object.blend_type
-        nest = sdf_object.nest
+        sdf_prop = pointer.object.sdf_prop
+        primitive_type = sdf_prop.primitive_type
+        boolean_type = sdf_prop.boolean_type
+        blend_type = sdf_prop.blend_type
+        nest = sdf_prop.nest
         
         f_merge_0 = ''
         f_merge_1 = ''
@@ -149,11 +154,11 @@ class ShaderFactory(object):
         # When the first SDF object group operation is completed, minDist0 is not yet determined, so minDist1 is directly assigned.
         for idx in range(1, len(alist)):
             pointer = alist[idx]
-            sdf_object = pointer.object.sdf_object
-            primitive_type = sdf_object.primitive_type
-            boolean_type = sdf_object.boolean_type
-            blend_type = sdf_object.blend_type
-            nest = sdf_object.nest
+            sdf_prop = pointer.object.sdf_prop
+            primitive_type = sdf_prop.primitive_type
+            boolean_type = sdf_prop.boolean_type
+            blend_type = sdf_prop.blend_type
+            nest = sdf_prop.nest
             
             break_loop = False
             if nest == False:
@@ -182,11 +187,11 @@ class ShaderFactory(object):
         # Concatenate the distance numbers to the end while rotating the loop
         for idx in range(idx_offset + 1, len(alist)):
             pointer = alist[idx]
-            sdf_object = pointer.object.sdf_object
-            primitive_type = sdf_object.primitive_type
-            boolean_type = sdf_object.boolean_type
-            blend_type = sdf_object.blend_type
-            nest = sdf_object.nest
+            sdf_prop = pointer.object.sdf_prop
+            primitive_type = sdf_prop.primitive_type
+            boolean_type = sdf_prop.boolean_type
+            blend_type = sdf_prop.blend_type
+            nest = sdf_prop.nest
 
             if nest == False:
                 f_dist = f_dist + '''

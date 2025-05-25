@@ -5,11 +5,11 @@ import numpy as np
 class ShaderBufferFactory(object):
     
     # List to get blend properties of shaders...seems like using dictionary is faster than if else?
-    __get_blend_props = {'No Blending': lambda sdf_object: (0, 0),
-                         'Smooth' : lambda sdf_object: (sdf_object.blend_smooth, 0),
-                         'Champfer' : lambda sdf_object: (sdf_object.blend_champfer_size, 0),
-                         'Steps' : lambda sdf_object: (sdf_object.blend_champfer_size, sdf_object.blend_step),
-                         'Round' : lambda sdf_object: (sdf_object.blend_radius, 0)}
+    __get_blend_props = {'No Blending': lambda sdf_prop: (0, 0),
+                         'Smooth' : lambda sdf_prop: (sdf_prop.blend_smooth, 0),
+                         'Champfer' : lambda sdf_prop: (sdf_prop.blend_champfer_size, 0),
+                         'Steps' : lambda sdf_prop: (sdf_prop.blend_champfer_size, sdf_prop.blend_step),
+                         'Round' : lambda sdf_prop: (sdf_prop.blend_radius, 0)}
     
     # Buffer used for SDFObjectProperty
     object_common_buffer = None
@@ -63,13 +63,13 @@ class ShaderBufferFactory(object):
         
         for i, pointer in enumerate(alist):
             object = pointer.object
-            sdf_object = object.sdf_object
+            sdf_prop = object.sdf_prop
             
             mat = object.matrix_world
             p = mat.to_translation()
             r = mat.to_quaternion()
             s = mat.to_scale()
-            bl_0, bl_1 = cls.__get_blend_props[sdf_object.blend_type](sdf_object)
+            bl_0, bl_1 = cls.__get_blend_props[sdf_prop.blend_type](sdf_prop)
             
             offset = i * dsize
             narray[offset + 0] = p[0]
@@ -95,7 +95,7 @@ class ShaderBufferFactory(object):
         if len(context.scene.sdf_object_pointer_list) > 0:
             cls._generate_object_common_buffer(ctx, context)
         else:
-            return cls.release_object_buffer()
+            return cls.release_object_common_buffer()
     
     # Reflects the specified element of the SDFObjectProperty list in the buffer
     @classmethod
@@ -107,13 +107,13 @@ class ShaderBufferFactory(object):
         
         pointer = alist[i]
         object = pointer.object
-        sdf_object = object.sdf_object
+        sdf_prop = object.sdf_prop
         
         mat = object.matrix_world
         p = mat.to_translation()
         r = mat.to_quaternion()
         s = mat.to_scale()
-        bl_0, bl_1 = cls.__get_blend_props[sdf_object.blend_type](sdf_object)
+        bl_0, bl_1 = cls.__get_blend_props[sdf_prop.blend_type](sdf_prop)
         
         narray[0] = p[0]
         narray[1] = p[1]
@@ -174,10 +174,10 @@ class ShaderBufferFactory(object):
         
         for i, pointer in enumerate(alist):
             object = pointer.object
-            sdf_object = object.sdf_object
+            sdf_prop = object.sdf_prop
             
-            bound = sdf_object.prop_box_bound
-            round = min(bound) * sdf_object.round * 0.5
+            bound = sdf_prop.prop_box_bound
+            round = min(bound) * sdf_prop.round * 0.5
             
             offset = i * dsize
             narray[offset + 0] = bound[0]
@@ -209,10 +209,10 @@ class ShaderBufferFactory(object):
         
         pointer = alist[sub_i]
         object = pointer.object
-        sdf_object = object.sdf_object
+        sdf_prop = object.sdf_prop
         
-        bound = sdf_object.prop_box_bound
-        round = min(bound) * sdf_object.round * 0.5
+        bound = sdf_prop.prop_box_bound
+        round = min(bound) * sdf_prop.round * 0.5
         
         narray[0] = bound[0]
         narray[1] = bound[1]
@@ -264,9 +264,9 @@ class ShaderBufferFactory(object):
         
         for i, pointer in enumerate(alist):
             object = pointer.object
-            sdf_object = object.sdf_object
+            sdf_prop = object.sdf_prop
             
-            radius = sdf_object.prop_sphere_radius
+            radius = sdf_prop.prop_sphere_radius
             
             offset = i * dsize
             narray[offset + 0] = radius
@@ -295,9 +295,9 @@ class ShaderBufferFactory(object):
         
         pointer = alist[sub_i]
         object = pointer.object
-        sdf_object = object.sdf_object
+        sdf_prop = object.sdf_prop
         
-        radius = sdf_object.prop_sphere_radius
+        radius = sdf_prop.prop_sphere_radius
         
         narray[0] = radius
         
@@ -346,11 +346,11 @@ class ShaderBufferFactory(object):
         
         for i, pointer in enumerate(alist):
             object = pointer.object
-            sdf_object = object.sdf_object
+            sdf_prop = object.sdf_prop
             
-            height = sdf_object.prop_cylinder_height
-            radius = sdf_object.prop_cylinder_radius
-            round = min(radius, height * 0.5) * sdf_object.round
+            height = sdf_prop.prop_cylinder_height
+            radius = sdf_prop.prop_cylinder_radius
+            round = min(radius, height * 0.5) * sdf_prop.round
             
             offset = i * dsize
             narray[offset + 0] = height
@@ -382,11 +382,11 @@ class ShaderBufferFactory(object):
         
         pointer = alist[sub_i]
         object = pointer.object
-        sdf_object = object.sdf_object
+        sdf_prop = object.sdf_prop
         
-        height = sdf_object.prop_cylinder_height
-        radius = sdf_object.prop_cylinder_radius
-        round = min(radius, height * 0.5) * sdf_object.round
+        height = sdf_prop.prop_cylinder_height
+        radius = sdf_prop.prop_cylinder_radius
+        round = min(radius, height * 0.5) * sdf_prop.round
         
         narray[0] = height
         narray[1] = radius
@@ -438,9 +438,9 @@ class ShaderBufferFactory(object):
         
         for i, pointer in enumerate(alist):
             object = pointer.object
-            sdf_object = object.sdf_object
+            sdf_prop = object.sdf_prop
             
-            radius = sdf_object.prop_cone_radius
+            radius = sdf_prop.prop_cone_radius
             
             offset = i * dsize
             narray[offset + 0] = radius[0]
@@ -470,9 +470,9 @@ class ShaderBufferFactory(object):
         
         pointer = alist[sub_i]
         object = pointer.object
-        sdf_object = object.sdf_object
+        sdf_prop = object.sdf_prop
         
-        radius = sdf_object.prop_torus_radius
+        radius = sdf_prop.prop_torus_radius
         
         narray[0] = radius[0]
         narray[1] = radius[1]
@@ -522,11 +522,11 @@ class ShaderBufferFactory(object):
         
         for i, pointer in enumerate(alist):
             object = pointer.object
-            sdf_object = object.sdf_object
+            sdf_prop = object.sdf_prop
             
-            radius = sdf_object.prop_cone_radius
-            height = sdf_object.prop_cone_height
-            round = min(radius[0], radius[1], height * 0.5) * sdf_object.round
+            radius = sdf_prop.prop_cone_radius
+            height = sdf_prop.prop_cone_height
+            round = min(radius[0], radius[1], height * 0.5) * sdf_prop.round
             
             offset = i * dsize
             narray[offset + 0] = height
@@ -558,11 +558,11 @@ class ShaderBufferFactory(object):
         
         pointer = alist[sub_i]
         object = pointer.object
-        sdf_object = object.sdf_object
+        sdf_prop = object.sdf_prop
         
-        radius = sdf_object.prop_cone_radius
-        height = sdf_object.prop_cone_height
-        round = min(radius[0], radius[1], height * 0.5) * sdf_object.round
+        radius = sdf_prop.prop_cone_radius
+        height = sdf_prop.prop_cone_height
+        round = min(radius[0], radius[1], height * 0.5) * sdf_prop.round
         
         narray[0] = height
         narray[1] = radius[0]
@@ -614,11 +614,11 @@ class ShaderBufferFactory(object):
         
         for i, pointer in enumerate(alist):
             object = pointer.object
-            sdf_object = object.sdf_object
+            sdf_prop = object.sdf_prop
             
-            height = sdf_object.prop_prism_height
-            radius = sdf_object.prop_prism_radius
-            round = min(radius, height * 0.5) * sdf_object.round
+            height = sdf_prop.prop_prism_height
+            radius = sdf_prop.prop_prism_radius
+            round = min(radius, height * 0.5) * sdf_prop.round
             
             offset = i * dsize
             narray[offset + 0] = height
@@ -650,11 +650,11 @@ class ShaderBufferFactory(object):
         
         pointer = alist[sub_i]
         object = pointer.object
-        sdf_object = object.sdf_object
+        sdf_prop = object.sdf_prop
         
-        height = sdf_object.prop_prism_height
-        radius = sdf_object.prop_prism_radius
-        round = min(radius, height * 0.5) * sdf_object.round
+        height = sdf_prop.prop_prism_height
+        radius = sdf_prop.prop_prism_radius
+        round = min(radius, height * 0.5) * sdf_prop.round
         
         narray[0] = height
         narray[1] = radius
@@ -706,11 +706,11 @@ class ShaderBufferFactory(object):
         
         for i, pointer in enumerate(alist):
             object = pointer.object
-            sdf_object = object.sdf_object
+            sdf_prop = object.sdf_prop
             
-            height = sdf_object.prop_prism_height
-            radius = sdf_object.prop_prism_radius
-            round = min(radius, height * 0.5) * sdf_object.round
+            height = sdf_prop.prop_prism_height
+            radius = sdf_prop.prop_prism_radius
+            round = min(radius, height * 0.5) * sdf_prop.round
             
             offset = i * dsize
             narray[offset + 0] = height
@@ -742,11 +742,11 @@ class ShaderBufferFactory(object):
         
         pointer = alist[sub_i]
         object = pointer.object
-        sdf_object = object.sdf_object
+        sdf_prop = object.sdf_prop
         
-        height = sdf_object.prop_prism_height
-        radius = sdf_object.prop_prism_radius
-        round = min(radius, height * 0.5) * sdf_object.round
+        height = sdf_prop.prop_prism_height
+        radius = sdf_prop.prop_prism_radius
+        round = min(radius, height * 0.5) * sdf_prop.round
         
         narray[0] = height
         narray[1] = radius
@@ -798,12 +798,12 @@ class ShaderBufferFactory(object):
         
         for i, pointer in enumerate(alist):
             object = pointer.object
-            sdf_object = object.sdf_object
+            sdf_prop = object.sdf_prop
             
-            height = sdf_object.prop_prism_height
-            radius = sdf_object.prop_prism_radius
-            round = min(radius, height * 0.5) * sdf_object.round
-            nsides = sdf_object.prop_prism_nsides
+            height = sdf_prop.prop_prism_height
+            radius = sdf_prop.prop_prism_radius
+            round = min(radius, height * 0.5) * sdf_prop.round
+            nsides = sdf_prop.prop_prism_nsides
             
             offset = i * dsize
             narray[offset + 0] = height
@@ -835,12 +835,12 @@ class ShaderBufferFactory(object):
         
         pointer = alist[sub_i]
         object = pointer.object
-        sdf_object = object.sdf_object
+        sdf_prop = object.sdf_prop
         
-        height = sdf_object.prop_prism_height
-        radius = sdf_object.prop_prism_radius
-        round = min(radius, height * 0.5) * sdf_object.round
-        nsides = sdf_object.prop_prism_nsides
+        height = sdf_prop.prop_prism_height
+        radius = sdf_prop.prop_prism_radius
+        round = min(radius, height * 0.5) * sdf_prop.round
+        nsides = sdf_prop.prop_prism_nsides
         
         narray[0] = height
         narray[1] = radius
