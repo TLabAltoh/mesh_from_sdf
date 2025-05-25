@@ -31,15 +31,15 @@ class ShaderBufferFactory(object):
     @classmethod
     def generate_all(cls, ctx, context):
         
-        generate_object_common_buffer(ctx, context)        
-        generate_box_buffer(ctx, context)
-        generate_sphere_buffer(ctx, context)
-        generate_cylinder_buffer(ctx, context)
-        generate_torus_buffer(ctx, context)
-        generate_hex_prism_buffer(ctx, context)
-        generate_tri_prism_buffer(ctx, context)
-        generate_ngon_prism_buffer(ctx, context)
-        generate_glsl_buffer(ctx, context)
+        cls.generate_object_common_buffer(ctx, context)        
+        cls.generate_box_buffer(ctx, context)
+        cls.generate_sphere_buffer(ctx, context)
+        cls.generate_cylinder_buffer(ctx, context)
+        cls.generate_torus_buffer(ctx, context)
+        cls.generate_hex_prism_buffer(ctx, context)
+        cls.generate_tri_prism_buffer(ctx, context)
+        cls.generate_ngon_prism_buffer(ctx, context)
+        cls.generate_glsl_buffer(ctx, context)
 
     # ----------------------------------------------------------
     # Storage Buffer Objects of Common Propertys

@@ -1135,13 +1135,11 @@ class SDFOBJECT_UTILITY(object):
     def __refresh_pointer_list(cls, alist):
 
         len_ = len(alist)
-        if len_ == 0:
-            return
         
         # Items with no referenced object and duplicated SDFObject are removed from the list.        
         cache = []
         i = -1
-        while i < len_:
+        while i < len_ - 1:
             i += 1
             pointer = alist[i]
             if pointer.object == None or (pointer.object in cache):
