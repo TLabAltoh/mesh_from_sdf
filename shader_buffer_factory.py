@@ -17,6 +17,7 @@ class ShaderBufferFactory(object):
     sphere_buffer = None
     cylinder_buffer = None
     torus_buffer = None
+    cone_buffer = None
     hex_prism_buffer = None
     tri_prism_buffer = None
     ngon_prism_buffer = None
@@ -176,7 +177,7 @@ class ShaderBufferFactory(object):
             object = pointer.object
             sdf_prop = object.sdf_prop
             
-            bound = sdf_prop.prop_box_bound
+            bound = pointer.bound
             round = min(bound) * sdf_prop.round * 0.5
             
             offset = i * dsize
@@ -211,7 +212,7 @@ class ShaderBufferFactory(object):
         object = pointer.object
         sdf_prop = object.sdf_prop
         
-        bound = sdf_prop.prop_box_bound
+        bound = pointer.bound
         round = min(bound) * sdf_prop.round * 0.5
         
         narray[0] = bound[0]
@@ -266,7 +267,7 @@ class ShaderBufferFactory(object):
             object = pointer.object
             sdf_prop = object.sdf_prop
             
-            radius = sdf_prop.prop_sphere_radius
+            radius = pointer.radius
             
             offset = i * dsize
             narray[offset + 0] = radius
@@ -297,7 +298,7 @@ class ShaderBufferFactory(object):
         object = pointer.object
         sdf_prop = object.sdf_prop
         
-        radius = sdf_prop.prop_sphere_radius
+        radius = pointer.radius
         
         narray[0] = radius
         
@@ -348,8 +349,8 @@ class ShaderBufferFactory(object):
             object = pointer.object
             sdf_prop = object.sdf_prop
             
-            height = sdf_prop.prop_cylinder_height
-            radius = sdf_prop.prop_cylinder_radius
+            height = pointer.height
+            radius = pointer.radius
             round = min(radius, height * 0.5) * sdf_prop.round
             
             offset = i * dsize
@@ -384,8 +385,8 @@ class ShaderBufferFactory(object):
         object = pointer.object
         sdf_prop = object.sdf_prop
         
-        height = sdf_prop.prop_cylinder_height
-        radius = sdf_prop.prop_cylinder_radius
+        height = pointer.height
+        radius = pointer.radius
         round = min(radius, height * 0.5) * sdf_prop.round
         
         narray[0] = height
@@ -440,7 +441,7 @@ class ShaderBufferFactory(object):
             object = pointer.object
             sdf_prop = object.sdf_prop
             
-            radius = sdf_prop.prop_cone_radius
+            radius = pointer.radius
             
             offset = i * dsize
             narray[offset + 0] = radius[0]
@@ -472,7 +473,7 @@ class ShaderBufferFactory(object):
         object = pointer.object
         sdf_prop = object.sdf_prop
         
-        radius = sdf_prop.prop_torus_radius
+        radius = pointer.radius
         
         narray[0] = radius[0]
         narray[1] = radius[1]
@@ -524,8 +525,8 @@ class ShaderBufferFactory(object):
             object = pointer.object
             sdf_prop = object.sdf_prop
             
-            radius = sdf_prop.prop_cone_radius
-            height = sdf_prop.prop_cone_height
+            radius = pointer.radius
+            height = pointer.height
             round = min(radius[0], radius[1], height * 0.5) * sdf_prop.round
             
             offset = i * dsize
@@ -560,8 +561,8 @@ class ShaderBufferFactory(object):
         object = pointer.object
         sdf_prop = object.sdf_prop
         
-        radius = sdf_prop.prop_cone_radius
-        height = sdf_prop.prop_cone_height
+        radius = pointer.radius
+        height = pointer.height
         round = min(radius[0], radius[1], height * 0.5) * sdf_prop.round
         
         narray[0] = height
@@ -616,8 +617,8 @@ class ShaderBufferFactory(object):
             object = pointer.object
             sdf_prop = object.sdf_prop
             
-            height = sdf_prop.prop_prism_height
-            radius = sdf_prop.prop_prism_radius
+            height = pointer.height
+            radius = pointer.radius
             round = min(radius, height * 0.5) * sdf_prop.round
             
             offset = i * dsize
@@ -652,8 +653,8 @@ class ShaderBufferFactory(object):
         object = pointer.object
         sdf_prop = object.sdf_prop
         
-        height = sdf_prop.prop_prism_height
-        radius = sdf_prop.prop_prism_radius
+        height = pointer.height
+        radius = pointer.radius
         round = min(radius, height * 0.5) * sdf_prop.round
         
         narray[0] = height
@@ -708,8 +709,8 @@ class ShaderBufferFactory(object):
             object = pointer.object
             sdf_prop = object.sdf_prop
             
-            height = sdf_prop.prop_prism_height
-            radius = sdf_prop.prop_prism_radius
+            height = pointer.height
+            radius = pointer.radius
             round = min(radius, height * 0.5) * sdf_prop.round
             
             offset = i * dsize
@@ -744,8 +745,8 @@ class ShaderBufferFactory(object):
         object = pointer.object
         sdf_prop = object.sdf_prop
         
-        height = sdf_prop.prop_prism_height
-        radius = sdf_prop.prop_prism_radius
+        height = pointer.height
+        radius = pointer.radius
         round = min(radius, height * 0.5) * sdf_prop.round
         
         narray[0] = height
@@ -800,10 +801,10 @@ class ShaderBufferFactory(object):
             object = pointer.object
             sdf_prop = object.sdf_prop
             
-            height = sdf_prop.prop_prism_height
-            radius = sdf_prop.prop_prism_radius
+            height = pointer.height
+            radius = pointer.radius
             round = min(radius, height * 0.5) * sdf_prop.round
-            nsides = sdf_prop.prop_prism_nsides
+            nsides = pointer.nsides
             
             offset = i * dsize
             narray[offset + 0] = height
@@ -837,10 +838,10 @@ class ShaderBufferFactory(object):
         object = pointer.object
         sdf_prop = object.sdf_prop
         
-        height = sdf_prop.prop_prism_height
-        radius = sdf_prop.prop_prism_radius
+        height = pointer.height
+        radius = pointer.adius
         round = min(radius, height * 0.5) * sdf_prop.round
-        nsides = sdf_prop.prop_prism_nsides
+        nsides = pointer.nsides
         
         narray[0] = height
         narray[1] = radius
