@@ -41,7 +41,7 @@ class SDFBoxPointer(SDFPrimitivePointer):
 
         # Update mesh for primitive interactions
         prev_mode = self.__class__.update_primitive_mesh_begin(context)
-        self.__class__.update_box_mesh(context.scene.sdf_object_list[this.index])
+        self.__class__.update_box_mesh(context.scene.sdf_object_pointer_list[this.index])
         self.__class__.update_primitive_mesh_end(prev_mode)
         
         # Updateing Storage Buffre Objects
@@ -82,7 +82,7 @@ class SDFSpherePointer(SDFPrimitivePointer):
 
         # Update mesh for primitive interactions
         prev_mode = self.__class__.update_primitive_mesh_begin(context)
-        self.__class__.update_sphere_mesh(context.scene.sdf_object_list[this.index])
+        self.__class__.update_sphere_mesh(context.scene.sdf_object_pointer_list[this.index])
         self.__class__.update_primitive_mesh_end(prev_mode)
         
         # Updateing Storage Buffre Objects

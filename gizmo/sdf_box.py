@@ -1,6 +1,7 @@
 import bpy
 import math
 import mathutils
+from mesh_from_sdf.pointer import *
 from bpy.props import FloatVectorProperty
 from bpy.types import Operator, GizmoGroup, PropertyGroup
 
@@ -11,7 +12,14 @@ class SDF2MESH_OT_Apply_Gizmo_To_SDF_Box(Operator):
     bl_description = 'Reflect Gizmo changes in SDFBoxProperty'
     
     def execute(self, context):
-        context.scene.sdf_box_gizmo_prop_out.bound = context.scene.sdf_box_gizmo_prop.bound
+        box_pointer = context.scene.sdf_box_pointer_list[context.object.sdf_prop.sub_index]
+        box_pointer.bound = context.scene.sdf_box_gizmo_prop.bound
+        
+        # Update mesh for primitive interactions
+        prev_mode = SDFPrimitivePointer.update_primitive_mesh_begin(context)
+        pointer = context.scene.sdf_object_pointer_list[context.object.sdf_prop.index]
+        SDFBoxPointer.update_box_mesh(pointer)
+        SDFPrimitivePointer.update_primitive_mesh_end(prev_mode)
         
         # Currently, each time Gizmo is updated, Undo is also recorded. Ideally, 
         # Undo should be performed when Gizmo is finished dragging.
@@ -25,7 +33,8 @@ class SDFBoxGizmoProperty(PropertyGroup):
         name='Bound',
         description='Lengths of the three sides of a cube',
         size=3,
-        default=(0,0,0))
+        min=0,
+        default=(1,1,1))
 
 
 class SDFBoxWidgetGroup(GizmoGroup):
@@ -42,21 +51,21 @@ class SDFBoxWidgetGroup(GizmoGroup):
     def setup(self, context):
         
         def move_get_x():
-            return bpy.context.scene.sdf_box_gizmo_prop_out.bound[0]
+            return bpy.context.scene.sdf_box_pointer_list[context.object.sdf_prop.sub_index].bound[0]
 
         def move_set_x(value):
             bpy.context.scene.sdf_box_gizmo_prop.bound[0] = value
             bpy.ops.mesh_from_sdf.apply_gizmo_to_sdf_box()
             
         def move_get_y():
-            return bpy.context.scene.sdf_box_gizmo_prop_out.bound[1]
+            return bpy.context.scene.sdf_box_pointer_list[context.object.sdf_prop.sub_index].bound[1]
 
         def move_set_y(value):
             bpy.context.scene.sdf_box_gizmo_prop.bound[1] = value
             bpy.ops.mesh_from_sdf.apply_gizmo_to_sdf_box()
             
         def move_get_z():
-            return bpy.context.scene.sdf_box_gizmo_prop_out.bound[2]
+            return bpy.context.scene.sdf_box_pointer_list[context.object.sdf_prop.sub_index].bound[2]
 
         def move_set_z(value):
             bpy.context.scene.sdf_box_gizmo_prop.bound[2] = value
@@ -67,9 +76,7 @@ class SDFBoxWidgetGroup(GizmoGroup):
         # Gizmo X Axis
         gz_x = self.gizmos.new("GIZMO_GT_arrow_3d")
         gz_x.target_set_handler("offset", get=move_get_x, set=move_set_x)
-        gz_x.matrix_offset = mathutils.Matrix.Translation((1, 0, 0))
-        gz_x.matrix_basis = ob.matrix_world
-        gz_x.matrix_basis = gz_x.matrix_basis @ mathutils.Matrix.Rotation(math.radians(90.0), 4, 'Z')
+        gz_x.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(90.0), 4, 'Z')
         gz_x.draw_style = 'BOX'
         gz_x.length = 0.2
 
@@ -81,9 +88,7 @@ class SDFBoxWidgetGroup(GizmoGroup):
         # Gizmo Y Axis
         gz_y = self.gizmos.new("GIZMO_GT_arrow_3d")
         gz_y.target_set_handler("offset", get=move_get_y, set=move_set_y)
-        gz_y.matrix_offset = mathutils.Matrix.Translation((0, 0, 1))
-        gz_y.matrix_basis = ob.matrix_world
-        gz_y.matrix_basis = gz_y.matrix_basis @ mathutils.Matrix.Rotation(math.radians(90.0), 4, 'Z')
+        gz_y.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(90.0), 4, 'Z')
         gz_y.draw_style = 'BOX'
         gz_y.length = 0.2
 
@@ -95,7 +100,6 @@ class SDFBoxWidgetGroup(GizmoGroup):
         # Gizmo Z Axis
         gz_z = self.gizmos.new("GIZMO_GT_arrow_3d")
         gz_z.target_set_handler("offset", get=move_get_z, set=move_set_z)
-        gz_z.matrix_offset = mathutils.Matrix.Translation((0, 0, 1))
         gz_z.matrix_basis = ob.matrix_world
         gz_z.matrix_basis = gz_y.matrix_basis
         gz_z.draw_style = 'BOX'
@@ -114,19 +118,13 @@ class SDFBoxWidgetGroup(GizmoGroup):
         ob = context.object
         
         gz_x = self.gizmo_x
-        gz_x.matrix_offset = mathutils.Matrix.Translation((0, 0, 1))
-        gz_x.matrix_basis = ob.matrix_world
-        gz_x.matrix_basis = gz_x.matrix_basis @ mathutils.Matrix.Rotation(math.radians(+90.0), 4, 'Y')
+        gz_x.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(+90.0), 4, 'Y')
         
         gz_y = self.gizmo_y
-        gz_y.matrix_offset = mathutils.Matrix.Translation((0, 0, 1))
-        gz_y.matrix_basis = ob.matrix_world
-        gz_y.matrix_basis = gz_y.matrix_basis @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'X')
+        gz_y.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'X')
         
         gz_z = self.gizmo_z
-        gz_z.matrix_offset = mathutils.Matrix.Translation((0, 0, 1))
         gz_z.matrix_basis = ob.matrix_world
-        gz_z.matrix_basis = gz_z.matrix_basis
 
 
 classes = [
