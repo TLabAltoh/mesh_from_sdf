@@ -18,347 +18,20 @@ import bpy
 import bmesh
 import numpy as np
 from bpy.app.handlers import persistent
-from mesh_from_sdf.material_util import *
-from mesh_from_sdf.moderngl_util import *
 from mesh_from_sdf.raymarching import *
 from mesh_from_sdf.marching_cube import *
 from mesh_from_sdf.marching_tables import *
 from mesh_from_sdf.shader_factory import *
 from mesh_from_sdf.shader_buffer_factory import *
+from mesh_from_sdf.pointer import *
+from mesh_from_sdf.gizmo.sdf_box import *
+from mesh_from_sdf.util.material import *
+from mesh_from_sdf.util.moderngl import *
+from mesh_from_sdf.util.algorithm import *
+from mesh_from_sdf.util.pointer_list import *
 from bpy.app.handlers import persistent
 from bpy.types import Panel, Operator, UIList, PropertyGroup
 from bpy.props import PointerProperty, EnumProperty, FloatProperty, IntProperty, StringProperty, BoolProperty, CollectionProperty
-
-
-class SDFObjectPointer(PropertyGroup):
-    object: PointerProperty(type=bpy.types.Object)
-
-
-class SDFPrimitivePointer(SDFObjectPointer):
-    
-    @classmethod
-    def update_primitive_mesh_begin(cls, context):
-        prev_mode = context.object.mode
-        prev_mesh = context.object.data
-
-        # Move to Edit mode to manipulate Mesh primitives
-        bpy.ops.object.mode_set(mode='EDIT')
-        
-        bm = bmesh.from_edit_mesh(prev_mesh)
-        bm.clear()
-        bmesh.update_edit_mesh(prev_mesh)
-
-        return prev_mode
-    
-    @classmethod
-    def update_primitive_mesh_end(cls, prev_mode):
-        bpy.ops.object.mode_set(mode=prev_mode)
-    
-
-class SDFBoxPointer(SDFPrimitivePointer):
-    
-    # Callback processing when updating properties.
-    def on_prop_update(self, context):
-        global ctx
-        this = self.object.sdf_prop
-
-        # Update mesh for primitive interactions
-        prev_mode = self.__class__.update_primitive_mesh_begin(context)
-        self.__class__.update_box_mesh(context.scene.sdf_object_list[this.index])
-        self.__class__.update_primitive_mesh_end(prev_mode)
-        
-        # Updateing Storage Buffre Objects
-        ShaderBufferFactory.update_box_buffer(ctx, context, this.index, this.sub_index)
-    
-    bound: bpy.props.FloatVectorProperty(
-        name='Bound',
-        description='Lengths of the three sides of a cube',
-        size=3,
-        min=0.0,
-        default=(1.0,1.0,1.0),
-        update=on_prop_update)
-        
-    @classmethod
-    def update_box_mesh(cls, pointer):
-        object = pointer.object
-        sdf_prop = object.sdf_prop
-        self = bpy.context.scene.sdf_box_pointer_list[sdf_prop.sub_index]
-        
-        bound = self.bound
-        bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
-
-        mesh = object.data
-        bm = bmesh.from_edit_mesh(mesh)
-        for i, vert in enumerate(bm.verts):
-            vert.co[0] = vert.co[0] * bound[0]
-            vert.co[1] = vert.co[1] * bound[1]
-            vert.co[2] = vert.co[2] * bound[2]
-        bmesh.update_edit_mesh(mesh)
-        
-        
-class SDFSpherePointer(SDFPrimitivePointer):
-    
-    # Callback processing when updating properties.
-    def on_prop_update(self, context):
-        global ctx
-        this = self.object.sdf_prop
-
-        # Update mesh for primitive interactions
-        prev_mode = self.__class__.update_primitive_mesh_begin(context)
-        self.__class__.update_sphere_mesh(context.scene.sdf_object_list[this.index])
-        self.__class__.update_primitive_mesh_end(prev_mode)
-        
-        # Updateing Storage Buffre Objects
-        ShaderBufferFactory.update_sphere_buffer(ctx, context, this.index, this.sub_index)
-    
-    radius: bpy.props.FloatProperty(
-        name='Radius',
-        description='Radius of sphere',
-        min=0.0,
-        default=1.0,
-        update=on_prop_update)
-        
-    @classmethod
-    def update_sphere_mesh(cls, pointer):
-        object = pointer.object
-        sdf_prop = object.sdf_prop
-        self = bpy.context.scene.sdf_sphere_pointer_list[sdf_prop.sub_index]
-        
-        radius = self.radius
-        bpy.ops.mesh.primitive_uv_sphere_add(radius=radius, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
-
-
-class SDFCylinderPointer(SDFPrimitivePointer):
-    
-    # Callback processing when updating properties.
-    def on_prop_update(self, context):
-        global ctx
-        this = self.object.sdf_prop
-        
-        # Update mesh for primitive interactions
-        prev_mode = self.__class__.update_primitive_mesh_begin(context)
-        self.__class__.update_cylinder_mesh(context.scene.sdf_object_pointer_list[this.index])
-        self.__class__.update_primitive_mesh_end(prev_mode)
-        
-        # Updateing Storage Buffre Objects
-        ShaderBufferFactory.update_cylinder_buffer(ctx, context, this.index, this.sub_index)
-    
-    height: bpy.props.FloatProperty(
-        name='Height',
-        description='',
-        min=0.0,
-        default=2.0,
-        update=on_prop_update)
-        
-    radius: bpy.props.FloatProperty(
-        name='Radius',
-        description='',
-        min=0.0,
-        default=1.0,
-        update=on_prop_update)
-        
-    @classmethod
-    def update_cylinder_mesh(cls, pointer):
-        object = pointer.object
-        sdf_prop = object.sdf_prop
-        self = bpy.context.scene.sdf_cylinder_pointer_list[sdf_prop.sub_index]
-
-        height = self.height
-        radius = self.radius
-        bpy.ops.mesh.primitive_cylinder_add(radius=radius, depth=height, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
-        
-        
-class SDFConePointer(SDFPrimitivePointer):
-    
-    # Callback processing when updating properties.
-    def on_prop_update(self, context):
-        global ctx
-        this = self.object.sdf_prop
-
-        # Update mesh for primitive interactions
-        prev_mode = self.__class__.update_primitive_mesh_begin(context)
-        self.__class__.update_cone_mesh(context.scene.sdf_object_pointer_list[this.index])
-        self.__class__.update_primitive_mesh_end(prev_mode)
-        
-        # Updateing Storage Buffre Objects
-        ShaderBufferFactory.update_cone_buffer(ctx, context, this.index, this.sub_index)
-    
-    height: bpy.props.FloatProperty(
-        name='Height',
-        description='',
-        min=0.0,
-        default=2.0,
-        update=on_prop_update)
-    
-    radius: bpy.props.FloatVectorProperty(
-        name='Radius',
-        description='',
-        size=2,
-        min=0.0,
-        default=(0.75,0.25),
-        update=on_prop_update)
-        
-    @classmethod
-    def update_cone_mesh(cls, pointer):
-        object = pointer.object
-        sdf_prop = object.sdf_prop
-        self = bpy.context.scene.sdf_cone_pointer_list[sdf_prop.sub_index]
-        
-        height = self.height
-        radius = self.radius
-        bpy.ops.mesh.primitive_cone_add(radius1=radius[0], radius2=radius[1], depth=height, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
-        
-        
-class SDFTorusPointer(SDFPrimitivePointer):
-    
-    # Callback processing when updating properties.
-    def on_prop_update(self, context):
-        global ctx
-        this = self.object.sdf_prop
-
-        # Update mesh for primitive interactions
-        prev_mode = self.__class__.update_primitive_mesh_begin(context)
-        self.__class__.update_torus_mesh(context.scene.sdf_object_pointer_list[this.index])
-        self.__class__.update_primitive_mesh_end(prev_mode)
-        
-        # Updateing Storage Buffre Objects
-        ShaderBufferFactory.update_torus_buffer(ctx, context, self.index, self.sub_index)
-    
-    radius: bpy.props.FloatVectorProperty(
-        name='Radius',
-        description='',
-        size=2,
-        min=0.0,
-        default=(0.75,0.25),
-        update=on_prop_update)
-        
-    @classmethod
-    def update_torus_mesh(cls, pointer):
-        object = pointer.object
-        sdf_prop = object.sdf_prop
-        self = bpy.context.scene.sdf_torus_pointer_list[sdf_prop.sub_index]
-        
-        prv_scale = (object.scale[0], object.scale[1], object.scale[2])
-        object.scale = (1,1,1)
-        radius = self.radius
-        bpy.ops.mesh.primitive_torus_add(major_radius=radius[0], minor_radius=radius[1], abso_major_rad=1.25, abso_minor_rad=0.75, align='CURSOR', location=object.location, rotation=object.rotation_euler)
-        object.scale = prv_scale
-        
-        
-class SDFPrismPointer(SDFPrimitivePointer):
-    
-    # List of SDFProperty.update_{nsides}_mesh and ShaderBufferFactory.update_{nsides_prism}_buffer, keyed by prism_type
-    # example: update = update_prism_mesh_and_buffer_by_prism_type[primitive_type]
-    #          update(ctx, context, self.index, self.sub_index) # execute
-    global update_prism_mesh_and_buffer_by_prism_type
-    update_prism_mesh_and_buffer_by_prism_type = {'Hexagonal Prism': lambda ctx, context, index, sub_index: (
-                                                SDFProperty.update_hex_prism_mesh(context.scene.sdf_object_pointer_list[index]),
-                                                ShaderBufferFactory.update_hex_prism_buffer(ctx, context, index, sub_index)),
-                                                  'Triangular Prism': lambda ctx, context, index, sub_index: (
-                                                SDFProperty.update_tri_prism_mesh(context.scene.sdf_object_pointer_list[index]),
-                                                ShaderBufferFactory.update_tri_prism_buffer(ctx, context, index, sub_index)),
-                                                  'Ngon Prism': lambda ctx, context, index, sub_index: (
-                                                SDFProperty.update_ngon_prism_mesh(context.scene.sdf_object_pointer_list[index]),
-                                                ShaderBufferFactory.update_ngon_prism_buffer(ctx, context, index, sub_index))}
-        
-    def on_prop_update(self, context):
-        global ctx, update_prism_mesh_and_buffer_by_prism_type
-        this = self.object.sdf_prop
-        
-        # Updateing Prism Mesh and Storage Buffre Objects
-        # Determine how many angles you are with an if statement.    
-        prev_mode = self.__class__.update_primitive_mesh_begin(context)
-        update_prism_mesh_and_buffer_by_prism_type[this.primitive_type](ctx, context, this.index, this.sub_index)
-        self.__class__.update_primitive_mesh_end(prev_mode)
-    
-    def on_ngon_prism_prop_update(self, context):
-        global ctx
-        this = self.object.sdf_prop
-        
-        # Update mesh for primitive interactions
-        prev_mode = self.__class__.update_primitive_mesh_begin(context)
-        self.__class__.update_ngon_prism_mesh(context.scene.sdf_object_pointer_list[this.index])
-        self.__class__.update_primitive_mesh_end(prev_mode)
-
-        # Updateing Storage Buffre Objects        
-        ShaderBufferFactory.update_ngon_prism_buffer(ctx, context, this.index, this.sub_index)
-    
-    radius: bpy.props.FloatProperty(
-        name='Radius',
-        description='',
-        min=0.0,
-        default=1.0,
-        update=on_prop_update)
-        
-    height: bpy.props.FloatProperty(
-        name='Height',
-        description='',
-        min=0.0,
-        default=3.0,
-        update=on_prop_update)
-        
-    nsides: bpy.props.IntProperty(
-        name='N',
-        description='',
-        min=3,
-        default=6,
-        update=on_ngon_prism_prop_update)
-        
-    @classmethod
-    def update_hex_prism_mesh(cls, pointer):
-        object = pointer.object
-        sdf_prop = object.sdf_prop
-        self = bpy.context.scene.sdf_hex_prism_pointer_list[sdf_prop.sub_index]
-        
-        height = self.height
-        radius = self.radius
-        bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=radius, depth=height, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
-        
-    @classmethod
-    def update_tri_prism_mesh(cls, pointer):
-        object = pointer.object
-        sdf_prop = object.sdf_prop
-        self = bpy.context.scene.sdf_tri_prism_pointer_list[sdf_prop.sub_index]
-        
-        height = self.height
-        radius = self.radius
-        bpy.ops.mesh.primitive_cylinder_add(vertices=3, radius=radius, depth=height, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
-        
-    @classmethod
-    def update_ngon_prism_mesh(cls, pointer):
-        object = pointer.object
-        sdf_prop = object.sdf_prop
-        self = bpy.context.scene.sdf_ngon_prism_pointer_list[sdf_prop.sub_index]
-        
-        nsides = self.nsides
-        height = self.height
-        radius = self.radius
-        bpy.ops.mesh.primitive_cylinder_add(vertices=nsides, radius=radius, depth=height, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
-
-
-class SDFGLSLPointer(SDFPrimitivePointer):
-    
-    # Callback processing when updating properties.
-    def on_prop_update(self, context):
-        pass
-    
-    bound: bpy.props.FloatVectorProperty(
-        name='Bound',
-        description='',
-        size=3,
-        min=0.0,
-        default=(1.0,1.0,1.0),
-        update=on_prop_update)
-    
-    shader_path: StringProperty(
-        name='Shader PATH',
-        description='',
-        default='C:\\',
-        update=on_prop_update)
-        
-    @classmethod
-    def update_glsl_mesh(cls, pointer):
-        pass
 
 
 class SDFProperty(PropertyGroup):
@@ -459,7 +132,7 @@ class SDFProperty(PropertyGroup):
     def _add_new_pointer(cls, prv_pointer, new_pointer, blist):
         new_pointer = blist.add()
         new_pointer.object = prv_pointer.object
-        SDFOBJECT_UTILITY.recalc_sub_index(blist)
+        PointerListUtil.recalc_sub_index(blist)
 
     def on_primitive_type_change(self, context):
         global ctx
@@ -474,7 +147,7 @@ class SDFProperty(PropertyGroup):
                 prev_mode = SDFPrimitivePointer.update_primitive_mesh_begin(context)
 
                 # Delete objects to be updated from the list in advance.
-                SDFOBJECT_UTILITY.delete_from_sub_pointer_list(context, object)
+                PointerListUtil.delete_from_sub_pointer_list(context, object)
 
                 prv_pointer = None
                 new_pointer = None
@@ -683,15 +356,15 @@ class SDF2MESH_OT_List_Reload(Operator):
             pointer.object.sdf_prop.index = i
         
         # Fix sub_index properties.
-        SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_box_pointer_list)
-        SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_sphere_pointer_list)
-        SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_cylinder_pointer_list)
-        SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_cone_pointer_list)
-        SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_torus_pointer_list)
-        SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_hex_prism_pointer_list)
-        SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_tri_prism_pointer_list)
-        SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_ngon_prism_pointer_list)
-        SDFOBJECT_UTILITY.recalc_sub_index(context.scene.sdf_glsl_pointer_list)
+        PointerListUtil.recalc_sub_index(context.scene.sdf_box_pointer_list)
+        PointerListUtil.recalc_sub_index(context.scene.sdf_sphere_pointer_list)
+        PointerListUtil.recalc_sub_index(context.scene.sdf_cylinder_pointer_list)
+        PointerListUtil.recalc_sub_index(context.scene.sdf_cone_pointer_list)
+        PointerListUtil.recalc_sub_index(context.scene.sdf_torus_pointer_list)
+        PointerListUtil.recalc_sub_index(context.scene.sdf_hex_prism_pointer_list)
+        PointerListUtil.recalc_sub_index(context.scene.sdf_tri_prism_pointer_list)
+        PointerListUtil.recalc_sub_index(context.scene.sdf_ngon_prism_pointer_list)
+        PointerListUtil.recalc_sub_index(context.scene.sdf_glsl_pointer_list)
 
         # Update the parental relationship of an object
         for i, pointer in enumerate(alist):
@@ -785,7 +458,7 @@ class SDF2MESH_OT_List_Remove(Operator):
                     bpy.data.meshes.remove(object.data,do_unlink=True)
                     
             alist.remove(deleted_index)
-            SDFOBJECT_UTILITY.refresh_pointer_list(context, primitive_type)
+            PointerListUtil.refresh_pointer_list(context, primitive_type)
             
             # Decrements the index by 1 from the item whose index is larger than the deleted item
             for i in range(deleted_index,len(alist)):
@@ -801,7 +474,7 @@ class SDF2MESH_OT_List_Remove(Operator):
             alloc = generate_storage_buffer_by_primitive_type[primitive_type]
                 
             # Reassign sub-indexes
-            SDFOBJECT_UTILITY.recalc_sub_index_without_sort(blist)
+            PointerListUtil.recalc_sub_index_without_sort(blist)
             
             # Rebuild Storage Buffer Objects
             alloc(ctx, context)
@@ -1081,7 +754,7 @@ class OBJECT_OT_Delete_SDF(Operator):
         # TODO: Replace the order of the group of objects to be deleted in ascending order of index (use quic sort).
         # STATE:  Not tested yet
         # NOTE: Is this process really necessary? I don't think there will be a case where the order of index properties of items in AABB will be shifted.
-        Algorithms.quick_sort_by_index(context.scene.sdf_object_pointer_list)
+        Algorithm.quick_sort_by_index(context.scene.sdf_object_pointer_list)
 
         # Delete mesh and update index properties of SDFObject.
         refresh_required_primitive_types = []
@@ -1109,7 +782,7 @@ class OBJECT_OT_Delete_SDF(Operator):
                     decrement = decrement + 1
                 
         refresh_required_primitive_types = set(refresh_required_primitive_types) # Remove duplicates
-        SDFOBJECT_UTILITY.refresh_pointer_lists(context, refresh_required_primitive_types)
+        PointerListUtil.refresh_pointer_lists(context, refresh_required_primitive_types)
                 
         if indexed_object_deleted == False:
             context.scene.sdf_object_pointer_list_index = -1
@@ -1125,110 +798,6 @@ class OBJECT_OT_Delete_SDF(Operator):
             
         bpy.ops.ed.undo_push(message='object.delete_sdf')
         return {'FINISHED'}
-
-
-class Algorithms(object):
-    
-    # Only sorting algorithm for now.
-
-    @classmethod
-    def __quick_sort_by_index(cls, alist, l, r):
-        # https://zenn.dev/yutabeee/articles/e8fb2847cfc980
-        
-        i = l
-        j = r
-        p = (l + r) // 2
-        
-        while True:
-            while alist[i].object.sdf_prop.index < alist[p].object.sdf_prop.index:
-                i = i + 1
-            while alist[j].object.sdf_prop.index > alist[p].object.sdf_prop.index:
-                j = j - 1
-                
-            if i >= j:
-                break
-            
-            alist.move(i,j)
-            
-            if l < i - 1:
-                cls.__quick_sort_by_index(alist, l, i - 1)
-            if r > j + 1:
-                cls.__quick_sort_by_index(alist, j + 1, r)
-    
-    @classmethod
-    def quick_sort_by_index(cls, alist):
-        # Algorithms.quick_sort_by_index(cls, alist)
-        if len(alist) == 0:
-            return;
-        cls.__quick_sort_by_index(alist, 0, len(alist) - 1)
-
-
-class SDFOBJECT_UTILITY(object):
-    
-    @classmethod
-    def recalc_sub_index_without_sort(cls, alist):
-        # SDFOBJECT_UTILITY.recalc_sub_index_without_sort(alist)
-        cls.__refresh_pointer_list(alist)
-        
-        for i, pointer in enumerate(alist):
-            pointer.object.sdf_prop.sub_index = i
-    
-    @classmethod
-    def recalc_sub_index(cls, alist):
-        # SDFOBJECT_UTILITY.recalc_sub_index(alist)
-        cls.__refresh_pointer_list(alist)
-             
-        Algorithms.quick_sort_by_index(alist)
-        
-        for i, pointer in enumerate(alist):
-            pointer.object.sdf_prop.sub_index = i
-    
-    @classmethod
-    def __refresh_pointer_list(cls, alist):
-
-        len_ = len(alist)
-        
-        # Items with no referenced object and duplicated SDFObject are removed from the list.        
-        cache = []
-        i = -1
-        while i < len_ - 1:
-            i += 1
-            pointer = alist[i]
-            if pointer.object == None or (pointer.object in cache):
-                alist.remove(i)
-                i -= 1
-                len_ -= 1
-                continue
-            cache.append(pointer.object)
-
-    @classmethod
-    def refresh_pointer_list(cls, context, primitive_type):
-        global sdf_object_pointer_list_by_primitive_type
-        cls.__refresh_pointer_list(sdf_object_pointer_list_by_primitive_type[primitive_type](context))
-            
-    @classmethod
-    def refresh_pointer_lists(cls, context, primitive_types):
-        for primitive_type in primitive_types:
-            cls.refresh_pointer_list(context, primitive_type)
-            
-    @classmethod
-    def __delete_from_sub_pointer_list(cls, alist, target):
-        delete_index = -1
-        for i,pointer in enumerate(alist):
-            if (pointer.object == None) or (pointer.object == target):
-                delete_index = i
-                break
-        if delete_index > -1:
-            alist.remove(delete_index)
-            # After deleting an object, update the sub-indexes of the currently existing objects
-            for i in range(delete_index, len(alist)):
-                alist[i].object.sdf_prop.sub_index = alist[i].object.sdf_prop.sub_index - 1
-
-    @classmethod
-    def delete_from_sub_pointer_list(cls, context, target):
-        global sdf_object_pointer_list_by_primitive_type
-        primitive_type = target.sdf_prop.prev_primitive_type
-        cls.__delete_from_sub_pointer_list(sdf_object_pointer_list_by_primitive_type[primitive_type](context), target)
 
 
 def sdf_object_delete_handler(self, context):
@@ -1258,20 +827,6 @@ classes = [
     SDFOBJECT_PT_Panel,
     OBJECT_OT_Delete_SDF,
 ]
-
-
-# List of SDFProperty, keyed by primitive_type
-# example: alist = sdf_object_pointer_list_by_primitive_type[primitive_type](context)
-global sdf_object_pointer_list_by_primitive_type
-sdf_object_pointer_list_by_primitive_type = {'Box': lambda context: context.scene.sdf_box_pointer_list,
-                                     'Sphere': lambda context: context.scene.sdf_sphere_pointer_list,
-                                     'Cylinder': lambda context: context.scene.sdf_cylinder_pointer_list,
-                                     'Torus': lambda context: context.scene.sdf_torus_pointer_list,
-                                     'Cone': lambda context: context.scene.sdf_cone_pointer_list,
-                                     'Hexagonal Prism': lambda context: context.scene.sdf_hex_prism_pointer_list,
-                                     'Triangular Prism': lambda context: context.scene.sdf_tri_prism_pointer_list,
-                                     'Ngon Prism': lambda context: context.scene.sdf_ngon_prism_pointer_list,
-                                     'GLSL': lambda context: context.scene.sdf_glsl_prism_pointer_list}
 
 # List of lambda functions to build Storage Buffer Objects, keyed by primitive_type
 # example: alloc = generate_storage_buffer_by_primitive_type[primitive_type](ctx, context)
@@ -1318,11 +873,12 @@ def on_depsgraph_update(scene):
             print('[on_depsgraph_update] update transform')
 
 
-global ctx
+global ctx, test_global
 def register():
-        
+            
     global ctx
-    ctx = moderngl_util.create_context()
+    ctx = create_context()
+    pointer.set_context(ctx)
     Raymarching.set_context(ctx)
     MarchingCube.set_context(ctx)
     
@@ -1331,6 +887,8 @@ def register():
 
     raymarching.register()
     marching_cube.register()
+    
+    gizmo.sdf_box.register()
 
     bpy.types.OUTLINER_MT_object.append(sdf_object_delete_handler)
     bpy.types.VIEW3D_MT_object.append(sdf_object_delete_handler)
@@ -1358,7 +916,7 @@ def register():
     
     bpy.app.handlers.depsgraph_update_post.append(on_depsgraph_update)
     
-
+    
 def unregister():
     del bpy.types.Object.sdf_prop
     del bpy.types.Scene.sdf_object_pointer_list
@@ -1367,6 +925,8 @@ def unregister():
     bpy.types.OUTLINER_MT_object.remove(sdf_object_delete_handler)
     bpy.types.VIEW3D_MT_object.remove(sdf_object_delete_handler)
     bpy.types.VIEW3D_MT_object_context_menu.remove(sdf_object_delete_handler)
+
+    gizmo.sdf_box.unregister()
 
     marching_cube.unregister()
     raymarching.unregister()
