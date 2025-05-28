@@ -23,7 +23,7 @@ class SDF2MESH_OT_Apply_Gizmo_To_SDF_Box(Operator):
         
         # Currently, each time Gizmo is updated, Undo is also recorded. Ideally, 
         # Undo should be performed when Gizmo is finished dragging.
-        bpy.ops.ed.undo_push(message='mesh_from_sdf.apply_gizmo_to_sdf_box')
+        # bpy.ops.ed.undo_push(message='mesh_from_sdf.apply_gizmo_to_sdf_box')
         return {'FINISHED'}
     
     
