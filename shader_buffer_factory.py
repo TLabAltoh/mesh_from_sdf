@@ -393,8 +393,8 @@ class ShaderBufferFactory(object):
             round = min(radius, height * 0.5) * sdf_prop.round
             
             offset = i * dsize
-            narray[offset + 0] = height
-            narray[offset + 1] = radius
+            narray[offset + 0] = height - round
+            narray[offset + 1] = radius - round
             narray[offset + 2] = round
             # narray[offset + 3] = 0 # dummy
 
@@ -428,8 +428,8 @@ class ShaderBufferFactory(object):
         radius = pointer.radius
         round = min(radius, height * 0.5) * sdf_prop.round
         
-        narray[0] = height
-        narray[1] = radius
+        narray[0] = height - round
+        narray[1] = radius - round
         narray[2] = round
         # narray[3] = 0 # dummy
         
@@ -575,9 +575,9 @@ class ShaderBufferFactory(object):
             round = min(radius[0], radius[1], height * 0.5) * sdf_prop.round
             
             offset = i * dsize
-            narray[offset + 0] = height
-            narray[offset + 1] = radius[0]
-            narray[offset + 2] = radius[1]
+            narray[offset + 0] = height - round
+            narray[offset + 1] = radius[0] - round
+            narray[offset + 2] = radius[1] - round
             narray[offset + 3] = round
 
         # Generate a buffer to bind to the shader using np.array as source
@@ -610,9 +610,9 @@ class ShaderBufferFactory(object):
         height = pointer.height
         round = min(radius[0], radius[1], height * 0.5) * sdf_prop.round
         
-        narray[0] = height
-        narray[1] = radius[0]
-        narray[2] = radius[1]
+        narray[0] = height - round
+        narray[1] = radius[0] - round
+        narray[2] = radius[1] - round
         narray[3] = round
         
         buf = cls.cone_buffer
@@ -667,8 +667,8 @@ class ShaderBufferFactory(object):
             round = min(radius, height * 0.5) * sdf_prop.round
             
             offset = i * dsize
-            narray[offset + 0] = height
-            narray[offset + 1] = radius
+            narray[offset + 0] = height - round
+            narray[offset + 1] = radius - round
             narray[offset + 2] = round
             # narray[offset + 3] = 0 # dummy
 
@@ -702,8 +702,8 @@ class ShaderBufferFactory(object):
         radius = pointer.radius
         round = min(radius, height * 0.5) * sdf_prop.round
         
-        narray[0] = height
-        narray[1] = radius
+        narray[0] = height - round
+        narray[1] = radius - round
         narray[2] = round
         # narray[3] = 0 # dummy
         
@@ -759,8 +759,8 @@ class ShaderBufferFactory(object):
             round = min(radius, height * 0.5) * sdf_prop.round
             
             offset = i * dsize
-            narray[offset + 0] = height
-            narray[offset + 1] = radius
+            narray[offset + 0] = height - round
+            narray[offset + 1] = radius - round
             narray[offset + 2] = round
             # narray[offset + 3] = 0 # dummy
 
@@ -794,8 +794,8 @@ class ShaderBufferFactory(object):
         radius = pointer.radius
         round = min(radius, height * 0.5) * sdf_prop.round
         
-        narray[0] = height
-        narray[1] = radius
+        narray[0] = height - round
+        narray[1] = radius - round
         narray[2] = round
         # narray[3] = 0 # dummy
         
@@ -852,8 +852,8 @@ class ShaderBufferFactory(object):
             nsides = pointer.nsides
             
             offset = i * dsize
-            narray[offset + 0] = height
-            narray[offset + 1] = radius
+            narray[offset + 0] = height - round
+            narray[offset + 1] = radius - round
             narray[offset + 2] = round
             narray[offset + 3] = nsides
 
@@ -888,8 +888,8 @@ class ShaderBufferFactory(object):
         round = min(radius, height * 0.5) * sdf_prop.round
         nsides = pointer.nsides
         
-        narray[0] = height
-        narray[1] = radius
+        narray[0] = height - round
+        narray[1] = radius - round
         narray[2] = round
         narray[3] = nsides
         
