@@ -159,9 +159,11 @@ include_ = '''
             float s = (cb.x<0.0 && ca.y<0.0) ? -1.0 : 1.0;
             return s*sqrt( min(dot2(ca),dot2(cb)) );
         }
-        float sdTorus( in vec3 p, in float r0, in float r1 ) {
-            vec2 q = vec2(length(p.xz)-r0, p.y);
-            return length(q)-r1;
+        float sdCappedTorus( vec3 p, vec2 sc, float ra, float rb)
+        {
+          p.x = abs(p.x);
+          float k = (sc.y*p.x>sc.x*p.z) ? dot(p.xz,sc) : length(p.xz);
+          return sqrt( dot(p,p) + ra*ra - 2.0*ra*k ) - rb;
         }
         float sdTriPrism( in vec3 p, in float h, in float r ) {
             vec3 q = abs(p);
@@ -237,6 +239,7 @@ frag_include_ = '''
         struct SDFTorusProp {
             float r0; // radius 0
             float r1; // radius 1
+            vec2 sc;  // fill
         };
         
         struct SDFConeProp {

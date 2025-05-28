@@ -217,6 +217,13 @@ class SDFTorusPointer(SDFPrimitivePointer):
         default=(0.75,0.25),
         update=on_prop_update)
         
+    fill: bpy.props.FloatProperty(
+        name='Fill',
+        description='',
+        min=0.0,
+        default=1.0,
+        update=on_prop_update)
+        
     @classmethod
     def update_torus_mesh(cls, pointer):
         object = pointer.object

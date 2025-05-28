@@ -25,7 +25,7 @@ class ShaderFactory(object):
             ''',
             'Torus':'''
                 sdfTorusProp = sdfTorusProps[sdfTorusPropIdx++];
-                dist = sdTorus(samplpos, sdfTorusProp.r0, sdfTorusProp.r1);
+                dist = sdCappedTorus(samplpos, sdfTorusProp.sc, sdfTorusProp.r0, sdfTorusProp.r1);
                 dist = opRound(dist, sdfTorusProp.rd);
             ''',
             'Hexagonal Prism':'''

@@ -1,4 +1,5 @@
 import moderngl
+import math
 import numpy as np
 
 # Class for generating and updating Storage Buffer Objects to be bound to shaders
@@ -177,15 +178,15 @@ class ShaderBufferFactory(object):
             object = pointer.object
             sdf_prop = object.sdf_prop
             
-            bound = (
+            bound = [
                 pointer.bound[0],
                 pointer.bound[1],
                 pointer.bound[2]
-            )
+            ]
             round = min(bound) * sdf_prop.round * 0.5
-            bound[0] -= round
-            bound[1] -= round
-            bound[2] -= round
+            bound[0] = bound[0] - round
+            bound[1] = bound[0] - round
+            bound[2] = bound[0] - round
             
             mnhalf = min(bound[0], bound[1]) * 0.5
             cround = (
@@ -231,15 +232,15 @@ class ShaderBufferFactory(object):
         object = pointer.object
         sdf_prop = object.sdf_prop
         
-        bound = (
+        bound = [
             pointer.bound[0],
             pointer.bound[1],
             pointer.bound[2]
-        )
+        ]
         round = min(bound) * sdf_prop.round * 0.5
-        bound[0] -= round
-        bound[1] -= round
-        bound[2] -= round
+        bound[0] = bound[0] - round
+        bound[1] = bound[0] - round
+        bound[2] = bound[0] - round
         
         mnhalf = min(bound[0], bound[1]) * 0.5
         cround = (
@@ -471,7 +472,7 @@ class ShaderBufferFactory(object):
         # If the buffer has already been allocated, release it
         cls.release_torus_buffer()
         
-        dsize = 2 # radius0 (1), radius1 (1)
+        dsize = 4 # radius0 (1), radius1 (1), fill (sin(theta), cos(theta))
         alist = context.scene.sdf_torus_pointer_list
         narray = np.empty(len(alist) * dsize, dtype=np.float32)
         
@@ -480,10 +481,13 @@ class ShaderBufferFactory(object):
             sdf_prop = object.sdf_prop
             
             radius = pointer.radius
+            fill = pointer.fill * 2 * math.pi
             
             offset = i * dsize
             narray[offset + 0] = radius[0]
             narray[offset + 1] = radius[1]
+            narray[offset + 2] = math.sin(fill)
+            narray[offset + 3] = math.cos(fill)
 
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray)
@@ -503,7 +507,7 @@ class ShaderBufferFactory(object):
     @classmethod
     def _update_torus_buffer(cls, ctx, context, i, sub_i):
         
-        dsize = 2 # radius0 (1), radius1 (1)
+        dsize = 4 # radius0 (1), radius1 (1), fill (sin(theta), cos(theta))
         alist = context.scene.sdf_torus_pointer_list
         narray = np.empty(dsize, dtype=np.float32)
         
@@ -512,9 +516,12 @@ class ShaderBufferFactory(object):
         sdf_prop = object.sdf_prop
         
         radius = pointer.radius
+        fill = pointer.fill * 2 * math.pi
         
         narray[0] = radius[0]
         narray[1] = radius[1]
+        narray[2] = math.sin(fill)
+        narray[3] = math.cos(fill)
         
         buf = cls.torus_buffer
         buf.write(narray.tobytes(), sub_i * dsize)

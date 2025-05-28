@@ -660,7 +660,8 @@ draw_sdf_object_property_by_primitive_type = {'Box': lambda context, col, item: 
                                                 col.prop(item, 'round')),
                                               'Torus': lambda context, col, item: (
                                                 sub_item := context.scene.sdf_torus_pointer_list[item.sub_index],
-                                                col.prop(sub_item, 'radius')),
+                                                col.prop(sub_item, 'radius'),
+                                                col.prop(sub_item, 'fill')),
                                               'Cone': lambda context, col, item: (
                                                 sub_item := context.scene.sdf_cone_pointer_list[item.sub_index],
                                                 col.prop(sub_item, 'height'),

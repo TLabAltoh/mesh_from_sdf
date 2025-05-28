@@ -149,7 +149,8 @@ class Raymarching(bpy.types.Operator):
                             dist = sdSphere(samplpos, 0.75);
                             break;
                         case TORUS:
-                            dist = sdTorus(samplpos, 1.0, 0.25 );
+                            float theta = 0.75 * 3.14;
+                            dist = sdCappedTorus(samplpos, vec2(sin(theta), cos(theta)), 1.0, 0.25 );
                             break;
                         case CAPPED_CONE:
                             dist = sdCappedCone(samplpos, 1.0, 0.1, 0.75);
@@ -185,7 +186,8 @@ class Raymarching(bpy.types.Operator):
                                 dist = sdSphere(samplpos, 0.75);
                                 break;
                             case TORUS:
-                                dist = sdTorus(samplpos, 1.0, 0.25 );
+                                float theta = 0.75 * 3.14;
+                                dist = sdCappedTorus(samplpos, vec2(sin(theta), cos(theta)), 1.0, 0.25 );
                                 break;
                             case CAPPED_CONE:
                                 dist = sdCappedCone(samplpos, 1.0, 0.1, 0.75);
