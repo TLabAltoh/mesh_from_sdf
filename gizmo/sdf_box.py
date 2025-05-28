@@ -51,21 +51,29 @@ class SDFBoxWidgetGroup(GizmoGroup):
     def setup(self, context):
         
         def move_get_x():
-            return bpy.context.scene.sdf_box_pointer_list[context.object.sdf_prop.sub_index].bound[0]
+            value = bpy.context.scene.sdf_box_pointer_list[context.object.sdf_prop.sub_index].bound[0]
+            # Apparently, it is not possible to write a value to sdf_box_gizmo_prop in the setup function.
+            # This function is called when an object is selected, so update the value of sdf_box_gizmo_prop here.
+            bpy.context.scene.sdf_box_gizmo_prop.bound[0] = value
+            return value
 
         def move_set_x(value):
             bpy.context.scene.sdf_box_gizmo_prop.bound[0] = value
             bpy.ops.mesh_from_sdf.apply_gizmo_to_sdf_box()
             
         def move_get_y():
-            return bpy.context.scene.sdf_box_pointer_list[context.object.sdf_prop.sub_index].bound[1]
+            value = bpy.context.scene.sdf_box_pointer_list[context.object.sdf_prop.sub_index].bound[1]
+            bpy.context.scene.sdf_box_gizmo_prop.bound[1] = value
+            return value
 
         def move_set_y(value):
             bpy.context.scene.sdf_box_gizmo_prop.bound[1] = value
             bpy.ops.mesh_from_sdf.apply_gizmo_to_sdf_box()
             
         def move_get_z():
-            return bpy.context.scene.sdf_box_pointer_list[context.object.sdf_prop.sub_index].bound[2]
+            value = bpy.context.scene.sdf_box_pointer_list[context.object.sdf_prop.sub_index].bound[2]
+            bpy.context.scene.sdf_box_gizmo_prop.bound[2] = value
+            return value
 
         def move_set_z(value):
             bpy.context.scene.sdf_box_gizmo_prop.bound[2] = value
