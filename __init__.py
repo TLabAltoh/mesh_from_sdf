@@ -647,6 +647,7 @@ class SDF2MESH_PT_Panel(Panel):
 draw_sdf_object_property_by_primitive_type = {'Box': lambda context, col, item: (
                                                 sub_item := context.scene.sdf_box_pointer_list[item.sub_index],
                                                 col.prop(sub_item, 'bound'),
+                                                col.prop(sub_item, 'round'),
                                                 col.prop(item, 'round')),
                                               'Sphere': lambda context, col, item: (
                                                 sub_item := context.scene.sdf_sphere_pointer_list[item.sub_index],

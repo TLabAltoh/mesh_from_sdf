@@ -142,7 +142,8 @@ class Raymarching(bpy.types.Operator):
                     
                     switch (primitives[0]) {
                         case BOX:
-                            dist = sdBox(samplpos, vec3(1,1,1), 0.1);
+                            dist = sdBox(samplpos, vec3(1,1,1), vec4(0.2,0.2,0,0));
+                            dist = opRound(dist, 0.1);
                             break;
                         case SPHERE:
                             dist = sdSphere(samplpos, 0.75);
@@ -177,7 +178,8 @@ class Raymarching(bpy.types.Operator):
                         
                         switch (primitives[i]) {
                             case BOX:
-                                dist = sdBox(samplpos, vec3(1,1,1), 0.1);
+                                dist = sdBox(samplpos, vec3(1,1,1), vec4(0.2,0.2,0,0));
+                                dist = opRound(dist, 0.1);
                                 break;
                             case SPHERE:
                                 dist = sdSphere(samplpos, 0.75);

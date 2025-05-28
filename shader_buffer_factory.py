@@ -169,7 +169,7 @@ class ShaderBufferFactory(object):
         # If the buffer has already been allocated, release it
         cls.release_box_buffer()
         
-        dsize = 4 # bound (3), round (1)
+        dsize = 8 # bound (3), round (1), corner round (4)
         alist = context.scene.sdf_box_pointer_list
         narray = np.empty(len(alist) * dsize, dtype=np.float32)
         
@@ -177,14 +177,33 @@ class ShaderBufferFactory(object):
             object = pointer.object
             sdf_prop = object.sdf_prop
             
-            bound = pointer.bound
+            bound = (
+                pointer.bound[0],
+                pointer.bound[1],
+                pointer.bound[2]
+            )
             round = min(bound) * sdf_prop.round * 0.5
+            bound[0] -= round
+            bound[1] -= round
+            bound[2] -= round
+            
+            mnhalf = min(bound[0], bound[1]) * 0.5
+            cround = (
+                pointer.round[0] * mnhalf,
+                pointer.round[1] * mnhalf,
+                pointer.round[2] * mnhalf,
+                pointer.round[3] * mnhalf
+            )
             
             offset = i * dsize
             narray[offset + 0] = bound[0]
             narray[offset + 1] = bound[1]
             narray[offset + 2] = bound[2]
             narray[offset + 3] = round
+            narray[offset + 4] = cround[0]
+            narray[offset + 5] = cround[1]
+            narray[offset + 6] = cround[2]
+            narray[offset + 7] = cround[3]
 
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray)
@@ -204,7 +223,7 @@ class ShaderBufferFactory(object):
     @classmethod
     def _update_box_buffer(cls, ctx, context, i, sub_i):
                 
-        dsize = 4 # bound (3), round (1)
+        dsize = 8 # bound (3), round (1), corner round (4)
         alist = context.scene.sdf_box_pointer_list
         narray = np.empty(dsize, dtype=np.float32)
         
@@ -212,13 +231,32 @@ class ShaderBufferFactory(object):
         object = pointer.object
         sdf_prop = object.sdf_prop
         
-        bound = pointer.bound
+        bound = (
+            pointer.bound[0],
+            pointer.bound[1],
+            pointer.bound[2]
+        )
         round = min(bound) * sdf_prop.round * 0.5
+        bound[0] -= round
+        bound[1] -= round
+        bound[2] -= round
+        
+        mnhalf = min(bound[0], bound[1]) * 0.5
+        cround = (
+            pointer.round[0] * mnhalf,
+            pointer.round[1] * mnhalf,
+            pointer.round[2] * mnhalf,
+            pointer.round[3] * mnhalf
+        )
         
         narray[0] = bound[0]
         narray[1] = bound[1]
         narray[2] = bound[2]
         narray[3] = round
+        narray[4] = cround[0]
+        narray[5] = cround[1]
+        narray[6] = cround[2]
+        narray[7] = cround[3]
         
         buf = cls.box_buffer
         buf.write(narray.tobytes(), sub_i * dsize)

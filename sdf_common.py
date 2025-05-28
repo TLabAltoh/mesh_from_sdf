@@ -28,9 +28,23 @@ include_ = '''
         float dot2( in vec3 v ) { return dot(v,v); }
         float ndot( in vec2 a, in vec2 b ) { return a.x*b.x - a.y*b.y; }
 
-        float rounding( in float d, in float h )
+        float opRound( in float d, in float h )
         {
             return d - h;
+        }
+        
+        float opExtrusion( in vec3 p, in float dist, in float h )
+        {
+            vec2 w = vec2( dist, abs(p.z) - h );
+            return min(max(w.x,w.y),0.0) + length(max(w,0.0));
+        }
+        
+        float which(float v0, float v1, bool t) {
+            return v0 * int(t) + v1 * (1.0 - int(t));
+        }
+        
+        vec2 which(vec2 v0, vec2 v1, bool t) {
+            return v0 * int(t) + v1 * (1.0 - int(t));
         }
 
         //
@@ -121,16 +135,11 @@ include_ = '''
         //
         // -----------------------------------------------------------------------------------------------
 
-
-        float opExtrusion( in vec3 p, in float dist, in float h )
-        {
-            vec2 w = vec2( dist, abs(p.z) - h );
-            return min(max(w.x,w.y),0.0) + length(max(w,0.0));
-        }
-
-        float sdBox( in vec3 p, in vec3 bounding, in float rounding ) {
-            vec3 q = abs(p)-bounding+rounding;
-            return length(max(q,0.0))+min(max(q.x,max(q.y,q.z)),0.0)-rounding;
+        float sdBox( in vec3 p, in vec3 b, vec4 cr ) {
+            cr.xy = which(cr.xy, cr.zw, (p.x>0.0));
+            cr.x  = which(cr.x, cr.y, (p.y>0.0));
+            vec2 q = abs(p.xy)-b.xy+cr.x;
+            return opExtrusion(p, min(max(q.x,q.y),0.0) + length(max(q,0.0)) - cr.x, b.z);
         }
         float sdSphere( in vec3 p, in float r ) {
             return length(p)-r;
@@ -211,6 +220,7 @@ frag_include_ = '''
         
         struct SDFBoxProp {
             vec4 br; // bound and round
+            vec4 cr; // corner round
         };
         
         struct SDfSphereProp {

@@ -6,7 +6,8 @@ class ShaderFactory(object):
     # Concatenate distance function snippets that match the primitive_type of the SDFObject    
     __distance_function_by_primitive_type = {'Box':'''
                 sdfBoxProp = sdfBoxProps[sdfBoxPropIdx++];
-                dist = sdBox(samplpos, sdfBoxProp.br.xyz, sdfBoxProp.br.w);
+                dist = sdBox(samplpos, sdfBoxProp.br.xyz, sdfBoxProp.cr);
+                dist = opRound(dist, sdfBoxProp.br.w);
             ''',
             'Sphere':'''
                 sdfSphereProp = sdfSphereProps[sdfSpherePropIdx++];
@@ -15,32 +16,32 @@ class ShaderFactory(object):
             'Cylinder':'''
                 sdfCylinderProp = sdfCylinderProps[sdfCylinderPropIdx++];
                 dist = sdCylinder(samplpos, sdfCylinderProp.h, sdfCylinderProp.ra);
-                dist = rounding(dist, sdfCylinderProp.rd);
+                dist = opRound(dist, sdfCylinderProp.rd);
             ''',
             'Cone':'''
                 sdfConeProp = sdfConeProps[sdfConePropIdx++];
                 dist = sdCappedCone(samplpos, sdfConeProp.h, sdfConeProp.r0, sdfConeProp.r1);
-                dist = rounding(dist, sdfConeProp.rd);
+                dist = opRound(dist, sdfConeProp.rd);
             ''',
             'Torus':'''
                 sdfTorusProp = sdfTorusProps[sdfTorusPropIdx++];
                 dist = sdTorus(samplpos, sdfTorusProp.r0, sdfTorusProp.r1);
-                dist = rounding(dist, sdfTorusProp.rd);
+                dist = opRound(dist, sdfTorusProp.rd);
             ''',
             'Hexagonal Prism':'''
                 sdfHexPrismProp = sdfHexPrismProps[sdfHexPrismPropIdx++];
                 dist = sdHexPrism(samplpos, sdfHexPrismProp.h);
-                dist = rounding(dist, sdfHexPrismProp.rd);
+                dist = opRound(dist, sdfHexPrismProp.rd);
             ''',
             'Triangular Prism':'''
                 sdfTriPrismProp = sdfTriPrismProps[sdfTriPrismPropIdx++];
                 dist = sdTriPrism(samplpos, sdfTriPrismProp.h, sdfTriPrismProp.ra);
-                dist = rounding(dist, sdfTriPrismProp.rd);
+                dist = opRound(dist, sdfTriPrismProp.rd);
             ''',
             'Ngon Prism':'''
                 sdfNgonPrismProp = sdfNgonPrismProps[sdfNgonPrismPropIdx++];
                 dist = sdNgonPrism(samplpos, sdfNgonPrismProp.h, sdfNgonPrismProp.ra, sdfNgonPrismProp.n);
-                dist = rounding(dist, sdfNgonPrismProp.rd);
+                dist = opRound(dist, sdfNgonPrismProp.rd);
             ''',
             'GLSL':'{dist = 1000000000}'}
 

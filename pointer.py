@@ -55,6 +55,14 @@ class SDFBoxPointer(SDFPrimitivePointer):
         default=(1.0,1.0,1.0),
         update=on_prop_update)
         
+    round: bpy.props.FloatVectorProperty(
+        name='Corner Round',
+        description='Radius of 4 corners viewed from z-plane',
+        size=4,
+        min=0.0,
+        default=(0,0,0,0),
+        update=on_prop_update)
+        
     @classmethod
     def update_box_mesh(cls, pointer):
         object = pointer.object
