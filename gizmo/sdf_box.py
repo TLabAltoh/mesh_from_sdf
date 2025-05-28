@@ -79,6 +79,7 @@ class SDFBoxWidgetGroup(GizmoGroup):
         gz_x.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(90.0), 4, 'Z')
         gz_x.draw_style = 'BOX'
         gz_x.length = 0.2
+        gz_x.scale_basis = 1.0 / ob.scale[0]
 
         gz_x.color = 1.0, 0.0, 0.0
         gz_x.alpha = 0.5
@@ -91,6 +92,7 @@ class SDFBoxWidgetGroup(GizmoGroup):
         gz_y.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(90.0), 4, 'Z')
         gz_y.draw_style = 'BOX'
         gz_y.length = 0.2
+        gz_y.scale_basis = 1.0 / ob.scale[0]
 
         gz_y.color = 0.0, 1.0, 0.0
         gz_y.alpha = 0.5
@@ -101,9 +103,9 @@ class SDFBoxWidgetGroup(GizmoGroup):
         gz_z = self.gizmos.new("GIZMO_GT_arrow_3d")
         gz_z.target_set_handler("offset", get=move_get_z, set=move_set_z)
         gz_z.matrix_basis = ob.matrix_world
-        gz_z.matrix_basis = gz_y.matrix_basis
         gz_z.draw_style = 'BOX'
         gz_z.length = 0.2
+        gz_z.scale_basis = 1.0 / ob.scale[0]
 
         gz_z.color = 0.0, 0.0, 1.0
         gz_z.alpha = 0.5
@@ -118,12 +120,15 @@ class SDFBoxWidgetGroup(GizmoGroup):
         ob = context.object
         
         gz_x = self.gizmo_x
+        gz_x.scale_basis = 1.0 / ob.scale[0]
         gz_x.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(+90.0), 4, 'Y')
         
         gz_y = self.gizmo_y
+        gz_y.scale_basis = 1.0 / ob.scale[0]
         gz_y.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'X')
         
         gz_z = self.gizmo_z
+        gz_z.scale_basis = 1.0 / ob.scale[0]
         gz_z.matrix_basis = ob.matrix_world
 
 
@@ -139,7 +144,6 @@ def register():
         bpy.utils.register_class(cls)
         
     bpy.types.Scene.sdf_box_gizmo_prop = bpy.props.PointerProperty(type=SDFBoxGizmoProperty)
-    bpy.types.Scene.sdf_box_gizmo_prop_out = bpy.props.PointerProperty(type=SDFBoxGizmoProperty)
 
 
 def unregister():
