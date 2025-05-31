@@ -24,7 +24,9 @@ from mesh_from_sdf.marching_tables import *
 from mesh_from_sdf.shader_factory import *
 from mesh_from_sdf.shader_buffer_factory import *
 from mesh_from_sdf.pointer import *
-from mesh_from_sdf.gizmo.sdf_box import *
+from mesh_from_sdf.gizmo.box import *
+from mesh_from_sdf.gizmo.cylinder import *
+from mesh_from_sdf.gizmo.torus import *
 from mesh_from_sdf.util.material import *
 from mesh_from_sdf.util.moderngl import *
 from mesh_from_sdf.util.algorithm import *
@@ -374,6 +376,7 @@ class SDF2MESH_OT_List_Reload(Operator):
         PointerListUtil.recalc_sub_index(context.scene.sdf_cone_pointer_list)
         PointerListUtil.recalc_sub_index(context.scene.sdf_torus_pointer_list)
         PointerListUtil.recalc_sub_index(context.scene.sdf_pyramid_pointer_list)
+        PointerListUtil.recalc_sub_index(context.scene.sdf_truncated_pyramid_pointer_list)
         PointerListUtil.recalc_sub_index(context.scene.sdf_hex_prism_pointer_list)
         PointerListUtil.recalc_sub_index(context.scene.sdf_tri_prism_pointer_list)
         PointerListUtil.recalc_sub_index(context.scene.sdf_ngon_prism_pointer_list)
@@ -923,7 +926,9 @@ def register():
     raymarching.register()
     marching_cube.register()
     
-    gizmo.sdf_box.register()
+    gizmo.box.register()
+    gizmo.cylinder.register()
+    gizmo.torus.register()
 
     bpy.types.OUTLINER_MT_object.append(sdf_object_delete_handler)
     bpy.types.VIEW3D_MT_object.append(sdf_object_delete_handler)
@@ -963,7 +968,9 @@ def unregister():
     bpy.types.VIEW3D_MT_object.remove(sdf_object_delete_handler)
     bpy.types.VIEW3D_MT_object_context_menu.remove(sdf_object_delete_handler)
 
-    gizmo.sdf_box.unregister()
+    gizmo.box.unregister()
+    gizmo.cylinder.unregister()
+    gizmo.torus.register()
 
     marching_cube.unregister()
     raymarching.unregister()

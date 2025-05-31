@@ -231,11 +231,25 @@ class SDFTorusPointer(SDFPrimitivePointer):
         self = bpy.context.scene.sdf_torus_pointer_list[sdf_prop.sub_index]
         
         prv_scale = (object.scale[0], object.scale[1], object.scale[2])
-        object.scale = (1,1,1)
-        radius = self.radius
-        bpy.ops.mesh.primitive_torus_add(major_radius=radius[0], minor_radius=radius[1], abso_major_rad=1.25, abso_minor_rad=0.75, align='CURSOR', location=object.location, rotation=object.rotation_euler)
-        object.scale = prv_scale
+        prv_rotaion_euler = (object.rotation_euler[0], object.rotation_euler[1], object.rotation_euler[2])
         
+        object.scale = (1,1,1)
+        object.rotation_euler[0] = 0
+        object.rotation_euler[1] = 0
+        object.rotation_euler[2] = 0
+        
+        radius = self.radius
+        # Maybe the rotation argument of add_torus is not working, 
+        # because the command log shows that an Euler angle of 
+        # (0,0,0) is given even if object.rotation_euler is given. 
+        # So I decided to control the rotation manually.
+        bpy.ops.mesh.primitive_torus_add(major_radius=radius[0], minor_radius=radius[1], abso_major_rad=1.25, abso_minor_rad=0.75, align='CURSOR', location=object.location)
+        
+        object.scale = prv_scale
+        object.rotation_euler[0] = prv_rotaion_euler[0]
+        object.rotation_euler[1] = prv_rotaion_euler[1]
+        object.rotation_euler[2] = prv_rotaion_euler[2]
+
         
 class SDFPyramidPointer(SDFPrimitivePointer):
     
