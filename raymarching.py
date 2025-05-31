@@ -248,9 +248,11 @@ class Raymarching(bpy.types.Operator):
         layout(binding=3) readonly buffer in_prop_cylinder { SDFCylinderProp sdfCylinderProps[]; };
         layout(binding=4) readonly buffer in_prop_torus { SDFTorusProp sdfTorusProps; };
         layout(binding=5) readonly buffer in_prop_cone { SDFConeProp sdfConeProps[]; };
-        layout(binding=6) readonly buffer in_prop_hex_prism { SDFPrismProp sdfHexPrismProps[]; };
-        layout(binding=7) readonly buffer in_prop_tri_prism { SDFPrismProp sdfTriPrismProps[]; };
-        layout(binding=8) readonly buffer in_prop_ngon_prism { SDFNgonPrismProp sdfNgonPrismProps[]; };
+        layout(binding=6) readonly buffer in_prop_pyramid { SDFPyramidProp sdfPyramidProps[]; };
+        layout(binding=7) readonly buffer in_prop_truncated_pyramid { SDFTruncatedPyramidProp sdfTruncatedPyramidProps[]; };
+        layout(binding=8) readonly buffer in_prop_hex_prism { SDFPrismProp sdfHexPrismProps[]; };
+        layout(binding=9) readonly buffer in_prop_tri_prism { SDFPrismProp sdfTriPrismProps[]; };
+        layout(binding=10) readonly buffer in_prop_ngon_prism { SDFNgonPrismProp sdfNgonPrismProps[]; };
         
         in vec3 pos;
         in vec3 orthoRayDir;
@@ -384,11 +386,6 @@ class Raymarching(bpy.types.Operator):
         cls.shader.uniform_float("u_ViewMatrix", cls.config["u_ViewMatrix"])
         cls.shader.uniform_float("u_CameraPosition", cls.config["u_CameraPosition"])
         cls.shader.uniform_float("u_CameraRotationMatrix", cls.config["u_CameraRotationMatrix"])
-
-#        test_buf = cls.ctx.buffer(np.array([0.5, 0.5], dtype='float32'))
-#        test_buf.bind_to_storage_buffer(0)
-
-        buf = ShaderBufferFactory.get_object_common_buffer()
         
         batch = batch_for_shader(cls.shader, 'TRIS', {"in_pos": cls.config["vertices"]}, indices=cls.indices,)
         gpu.state.blend_set("ALPHA") 

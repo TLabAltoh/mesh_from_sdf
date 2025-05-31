@@ -156,14 +156,53 @@ include_ = '''
             vec2 k2 = vec2(r1-r0,2.0*h);
             vec2 ca = vec2(q.x-min(q.x,(q.y<0.0)?r0:r1), abs(q.y)-h);
             vec2 cb = q - k1 + k2*clamp( dot(k1-q,k2)/dot2(k2), 0.0, 1.0 );
-            float s = (cb.x<0.0 && ca.y<0.0) ? -1.0 : 1.0;
+            float s = which(-1.0, 1.0, (cb.x<0.0 && ca.y<0.0));
             return s*sqrt( min(dot2(ca),dot2(cb)) );
         }
         float sdCappedTorus( vec3 p, vec2 sc, float ra, float rb)
         {
           p.x = abs(p.x);
-          float k = (sc.y*p.x>sc.x*p.z) ? dot(p.xz,sc) : length(p.xz);
+          float k = which(dot(p.xz,sc), length(p.xz), (sc.y*p.x>sc.x*p.z));
           return sqrt( dot(p,p) + ra*ra - 2.0*ra*k ) - rb;
+        }
+        float sdPyramid(vec3 p, float hw, float hd, float hh) {
+            p.y += hh;
+            p.xz = abs(p.xz);
+            vec3 d1 = vec3(max(p.x - hw, 0.0), p.y, max(p.z - hd, 0.0));
+            vec3 n1 = vec3(0.0, hd, 2.0 * hh);
+            float k1 = dot(n1, n1);
+            float h1 = dot(p - vec3(hw, 0.0, hd), n1) / k1;
+            vec3 n2 = vec3(k1, 2.0 * hh * hw, -hd * hw);
+            float m1 = dot(p - vec3(hw, 0.0, hd), n2) / dot(n2, n2);
+            vec3 d2 = p - clamp(p - n1 * h1 - n2 * max(m1, 0.0), vec3(0.0), vec3(hw, 2.0 * hh, hd));
+            vec3 n3 = vec3(2.0 * hh, hw, 0.0);
+            float k2 = dot(n3, n3);
+            float h2 = dot(p - vec3(hw, 0.0, hd), n3) / k2;
+            vec3 n4 = vec3(-hw * hd, 2.0 * hh * hd, k2);
+            float m2 = dot(p - vec3(hw, 0.0, hd), n4) / dot(n4, n4);    
+            vec3 d3 = p - clamp(p - n3 * h2 - n4 * max(m2, 0.0), vec3(0.0), vec3(hw, 2.0 * hh, hd));
+            float d = sqrt(min(min(dot(d1, d1), dot(d2, d2)), dot(d3, d3)));
+            return which(-d, d, max(max(h1, h2), -p.y) < 0.0);
+        }
+        float sdTruncatedPyramid(vec3 p, float hw0, float hd0, float hw1, float hd1, float hh) {
+            p.xz = abs(p.xz);
+            vec3 d1 = vec3(max(p.x - hw0, 0.0), p.y + hh, max(p.z - hd0, 0.0));
+            vec3 d2 = vec3(max(p.x - hw1, 0.0), p.y - hh, max(p.z - hd1, 0.0));
+            vec3 e = vec3(hw0 - hw1, 2.0 * hh, hd0 - hd1);
+            vec3 n1 = vec3(0.0, e.zy);
+            float k1 = dot(n1, n1);
+            float h1 = dot(p - vec3(hw0, -hh, hd0), n1) / k1;
+            vec3 n2 = vec3(k1, e.y * e.x, -e.z * e.x);
+            float m1 = dot(p - vec3(hw0, -hh, hd0), n2) / dot(n2, n2);
+            vec3 d3 = p - clamp(p - n1 * h1 - n2 * max(m1, 0.0), vec3(0.0, -hh, 0.0), vec3(max(hw0, hw1), hh, max(hd0, hd1)));
+            vec3 n3 = vec3(e.yx, 0.0);
+            float k2 = dot(n3, n3);
+            float h2 = dot(p - vec3(hw0, -hh, hd0), n3) / k2;
+            vec3 n4 = vec3(-e.x * e.z, e.y * e.z, k2);
+            float m2 = dot(p - vec3(hw0, -hh, hd0), n4) / dot(n4, n4);    
+            vec3 d4 = p - clamp(p - n3 * h2 - n4 * max(m2, 0.0), vec3(0.0, -hh, 0.0), vec3(max(hw0, hw1), hh, max(hd0, hd1)));
+            float d = sqrt(min(min(min(dot(d1, d1), dot(d2, d2)), dot(d3, d3)), dot(d4, d4)));
+            return which(-d, d, max(max(h1, h2), abs(p.y) - hh) < 0.0);
         }
         float sdTriPrism( in vec3 p, in float h, in float r ) {
             vec3 q = abs(p);
@@ -219,43 +258,50 @@ frag_include_ = '''
             vec4 qu;  // quaternion
             vec2 bl;  // blend
         };
-        
         struct SDFBoxProp {
             vec4 br; // bound and round
             vec4 cr; // corner round
         };
-        
         struct SDfSphereProp {
             float r; // radius
         };
-        
         struct SDFCylinderProp {
             float h;  // height
             float ra; // radius
             float rd; // round
             float dm; // dummy
         };
-        
         struct SDFTorusProp {
             float r0; // radius 0
             float r1; // radius 1
             vec2 sc;  // fill
         };
-        
         struct SDFConeProp {
             float h;  // height
             float r0; // radius 0
             float r1; // radius 1
             float rd; // round
         };
-        
+        struct SDFPyramidProp {
+            float hw; // half width
+            float hd; // half depth
+            float hh; // half hegiht
+            float rd; // round
+        };
+        struct SDFTruncatedPyramidProp {
+            float hw0; // half width 0
+            float hd0; // half depth 0
+            float hw1; // half width 1
+            float hd1; // half depth 1
+            float hh;  // half height
+            float rd;  // round
+        };
         struct SDFPrismProp {
             float h;  // height
             float ra; // radius
             float rd; // round
             float dm; // dummy
         };
-        
         struct SDFNgonPrismProp {
             float h;  // height
             float ra; // radius

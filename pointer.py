@@ -237,6 +237,174 @@ class SDFTorusPointer(SDFPrimitivePointer):
         object.scale = prv_scale
         
         
+class SDFPyramidPointer(SDFPrimitivePointer):
+    
+    # Callback processing when updating properties.
+    def on_prop_update(self, context):
+        global ctx
+        this = self.object.sdf_prop
+
+        # Update mesh for primitive interactions
+        prev_mode = self.__class__.update_primitive_mesh_begin(context)
+        self.__class__.update_pyramid_mesh(context.scene.sdf_object_pointer_list[this.index])
+        self.__class__.update_primitive_mesh_end(prev_mode)
+        
+        # Updateing Storage Buffre Objects
+        ShaderBufferFactory.update_pyramid_buffer(ctx, context, self.index, self.sub_index)
+        
+    width: bpy.props.FloatProperty(
+        name='Width',
+        description='',
+        min=0.0,
+        default=2.0,
+        update=on_prop_update)
+        
+    depth: bpy.props.FloatProperty(
+        name='Depth',
+        description='',
+        min=0.0,
+        default=2.0,
+        update=on_prop_update)
+        
+    height: bpy.props.FloatProperty(
+        name='Height',
+        description='',
+        min=0.0,
+        default=2.0,
+        update=on_prop_update)
+        
+    @classmethod
+    def update_pyramid_mesh(cls, pointer):
+        object = pointer.object
+        sdf_prop = object.sdf_prop
+        self = bpy.context.scene.sdf_pyramid_pointer_list[sdf_prop.sub_index]
+        
+        hwidth = self.width * 0.5
+        hdepth = self.depth * 0.5
+        hheight = self.height * 0.5
+        
+        verts = (
+            (-hwidth,-hdepth,-hheight),
+            (-hwidth,+hdepth,-hheight),
+            (+hwidth,+hdepth,-hheight),
+            (+hwidth,-hdepth,-hheight),
+            (0,0,+hheight)
+        )
+        faces = (
+            (0,1,2,3),
+            (0,4,1),
+            (1,4,2),
+            (2,4,3),
+            (3,4,0)
+        )
+        
+        mesh = object.data
+        bm = bmesh.from_edit_mesh(mesh)
+        for vert in verts:
+            bm.verts.new(vert)
+        bm.verts.ensure_lookup_table()
+        for face in faces:
+            print(len(bm.verts))
+            vert_tuple = tuple(bm.verts[i] for i in face)
+            bm.faces.new(vert_tuple)
+            
+        bmesh.update_edit_mesh(mesh)
+        
+        
+class SDFTruncatedPyramidPointer(SDFPrimitivePointer):
+    
+    # Callback processing when updating properties.
+    def on_prop_update(self, context):
+        global ctx
+        this = self.object.sdf_prop
+
+        # Update mesh for primitive interactions
+        prev_mode = self.__class__.update_primitive_mesh_begin(context)
+        self.__class__.update_truncated_pyramid_mesh(context.scene.sdf_object_pointer_list[this.index])
+        self.__class__.update_primitive_mesh_end(prev_mode)
+        
+        # Updateing Storage Buffre Objects
+        ShaderBufferFactory.update_truncated_pyramid_buffer(ctx, context, self.index, self.sub_index)
+        
+    width_0: bpy.props.FloatProperty(
+        name='Lower Width',
+        description='',
+        min=0.0,
+        default=2.0,
+        update=on_prop_update)
+        
+    depth_0: bpy.props.FloatProperty(
+        name='Lower Depth',
+        description='',
+        min=0.0,
+        default=2.0,
+        update=on_prop_update)
+        
+    width_1: bpy.props.FloatProperty(
+        name='Upper Width',
+        description='',
+        min=0.0,
+        default=1.5,
+        update=on_prop_update)
+        
+    depth_1: bpy.props.FloatProperty(
+        name='Upper Depth',
+        description='',
+        min=0.0,
+        default=1.5,
+        update=on_prop_update)
+        
+    height: bpy.props.FloatProperty(
+        name='Height',
+        description='',
+        min=0.0,
+        default=2.0,
+        update=on_prop_update)
+        
+    @classmethod
+    def update_truncated_pyramid_mesh(cls, pointer):
+        object = pointer.object
+        sdf_prop = object.sdf_prop
+        self = bpy.context.scene.sdf_truncated_pyramid_pointer_list[sdf_prop.sub_index]
+        
+        hwidth_0 = self.width_0 * 0.5
+        hdepth_0 = self.depth_0 * 0.5
+        hwidth_1 = self.width_1 * 0.5
+        hdepth_1 = self.depth_1 * 0.5
+        hheight = self.height * 0.5
+        
+        verts = (
+            (-hwidth_0,-hdepth_0,-hheight),
+            (-hwidth_0,+hdepth_0,-hheight),
+            (+hwidth_0,+hdepth_0,-hheight),
+            (+hwidth_0,-hdepth_0,-hheight),
+            (-hwidth_1,-hdepth_1,+hheight),
+            (-hwidth_1,+hdepth_1,+hheight),
+            (+hwidth_1,+hdepth_1,+hheight),
+            (+hwidth_1,-hdepth_1,+hheight)
+        )
+        faces = (
+            (0,1,2,3),
+            (4,5,6,7),
+            (0,4,5,1),
+            (1,5,6,2),
+            (2,6,7,3),
+            (3,7,4,0)
+        )
+        
+        mesh = object.data
+        bm = bmesh.from_edit_mesh(mesh)
+        for vert in verts:
+            bm.verts.new(vert)
+        bm.verts.ensure_lookup_table()
+        for face in faces:
+            print(len(bm.verts))
+            vert_tuple = tuple(bm.verts[i] for i in face)
+            bm.faces.new(vert_tuple)
+            
+        bmesh.update_edit_mesh(mesh)
+        
+        
 class SDFPrismPointer(SDFPrimitivePointer):
     
     # List of SDFProperty.update_{nsides}_mesh and ShaderBufferFactory.update_{nsides_prism}_buffer, keyed by prism_type

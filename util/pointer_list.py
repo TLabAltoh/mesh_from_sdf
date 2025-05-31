@@ -8,6 +8,8 @@ sdf_object_pointer_list_by_primitive_type = {'Box': lambda context: context.scen
                                      'Cylinder': lambda context: context.scene.sdf_cylinder_pointer_list,
                                      'Torus': lambda context: context.scene.sdf_torus_pointer_list,
                                      'Cone': lambda context: context.scene.sdf_cone_pointer_list,
+                                     'Pyramid': lambda context: context.scene.sdf_pyramid_pointer_list,
+                                     'Truncated Pyramid': lambda context: context.scene.sdf_truncated_pyramid_pointer_list,
                                      'Hexagonal Prism': lambda context: context.scene.sdf_hex_prism_pointer_list,
                                      'Triangular Prism': lambda context: context.scene.sdf_tri_prism_pointer_list,
                                      'Ngon Prism': lambda context: context.scene.sdf_ngon_prism_pointer_list,

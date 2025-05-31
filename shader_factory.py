@@ -28,6 +28,16 @@ class ShaderFactory(object):
                 dist = sdCappedTorus(samplpos, sdfTorusProp.sc, sdfTorusProp.r0, sdfTorusProp.r1);
                 dist = opRound(dist, sdfTorusProp.rd);
             ''',
+            'Pyramid':'''
+                sdfPyramidProp = sdfPyramidProps[sdfPyramidPropIdx++];
+                dist = sdPyramid(samplpos, sdfTorusProp.hw, sdfTorusProp.hd, sdfTorusProp.hh);
+                dist = opRound(dist, sdfTorusProp.rd);
+            ''',
+            'Truncated Pyramid':'''
+                sdfTruncatedPyramidProp = sdfTruncatedPyramidProps[sdfTruncatedPyramidPropIdx++];
+                dist = sdTruncatedPyramid(samplpos, sdfTorusProp.hw0, sdfTorusProp.hd0, sdfTorusProp.hw1, sdfTorusProp.hd1, sdfTorusProp.hh);
+                dist = opRound(dist, sdfTorusProp.rd);
+            ''',
             'Hexagonal Prism':'''
                 sdfHexPrismProp = sdfHexPrismProps[sdfHexPrismPropIdx++];
                 dist = sdHexPrism(samplpos, sdfHexPrismProp.h);
@@ -56,6 +66,8 @@ class ShaderFactory(object):
             SDFCylinderProp sdfCylinderProp; uint sdfCylinderPropIdx = 0;
             SDFTorusProp sdfTorusProp; uint sdfTorusPropIdx = 0;
             SDFConeProp sdfConeProp; uint sdfConePropIdx = 0;
+            SDFPyramidProp sdfPyramidProp; uint sdfPyramidPropIdx = 0;
+            SDFPyramidProp sdfTruncatedPyramidProp; uint sdfTruncatedPyramidPropIdx = 0;
             SDFPrismProp sdfHexPrismProp; uint sdfHexPrismPropIdx = 0;
             SDFPrismProp sdfTriPrismProp; uint sdfTriPrismPropIdx = 0;
             SDFNgonPrismProp sdfNgonPrismProp; uint sdfNgonPrismPropIdx = 0;

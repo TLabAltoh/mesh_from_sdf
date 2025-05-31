@@ -19,6 +19,8 @@ class ShaderBufferFactory(object):
     cylinder_buffer = None
     torus_buffer = None
     cone_buffer = None
+    pyramid_buffer = None
+    truncated_pyramid_buffer = None
     hex_prism_buffer = None
     tri_prism_buffer = None
     ngon_prism_buffer = None
@@ -28,6 +30,17 @@ class ShaderBufferFactory(object):
     @classmethod
     def release_all(cls):
         cls.release_object_common_buffer()
+        cls.release_box_buffer()
+        cls.release_sphere_buffer()
+        cls.release_cylinder_buffer()
+        cls.release_torus_buffer()
+        cls.release_cone_buffer()
+        cls.release_pyramid_buffer()
+        cls.release_truncated_pyramid_buffer()
+        cls.release_hex_prism_buffer()
+        cls.release_tri_prism_buffer()
+        cls.release_ngon_prism_buffer()
+        cls.release_glsl_buffer()
 
     # Build all buffers
     @classmethod
@@ -38,6 +51,9 @@ class ShaderBufferFactory(object):
         cls.generate_sphere_buffer(ctx, context)
         cls.generate_cylinder_buffer(ctx, context)
         cls.generate_torus_buffer(ctx, context)
+        cls.generate_cone_buffer(ctx, context)
+        cls.generate_pyramid_buffer(ctx, context)
+        cls.generate_truncated_pyramid_buffer(ctx, context)
         cls.generate_hex_prism_buffer(ctx, context)
         cls.generate_tri_prism_buffer(ctx, context)
         cls.generate_ngon_prism_buffer(ctx, context)
@@ -640,6 +656,206 @@ class ShaderBufferFactory(object):
             cls.cone_buffer.release()
         cls.cone_buffer = None
     
+    
+    # ----------------------------------------------------------
+    # Storage Buffer Objects of Pyramid
+    #
+    
+    @classmethod
+    def get_pyramid_buffer(cls):
+        return cls.pyramid_buffer
+    
+    @classmethod
+    def _generate_pyramid_buffer(cls, ctx, context):
+        
+        # If the buffer has already been allocated, release it
+        cls.release_pyramid_buffer()
+        
+        dsize = 4 # half width (1), half depth (1), half height (1), round (1)
+        alist = context.scene.sdf_pyramid_pointer_list
+        narray = np.empty(len(alist) * dsize, dtype=np.float32)
+        
+        for i, pointer in enumerate(alist):
+            object = pointer.object
+            sdf_prop = object.sdf_prop
+        
+            hwidth = pointer.width * 0.5
+            hdepth = pointer.depth * 0.5
+            hheight = pointer.height * 0.5
+            round = min(hwidth, hdepth, hheight) * sdf_prop.round
+            
+            offset = i * dsize
+            narray[offset + 0] = hwidth - round
+            narray[offset + 1] = hdepth - round
+            narray[offset + 2] = hheight - round
+            narray[offset + 3] = round
+
+        # Generate a buffer to bind to the shader using np.array as source
+        buf = ctx.buffer(narray)
+        cls.pyramid_buffer = buf
+        buf.bind_to_storage_buffer(6)
+        
+        print('[generate_pyramid_buffer] narray:', narray, 'buf:', buf.read())
+        return cls.pyramid_buffer
+
+    @classmethod
+    def generate_pyramid_buffer(cls, ctx, context):
+        if len(context.scene.sdf_pyramid_pointer_list) > 0:
+            cls._generate_pyramid_buffer(ctx, context)
+        else:
+            cls.release_pyramid_buffer()
+
+    @classmethod
+    def _update_pyramid_buffer(cls, ctx, context, i, sub_i):
+        
+        dsize = 4 # half width (1), half depth (1), half height (1), round (1)
+        alist = context.scene.sdf_pyramid_pointer_list
+        narray = np.empty(dsize, dtype=np.float32)
+        
+        pointer = alist[sub_i]
+        object = pointer.object
+        sdf_prop = object.sdf_prop
+        
+        hwidth = pointer.width * 0.5
+        hdepth = pointer.depth * 0.5
+        hheight = pointer.height * 0.5
+        round = min(hwidth, hdepth, hheight) * sdf_prop.round
+        
+        narray[0] = hwidth - round
+        narray[1] = hdepth - round
+        narray[2] = hheight - round
+        narray[3] = round
+        
+        buf = cls.pyramid_buffer
+        buf.write(narray.tobytes(), sub_i * dsize)
+        
+        print('[generate_pyramid_buffer] narray:', narray, 'buf:', buf.read())
+        return cls.pyramid_buffer
+
+    @classmethod
+    def update_pyramid_buffer(cls, ctx, context, i, sub_i):
+
+        # If the element of the list is 0, the buffer is not used and shall be released.
+        if len(context.scene.sdf_pyramid_pointer_list) > 0:
+            return cls.release_pyramid_buffer()
+        
+        # If buffer is set to None for some reason, a new buffer is created here.
+        if cls.pyramid_buffer == None:
+            return cls._generate_pyramid_buffer(ctx, context)
+        
+        return cls._update_pyramid_buffer(ctx, context, i, sub_i)
+    
+    @classmethod
+    def release_pyramid_buffer(cls):
+        if cls.pyramid_buffer != None:
+            cls.pyramid_buffer.release()
+        cls.pyramid_buffer = None
+
+    # ----------------------------------------------------------
+    # Storage Buffer Objects of Pyramid
+    #
+    
+    @classmethod
+    def get_truncated_pyramid_buffer(cls):
+        return cls.truncated_pyramid_buffer
+    
+    @classmethod
+    def _generate_truncated_pyramid_buffer(cls, ctx, context):
+        
+        # If the buffer has already been allocated, release it
+        cls.release_truncated_pyramid_buffer()
+        
+        dsize = 6 # half width 0 (1), half depth 0 (1), half width 1 (1), half depth 1 (1), half height (1), round (1)
+        alist = context.scene.sdf_truncated_pyramid_pointer_list
+        narray = np.empty(len(alist) * dsize, dtype=np.float32)
+        
+        for i, pointer in enumerate(alist):
+            object = pointer.object
+            sdf_prop = object.sdf_prop
+            
+            hwidth_0 = pointer.width_0 * 0.5
+            hdepth_0 = pointer.depth_0 * 0.5
+            hwidth_1 = pointer.width_1 * 0.5
+            hdepth_1 = pointer.depth_1 * 0.5
+            hheight = pointer.height * 0.5
+            round = min(hwidth_0, hdepth_0, hwidth_1, hdepth_1, hheight) * sdf_prop.round
+            
+            offset = i * dsize
+            narray[offset + 0] = hwidth_0 - round
+            narray[offset + 1] = hdepth_0 - round
+            narray[offset + 2] = hwidth_1 - round
+            narray[offset + 3] = hdepth_1 - round
+            narray[offset + 4] = hheight - round
+            narray[offset + 5] = round
+
+        # Generate a buffer to bind to the shader using np.array as source
+        buf = ctx.buffer(narray)
+        cls.truncated_pyramid_buffer = buf
+        buf.bind_to_storage_buffer(7)
+        
+        print('[generate_truncated_pyramid_buffer] narray:', narray, 'buf:', buf.read())
+        return cls.truncated_pyramid_buffer
+
+    @classmethod
+    def generate_truncated_pyramid_buffer(cls, ctx, context):
+        if len(context.scene.sdf_truncated_pyramid_pointer_list) > 0:
+            cls._generate_truncated_pyramid_buffer(ctx, context)
+        else:
+            cls.release_truncated_pyramid_buffer()
+
+    @classmethod
+    def _update_truncated_pyramid_buffer(cls, ctx, context, i, sub_i):
+        
+        dsize = 6 # half width 0 (1), half depth 0 (1), half width 1 (1), half depth 1 (1), half height (1), round (1)
+        alist = context.scene.sdf_truncated_pyramid_pointer_list
+        narray = np.empty(dsize, dtype=np.float32)
+        
+        pointer = alist[sub_i]
+        object = pointer.object
+        sdf_prop = object.sdf_prop
+        
+        object = pointer.object
+        sdf_prop = object.sdf_prop
+        
+        hwidth_0 = pointer.width_0 * 0.5
+        hdepth_0 = pointer.depth_0 * 0.5
+        hwidth_1 = pointer.width_1 * 0.5
+        hdepth_1 = pointer.depth_1 * 0.5
+        hheight = pointer.height * 0.5
+        round = min(hwidth_0, hdepth_0, hwidth_1, hdepth_1, hheight) * sdf_prop.round
+        
+        narray[0] = hwidth_0 - round
+        narray[1] = hdepth_0 - round
+        narray[2] = hwidth_1 - round
+        narray[3] = hdepth_1 - round
+        narray[4] = hheight - round
+        narray[5] = round
+        
+        buf = cls.truncated_pyramid_buffer
+        buf.write(narray.tobytes(), sub_i * dsize)
+        
+        print('[generate_truncated_pyramid_buffer] narray:', narray, 'buf:', buf.read())
+        return cls.truncated_pyramid_buffer
+
+    @classmethod
+    def update_truncated_pyramid_buffer(cls, ctx, context, i, sub_i):
+
+        # If the element of the list is 0, the buffer is not used and shall be released.
+        if len(context.scene.sdf_truncated_pyramid_pointer_list) > 0:
+            return cls.release_truncated_pyramid_buffer()
+        
+        # If buffer is set to None for some reason, a new buffer is created here.
+        if cls.truncated_pyramid_buffer == None:
+            return cls._generate_truncated_pyramid_buffer(ctx, context)
+        
+        return cls._update_truncated_pyramid_buffer(ctx, context, i, sub_i)
+    
+    @classmethod
+    def release_truncated_pyramid_buffer(cls):
+        if cls.truncated_pyramid_buffer != None:
+            cls.truncated_pyramid_buffer.release()
+        cls.truncated_pyramid_buffer = None
+
     # ----------------------------------------------------------
     # Storage Buffer Objects of Hex Prism Primitive
     #
@@ -675,7 +891,7 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray)
         cls.hex_prism_buffer = buf
-        buf.bind_to_storage_buffer(6)
+        buf.bind_to_storage_buffer(8)
         
         print('[generate_hex_prism_buffer] narray:', narray, 'buf:', buf.read())
         return cls.hex_prism_buffer
@@ -731,6 +947,7 @@ class ShaderBufferFactory(object):
         if cls.hex_prism_buffer != None:
             cls.hex_prism_buffer.release()
         cls.hex_prism_buffer = None
+
     
     # ----------------------------------------------------------
     # Storage Buffer Objects of Tri Prism Primitive
@@ -767,7 +984,7 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray)
         cls.tri_prism_buffer = buf
-        buf.bind_to_storage_buffer(7)
+        buf.bind_to_storage_buffer(9)
         
         print('[generate_tri_prism_buffer] narray:', narray, 'buf:', buf.read())
         return cls.tri_prism_buffer
@@ -860,7 +1077,7 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray)
         cls.ngon_prism_buffer = buf
-        buf.bind_to_storage_buffer(8)
+        buf.bind_to_storage_buffer(10)
         
         print('[generate_ngon_prism_buffer] narray:', narray, 'buf:', buf.read())
         return cls.ngon_prism_buffer

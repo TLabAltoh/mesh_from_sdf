@@ -41,6 +41,8 @@ class SDFProperty(PropertyGroup):
             ('Cylinder','Cylinder',''),
             ('Cone','Cone',''),
             ('Torus','Torus',''),
+            ('Pyramid', 'Pyramid', ''),
+            ('Truncated Pyramid', 'Truncated Pyramid', ''),
             ('Hexagonal Prism', 'Hexagonal Prism', ''),
             ('Triangular Prism', 'Triangular Prism', ''),
             ('Ngon Prism','Ngon Prism',''),
@@ -186,6 +188,16 @@ class SDFProperty(PropertyGroup):
                     self.__class__._add_new_pointer(prv_pointer, new_pointer, blist)
                     SDFTorusPointer.update_torus_mesh(prv_pointer)
                     alloc = lambda ctx, context: ShaderBufferFactory.generate_torus_buffer(ctx, context)
+                elif (primitive_type == 'Pyramid') and (SDFProperty.contains_in_pointer_list(context.scene.sdf_pyramid_pointer_list, prv_pointer.object) == False):
+                    blist = context.scene.sdf_pyramid_pointer_list
+                    self.__class__._add_new_pointer(prv_pointer, new_pointer, blist)
+                    SDFPyramidPointer.update_pyramid_mesh(prv_pointer)
+                    alloc = lambda ctx, context: ShaderBufferFactory.generate_pyramid_buffer(ctx, context)
+                elif (primitive_type == 'Truncated Pyramid') and (SDFProperty.contains_in_pointer_list(context.scene.sdf_truncated_pyramid_pointer_list, prv_pointer.object) == False):
+                    blist = context.scene.sdf_truncated_pyramid_pointer_list
+                    self.__class__._add_new_pointer(prv_pointer, new_pointer, blist)
+                    SDFTruncatedPyramidPointer.update_truncated_pyramid_mesh(prv_pointer)
+                    alloc = lambda ctx, context: ShaderBufferFactory.generate_truncated_pyramid_buffer(ctx, context)
                 elif (primitive_type == 'Hexagonal Prism') and (SDFProperty.contains_in_pointer_list(context.scene.sdf_hex_prism_pointer_list, prv_pointer.object) == False):
                     blist = context.scene.sdf_hex_prism_pointer_list
                     self.__class__._add_new_pointer(prv_pointer, new_pointer, blist)
@@ -361,6 +373,7 @@ class SDF2MESH_OT_List_Reload(Operator):
         PointerListUtil.recalc_sub_index(context.scene.sdf_cylinder_pointer_list)
         PointerListUtil.recalc_sub_index(context.scene.sdf_cone_pointer_list)
         PointerListUtil.recalc_sub_index(context.scene.sdf_torus_pointer_list)
+        PointerListUtil.recalc_sub_index(context.scene.sdf_pyramid_pointer_list)
         PointerListUtil.recalc_sub_index(context.scene.sdf_hex_prism_pointer_list)
         PointerListUtil.recalc_sub_index(context.scene.sdf_tri_prism_pointer_list)
         PointerListUtil.recalc_sub_index(context.scene.sdf_ngon_prism_pointer_list)
@@ -667,6 +680,20 @@ draw_sdf_object_property_by_primitive_type = {'Box': lambda context, col, item: 
                                                 col.prop(sub_item, 'height'),
                                                 col.prop(sub_item, 'radius'),
                                                 col.prop(item, 'round')),
+                                              'Pyramid': lambda context, col, item: (
+                                                sub_item := context.scene.sdf_pyramid_pointer_list[item.sub_index],
+                                                col.prop(sub_item, 'width'),
+                                                col.prop(sub_item, 'depth'),
+                                                col.prop(sub_item, 'height'),
+                                                col.prop(item, 'round')),
+                                              'Truncated Pyramid': lambda context, col, item: (
+                                                sub_item := context.scene.sdf_truncated_pyramid_pointer_list[item.sub_index],
+                                                col.prop(sub_item, 'width_0'),
+                                                col.prop(sub_item, 'depth_0'),
+                                                col.prop(sub_item, 'width_1'),
+                                                col.prop(sub_item, 'depth_1'),
+                                                col.prop(sub_item, 'height'),
+                                                col.prop(item, 'round')),
                                               'Hexagonal Prism': lambda context, col, item: (
                                                 sub_item := context.scene.sdf_hex_prism_pointer_list[item.sub_index],
                                                 col.prop(sub_item, 'radius'),
@@ -815,6 +842,8 @@ classes = [
     SDFCylinderPointer,
     SDFConePointer,
     SDFTorusPointer,
+    SDFPyramidPointer,
+    SDFTruncatedPyramidPointer,
     SDFPrismPointer,
     SDFGLSLPointer,
     
@@ -838,6 +867,8 @@ generate_storage_buffer_by_primitive_type = {'Box': lambda ctx, context: ShaderB
                                              'Cylinder': lambda ctx, context: ShaderBufferFactory.generate_cylinder_buffer(ctx, context),
                                              'Torus': lambda ctx, context: ShaderBufferFactory.generate_torus_buffer(ctx, context),
                                              'Cone': lambda ctx, context: ShaderBufferFactory.generate_cone_buffer(ctx, context),
+                                             'Pyramid': lambda ctx, context: ShaderBufferFactory.generate_pyramid_buffer(ctx, context),
+                                             'Truncated Pyramid': lambda ctx, context: ShaderBufferFactory.generate_truncated_pyramid_buffer(ctx, context),
                                              'Hexagonal Prism': lambda ctx, context: ShaderBufferFactory.generate_hex_prism_buffer(ctx, context),
                                              'Triangular Prism': lambda ctx, context: ShaderBufferFactory.generate_tri_prism_buffer(ctx, context),
                                              'Ngon Prism': lambda ctx, context: ShaderBufferFactory.generate_ngon_prism_buffer(ctx, context),
@@ -851,6 +882,8 @@ update_storage_buffer_by_primitive_type = {'Box': lambda ctx, context, index, su
                                            'Cylinder': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_cylinder_buffer(ctx, context, index, sub_index),
                                            'Torus': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_torus_buffer(ctx, context, index, sub_index),
                                            'Cone': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_cone_buffer(ctx, context, index, sub_index),
+                                           'Pyramid': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_pyramid_buffer(ctx, context, index, sub_index),
+                                           'Truncated Pyramid': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_truncated_pyramid_buffer(ctx, context, index, sub_index),
                                            'Hexagonal Prism': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_hex_prism_buffer(ctx, context, index, sub_index),
                                            'Triangular Prism': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_tri_prism_buffer(ctx, context, index, sub_index),
                                            'Ngon Prism': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_ngon_prism_buffer(ctx, context, index, sub_index),
@@ -909,6 +942,8 @@ def register():
     bpy.types.Scene.sdf_cylinder_pointer_list = CollectionProperty(type = SDFCylinderPointer)
     bpy.types.Scene.sdf_cone_pointer_list = CollectionProperty(type = SDFConePointer)
     bpy.types.Scene.sdf_torus_pointer_list = CollectionProperty(type = SDFTorusPointer)
+    bpy.types.Scene.sdf_pyramid_pointer_list = CollectionProperty(type = SDFPyramidPointer)
+    bpy.types.Scene.sdf_truncated_pyramid_pointer_list = CollectionProperty(type = SDFTruncatedPyramidPointer)
     bpy.types.Scene.sdf_hex_prism_pointer_list = CollectionProperty(type = SDFPrismPointer)
     bpy.types.Scene.sdf_tri_prism_pointer_list = CollectionProperty(type = SDFPrismPointer)
     bpy.types.Scene.sdf_ngon_prism_pointer_list = CollectionProperty(type = SDFPrismPointer)
