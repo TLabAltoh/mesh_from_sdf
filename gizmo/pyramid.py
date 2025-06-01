@@ -49,6 +49,8 @@ class SDFPyramidWidgetGroup(GizmoGroup):
 
     def setup(self, context):
         
+        global width, depth, height
+        
         def move_get_width():
             global width
             value = bpy.context.scene.sdf_pyramid_pointer_list[context.object.sdf_prop.sub_index].width * 0.5
@@ -85,6 +87,11 @@ class SDFPyramidWidgetGroup(GizmoGroup):
             bpy.ops.mesh_from_sdf.apply_gizmo_to_sdf_pyramid()
 
         ob = context.object
+        
+#        pointer = bpy.context.scene.sdf_pyramid_pointer_list[ob.sdf_prop.sub_index]
+#        width = pointer.width * 0.5
+#        depth = pointer.depth * 0.5
+#        height = pointer.height * 0.5
         
         # Gizmo Width
         gz_width = self.gizmos.new("GIZMO_GT_arrow_3d")

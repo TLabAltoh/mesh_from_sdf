@@ -40,7 +40,7 @@ depth_1 = 1.5
 height = 2.0
 
 
-class SDFTruncated_PyramidWidgetGroup(GizmoGroup):
+class SDFTruncatedPyramidWidgetGroup(GizmoGroup):
     bl_idname = "OBJECT_GGT_sdf_truncated_pyramid"
     bl_label = "SDF Truncated Pyramid Widget"
     bl_space_type = 'VIEW_3D'
@@ -52,6 +52,8 @@ class SDFTruncated_PyramidWidgetGroup(GizmoGroup):
         return context.object and context.object.sdf_prop.enabled and (context.object.sdf_prop.primitive_type == 'Truncated Pyramid')
 
     def setup(self, context):
+        
+        global width_0, depth_0, width_1, depth_1, height
         
         def move_get_width_0():
             global width_0
@@ -113,6 +115,13 @@ class SDFTruncated_PyramidWidgetGroup(GizmoGroup):
             bpy.ops.mesh_from_sdf.apply_gizmo_to_sdf_truncated_pyramid()
 
         ob = context.object
+        
+        pointer = bpy.context.scene.sdf_truncated_pyramid_pointer_list[ob.sdf_prop.sub_index]
+        width_0 = pointer.width_0 * 0.5
+        depth_0 = pointer.depth_0 * 0.5
+        width_1 = pointer.width_1 * 0.5
+        depth_1 = pointer.depth_1 * 0.5
+        height = pointer.height * 0.5
         
         # Gizmo Width 0
         gz_width_0 = self.gizmos.new("GIZMO_GT_arrow_3d")
@@ -217,7 +226,7 @@ class SDFTruncated_PyramidWidgetGroup(GizmoGroup):
 
 classes = [
     SDF2MESH_OT_Apply_Gizmo_To_SDF_Truncated_Pyramid,
-    SDFTruncated_PyramidWidgetGroup
+    SDFTruncatedPyramidWidgetGroup
 ]
 
 

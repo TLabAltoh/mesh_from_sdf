@@ -79,6 +79,11 @@ class SDFBoxWidgetGroup(GizmoGroup):
 
         ob = context.object
         
+        # When Gizmo is reselected, the setup function and the reflesh function 
+        # are not called and the values registered in the first setup are used ?
+        # pointer = bpy.context.scene.sdf_box_pointer_list[ob.sdf_prop.sub_index]
+        # bound = pointer.bound
+        
         # Gizmo X Axis
         gz_bound_x = self.gizmos.new("GIZMO_GT_arrow_3d")
         gz_bound_x.target_set_handler("offset", get=move_get_bound_x, set=move_set_x)

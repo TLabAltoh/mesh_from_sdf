@@ -133,6 +133,10 @@ class SDFConeWidgetGroup(GizmoGroup):
         
         ob = context.object
         
+#        pointer = bpy.context.scene.sdf_cone_pointer_list[ob.sdf_prop.sub_index]
+#        radius = pointer.radius
+#        height = pointer.height
+        
         gz_radius_0 = self.gizmo_radius_0
         gz_radius_0.scale_basis = 1.0 / ob.scale[0]
         gz_radius_0.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'Y')

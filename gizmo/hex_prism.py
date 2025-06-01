@@ -30,11 +30,11 @@ class SDF2MESH_OT_Apply_Gizmo_To_SDF_Hex_Prism(Operator):
     
 
 global height, radius
-height = 1.0
+height = 0.5
 radius = 1.0
 
 
-class SDFHex_PrismWidgetGroup(GizmoGroup):
+class SDFHexPrismWidgetGroup(GizmoGroup):
     bl_idname = "OBJECT_GGT_sdf_hex_prism"
     bl_label = "SDF Hexagonal Prism Widget"
     bl_space_type = 'VIEW_3D'
@@ -46,6 +46,8 @@ class SDFHex_PrismWidgetGroup(GizmoGroup):
         return context.object and context.object.sdf_prop.enabled and (context.object.sdf_prop.primitive_type == 'Hexagonal Prism')
 
     def setup(self, context):
+        
+        global height, radius
         
         def move_get_height():
             global height
@@ -72,6 +74,10 @@ class SDFHex_PrismWidgetGroup(GizmoGroup):
             bpy.ops.mesh_from_sdf.apply_gizmo_to_sdf_hex_prism()
 
         ob = context.object
+        
+#        pointer = bpy.context.scene.sdf_hex_prism_pointer_list[ob.sdf_prop.sub_index]
+#        height = pointer.height * 0.5
+#        radius = pointer.radius
         
         # Gizmo Height
         gz_height = self.gizmos.new("GIZMO_GT_arrow_3d")
@@ -116,7 +122,7 @@ class SDFHex_PrismWidgetGroup(GizmoGroup):
 
 classes = [
     SDF2MESH_OT_Apply_Gizmo_To_SDF_Hex_Prism,
-    SDFHex_PrismWidgetGroup
+    SDFHexPrismWidgetGroup
 ]
 
 

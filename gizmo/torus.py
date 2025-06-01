@@ -47,6 +47,8 @@ class SDFTorusWidgetGroup(GizmoGroup):
 
     def setup(self, context):
         
+        global radius, fill
+        
         def move_get_radius_0():
             global radius
             value = bpy.context.scene.sdf_torus_pointer_list[context.object.sdf_prop.sub_index].radius[0]
@@ -83,6 +85,12 @@ class SDFTorusWidgetGroup(GizmoGroup):
             bpy.ops.mesh_from_sdf.apply_gizmo_to_sdf_torus()
 
         ob = context.object
+        
+        print(ob)
+        
+#        pointer = bpy.context.scene.sdf_torus_pointer_list[ob.sdf_prop.sub_index]
+#        radius = pointer.radius
+#        fill = pointer.fill
         
         # Gizmo Radius 0
         gz_radius_0 = self.gizmos.new("GIZMO_GT_arrow_3d")
