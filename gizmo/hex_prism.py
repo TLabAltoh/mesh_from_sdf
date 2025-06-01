@@ -81,7 +81,7 @@ class SDFHex_PrismWidgetGroup(GizmoGroup):
         gz_height.length = 0.2
         gz_height.scale_basis = 1.0 / ob.scale[0]
 
-        gz_height.color = 1.0, 0.0, 0.0
+        gz_height.color = 0.0, 0.0, 1.0
         gz_height.alpha = 0.5
         gz_height.color_highlight = 1.0, 0.0, 1.0
         gz_height.alpha_highlight = 0.25
@@ -89,7 +89,7 @@ class SDFHex_PrismWidgetGroup(GizmoGroup):
         # Gizmo Radius
         gz_radius = self.gizmos.new("GIZMO_GT_arrow_3d")
         gz_radius.target_set_handler("offset", get=move_get_radius, set=move_set_radius)
-        gz_radius.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'Y')
+        gz_radius.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'X')
         gz_radius.draw_style = 'BOX'
         gz_radius.length = 0.2
         gz_radius.scale_basis = 1.0 / ob.scale[0]
@@ -111,7 +111,7 @@ class SDFHex_PrismWidgetGroup(GizmoGroup):
         
         gz_radius = self.gizmo_radius
         gz_radius.scale_basis = 1.0 / ob.scale[0]
-        gz_radius.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'Y')
+        gz_radius.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'X')
 
 
 classes = [

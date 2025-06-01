@@ -6,26 +6,26 @@ from bpy.props import FloatVectorProperty
 from bpy.types import Operator, GizmoGroup, PropertyGroup
 
 
-class SDF2MESH_OT_Apply_Gizmo_To_SDF_Cylinder(Operator):
-    bl_idname = 'mesh_from_sdf.apply_gizmo_to_sdf_cylinder'
-    bl_label = 'Apply Gizmo to SDF Cylinder'
-    bl_description = 'Reflect Gizmo changes in SDFCylinderProperty'
+class SDF2MESH_OT_Apply_Gizmo_To_SDF_Tri_Prism(Operator):
+    bl_idname = 'mesh_from_sdf.apply_gizmo_to_sdf_tri_prism'
+    bl_label = 'Apply Gizmo to SDF Triangular Prism'
+    bl_description = 'Reflect Gizmo changes in SDFTriPrismProperty'
     
     def execute(self, context):
         global height, radius
-        cylinder_pointer = context.scene.sdf_cylinder_pointer_list[context.object.sdf_prop.sub_index]
-        cylinder_pointer.height = height * 2.0
-        cylinder_pointer.radius = radius
+        tri_prism_pointer = context.scene.sdf_tri_prism_pointer_list[context.object.sdf_prop.sub_index]
+        tri_prism_pointer.height = height * 2.0
+        tri_prism_pointer.radius = radius
         
         # Update mesh for primitive interactions
         prev_mode = SDFPrimitivePointer.update_primitive_mesh_begin(context)
         pointer = context.scene.sdf_object_pointer_list[context.object.sdf_prop.index]
-        SDFCylinderPointer.update_cylinder_mesh(pointer)
+        SDFPrismPointer.update_tri_prism_mesh(pointer)
         SDFPrimitivePointer.update_primitive_mesh_end(prev_mode)
         
         # Currently, each time Gizmo is updated, Undo is also recorded. Ideally, 
         # Undo should be performed when Gizmo is finished dragging.
-        # bpy.ops.ed.undo_push(message='mesh_from_sdf.apply_gizmo_to_sdf_cylinder')
+        # bpy.ops.ed.undo_push(message='mesh_from_sdf.apply_gizmo_to_sdf_tri_prism')
         return {'FINISHED'}
     
 
@@ -34,42 +34,42 @@ height = 1.0
 radius = 1.0
 
 
-class SDFCylinderWidgetGroup(GizmoGroup):
-    bl_idname = "OBJECT_GGT_sdf_cylinder"
-    bl_label = "SDF Cylinder Widget"
+class SDFTri_PrismWidgetGroup(GizmoGroup):
+    bl_idname = "OBJECT_GGT_sdf_tri_prism"
+    bl_label = "SDF Triangular Prism Widget"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'WINDOW'
     bl_options = {'3D', 'PERSISTENT'}
 
     @classmethod
     def poll(cls, context):
-        return context.object and context.object.sdf_prop.enabled and (context.object.sdf_prop.primitive_type == 'Cylinder')
+        return context.object and context.object.sdf_prop.enabled and (context.object.sdf_prop.primitive_type == 'Triangular Prism')
 
     def setup(self, context):
         
         def move_get_height():
             global height
-            value = bpy.context.scene.sdf_cylinder_pointer_list[context.object.sdf_prop.sub_index].height * 0.5
-            # Apparently, it is not possible to write a value to sdf_cylinder_gizmo_prop in the setup function.
-            # This function is called when an object is selected, so update the value of sdf_cylinder_gizmo_prop here.
+            value = bpy.context.scene.sdf_tri_prism_pointer_list[context.object.sdf_prop.sub_index].height * 0.5
+            # Apparently, it is not possible to write a value to sdf_tri_prism_gizmo_prop in the setup function.
+            # This function is called when an object is selected, so update the value of sdf_tri_prism_gizmo_prop here.
             height = max(0, value)
             return value
 
         def move_set_height(value):
             global height
             height = max(0, value)
-            bpy.ops.mesh_from_sdf.apply_gizmo_to_sdf_cylinder()
+            bpy.ops.mesh_from_sdf.apply_gizmo_to_sdf_tri_prism()
             
         def move_get_radius():
             global radius
-            value = bpy.context.scene.sdf_cylinder_pointer_list[context.object.sdf_prop.sub_index].radius
+            value = bpy.context.scene.sdf_tri_prism_pointer_list[context.object.sdf_prop.sub_index].radius
             radius = max(0, value)
             return value
 
         def move_set_radius(value):
             global radius
             radius = max(0, value)
-            bpy.ops.mesh_from_sdf.apply_gizmo_to_sdf_cylinder()
+            bpy.ops.mesh_from_sdf.apply_gizmo_to_sdf_tri_prism()
 
         ob = context.object
         
@@ -115,8 +115,8 @@ class SDFCylinderWidgetGroup(GizmoGroup):
 
 
 classes = [
-    SDF2MESH_OT_Apply_Gizmo_To_SDF_Cylinder,
-    SDFCylinderWidgetGroup
+    SDF2MESH_OT_Apply_Gizmo_To_SDF_Tri_Prism,
+    SDFTri_PrismWidgetGroup
 ]
 
 
