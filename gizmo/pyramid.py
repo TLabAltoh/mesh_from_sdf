@@ -131,7 +131,7 @@ class SDFPyramidWidgetGroup(GizmoGroup):
 
     def refresh(self, context):
         
-        global radius, height
+        global width, depth, height
         
         ob = context.object
         
