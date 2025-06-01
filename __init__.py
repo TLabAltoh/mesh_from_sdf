@@ -106,6 +106,7 @@ class SDFProperty(PropertyGroup):
         # Generate shaders according to the current hierarchy
         f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
         print(f_dist)
+        Raymarching.update_distance_function(f_dist)
         
     def on_nest_prop_update(self, context):
         global ctx
@@ -119,6 +120,7 @@ class SDFProperty(PropertyGroup):
         # Generate shaders according to the current hierarchy
         f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
         print(f_dist)
+        Raymarching.update_distance_function(f_dist)
 
     @classmethod
     def update_primitive_mesh_begin(cls, context):
@@ -240,6 +242,7 @@ class SDFProperty(PropertyGroup):
                 # Generate shaders according to the current hierarchy
                 f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
                 print(f_dist)
+                Raymarching.update_distance_function(f_dist)
         
     enabled: BoolProperty(
         description='Whether this object is treated as an SDF Object.',
@@ -400,6 +403,7 @@ class SDF2MESH_OT_List_Reload(Operator):
         # Generate shaders according to the current hierarchy
         f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
         print(f_dist)
+        Raymarching.update_distance_function(f_dist)
         
         bpy.ops.ed.undo_push(message='mesh_from_sdf.hierarchy_reload')
         return {'FINISHED'}
@@ -450,6 +454,7 @@ class SDF2MESH_OT_List_Add(Operator):
         # Generate shaders according to the current hierarchy
         f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
         print(f_dist)
+        Raymarching.update_distance_function(f_dist)
         
         bpy.ops.ed.undo_push(message='mesh_from_sdf.hierarchy_add')
         return {'FINISHED'}
@@ -505,6 +510,7 @@ class SDF2MESH_OT_List_Remove(Operator):
             # Generate shaders according to the current hierarchy
             f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
             print(f_dist)
+            Raymarching.update_distance_function(f_dist)
                 
             bpy.ops.ed.undo_push(message='mesh_from_sdf.hierarchy_remove')
         return {'FINISHED'}
@@ -572,6 +578,7 @@ class SDF2MESH_OT_List_Reorder(Operator):
         # Generate shaders according to the current hierarchy
         f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
         print(f_dist)
+        Raymarching.update_distance_function(f_dist)
         
         bpy.ops.ed.undo_push(message='mesh_from_sdf.hierarchy_reorder')
         return {'FINISHED'}
@@ -833,6 +840,7 @@ class OBJECT_OT_Delete_SDF(Operator):
         # Generate shaders according to the current hierarchy
         f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
         print(f_dist)
+        Raymarching.update_distance_function(f_dist)
             
         bpy.ops.ed.undo_push(message='object.delete_sdf')
         return {'FINISHED'}
@@ -913,8 +921,7 @@ def on_depsgraph_update(scene):
         if update.is_updated_transform:
             for obj in bpy.context.selected_objects:
                 if obj.sdf_prop.enabled:
-                    pass
-                    # ShaderBufferFactory.update_object_common_buffer(ctx, bpy.context, obj.sdf_prop.index)
+                    ShaderBufferFactory.update_object_common_buffer(ctx, bpy.context, obj.sdf_prop.index)
             print('[on_depsgraph_update] update transform')
 
 

@@ -161,9 +161,9 @@ include_ = '''
         }
         float sdCappedTorus( vec3 p, vec2 sc, float ra, float rb)
         {
-          p.x = abs(p.x);
-          float k = which(dot(p.xz,sc), length(p.xz), (sc.y*p.x>sc.x*p.z));
-          return sqrt( dot(p,p) + ra*ra - 2.0*ra*k ) - rb;
+            p.x = abs(p.x);
+            float k = which(dot(p.xz,sc), length(p.xz), (sc.y*p.x>sc.x*p.z));
+            return sqrt( dot(p,p) + ra*ra - 2.0*ra*k ) - rb;
         }
         float sdPyramid(vec3 p, float hw, float hd, float hh) {
             p.y += hh;

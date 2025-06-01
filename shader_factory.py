@@ -7,7 +7,8 @@ class ShaderFactory(object):
     __distance_function_by_primitive_type = {'Box':'''
                 sdfBoxProp = sdfBoxProps[sdfBoxPropIdx++];
                 dist = sdBox(samplpos, sdfBoxProp.br.xyz, sdfBoxProp.cr);
-                dist = opRound(dist, sdfBoxProp.br.w);
+                // dist = opRound(dist, sdfBoxProp.br.w);
+                dist = sdBox(samplpos, vec3(1.0, 1.0, 1.0), vec4(0.0, 0.0, 0.0, 0.0));
             ''',
             'Sphere':'''
                 sdfSphereProp = sdfSphereProps[sdfSpherePropIdx++];
@@ -26,7 +27,6 @@ class ShaderFactory(object):
             'Torus':'''
                 sdfTorusProp = sdfTorusProps[sdfTorusPropIdx++];
                 dist = sdCappedTorus(samplpos, sdfTorusProp.sc, sdfTorusProp.r0, sdfTorusProp.r1);
-                dist = opRound(dist, sdfTorusProp.rd);
             ''',
             'Pyramid':'''
                 sdfPyramidProp = sdfPyramidProps[sdfPyramidPropIdx++];
@@ -80,11 +80,13 @@ class ShaderFactory(object):
         f_common = '''
                 sdfObjectProp = sdfObjectProps[sdfObjectPropIdx++];
                 position = sdfObjectProp.ps.xyz;
+                // position = vec3(0,0,0);
                 samplpos = p - position;
-                rotation = qua2mat(sdfObjectProp.qu);
-                scale = sdfObjectProp.ps.w;
-                samplpos = mulVec(rotation, samplpos).xyz;
-                samplpos /= scale;
+                // rotation = qua2mat(sdfObjectProp.qu);
+                // scale = sdfObjectProp.ps.w;
+                scale = 1.0;
+                // samplpos = mulVec(rotation, samplpos).xyz;
+                // samplpos /= scale;
                 
                 k0 = sdfObjectProp.bl.x;
                 k1 = sdfObjectProp.bl.y;'''
@@ -160,6 +162,8 @@ class ShaderFactory(object):
         f_dist = f_dist + '''
             {
         ''' + f_common +  cls.__distance_function_by_primitive_type[primitive_type] + '''
+                dist *= scale;
+                
                 minDist1 = dist;'''
 
         idx_offset = 0
@@ -184,6 +188,8 @@ class ShaderFactory(object):
             {
                 ''' + f_common + '''
                     ''' + cls.__distance_function_by_primitive_type[primitive_type] + '''
+                dist *= scale;
+                
                 minDist1 = dist;'''
                 
                 f_merge_0 = f_blend_0[blend_type][boolean_type]
@@ -192,6 +198,8 @@ class ShaderFactory(object):
                 # To align the indentation of the generated shaders, a tab-only string is inserted between them.
                 f_dist = f_dist + f_common + '''
                     ''' + cls.__distance_function_by_primitive_type[primitive_type] + '''
+                dist *= scale;
+                
                 ''' + f_merge_1
                 
             if break_loop:
@@ -215,6 +223,8 @@ class ShaderFactory(object):
 
                 f_dist = f_dist + f_common + '''
                     ''' + cls.__distance_function_by_primitive_type[primitive_type] + '''
+                dist *= scale;
+                
                 minDist1 = dist;'''
                 
                 f_merge_0 = f_blend_0[blend_type][boolean_type]
@@ -222,7 +232,12 @@ class ShaderFactory(object):
                 f_merge_1 = f_blend_1[blend_type][boolean_type]
                 f_dist = f_dist + f_common + '''
                     ''' + cls.__distance_function_by_primitive_type[primitive_type] + '''
+                dist *= scale;
+                
                 ''' + f_merge_1
+        
+        if len(alist) == 1:
+            f_merge_0 = 'minDist0 = minDist1;'
         
         # Remember to close the trailing scope
         f_dist = f_dist + '''

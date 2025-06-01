@@ -84,63 +84,101 @@ class Raymarching(bpy.types.Operator):
          '''
 
     dist_ = '''
-            const vec3 positions[OBJECT_COUNT] = { 
-                vec3(0.5,0.5,0.5), 
-                vec3(0.2,0.5,0.0),
-                vec3(0.1,0.3,0.1),
-                vec3(0.3,0.2,0.6),
-                vec3(0.4,0.1,0.8),
-                vec3(0.1,0.6,0.1)
-            };
-            const vec3 axiss[OBJECT_COUNT] = { 
-                vec3(1.0, 0.0, 0.0),
-                vec3(1.0, 0.0, 0.0),
-                vec3(0.0, 1.0, 0.0),
-                vec3(0.0, 0.0, 1.0),
-                vec3(0.0, 1.0, 0.0),
-                vec3(1.0, 0.0, 0.0)
-            };
-            const float thetas[OBJECT_COUNT] = {
-                3.14 * 0.5,
-                3.14 * 0.2,
-                3.14 * 0.0,
-                3.14 * 0.15,
-                3.14 * 0.25,
-                3.14 * 0.33
-            };
-            const float scales[OBJECT_COUNT] = { 
-                0.50,
-                0.70,
-                1.00,
-                1.30,
-                1.00,
-                1.15
-            };
-            const int primitives[OBJECT_COUNT] = {
-                BOX,
-                CAPPED_CONE,
-                SPHERE,
-                TORUS,
-                NGON_PRISM,
-                TRI_PRISM
-            };
-            
-            vec3 position, samplpos, axis;
-            float theta, scale, dist, k;
-            mat4 rotation;
+        const vec3 positions[OBJECT_COUNT] = { 
+            vec3(0.5,0.5,0.5), 
+            vec3(0.2,0.5,0.0),
+            vec3(0.1,0.3,0.1),
+            vec3(0.3,0.2,0.6),
+            vec3(0.4,0.1,0.8),
+            vec3(0.1,0.6,0.1)
+        };
+        const vec3 axiss[OBJECT_COUNT] = { 
+            vec3(1.0, 0.0, 0.0),
+            vec3(1.0, 0.0, 0.0),
+            vec3(0.0, 1.0, 0.0),
+            vec3(0.0, 0.0, 1.0),
+            vec3(0.0, 1.0, 0.0),
+            vec3(1.0, 0.0, 0.0)
+        };
+        const float thetas[OBJECT_COUNT] = {
+            3.14 * 0.5,
+            3.14 * 0.2,
+            3.14 * 0.0,
+            3.14 * 0.15,
+            3.14 * 0.25,
+            3.14 * 0.33
+        };
+        const float scales[OBJECT_COUNT] = { 
+            0.50,
+            0.70,
+            1.00,
+            1.30,
+            1.00,
+            1.15
+        };
+        const int primitives[OBJECT_COUNT] = {
+            BOX,
+            CAPPED_CONE,
+            SPHERE,
+            TORUS,
+            NGON_PRISM,
+            TRI_PRISM
+        };
+        
+        vec3 position, samplpos, axis;
+        float theta, scale, dist, k;
+        mat4 rotation;
+        float minDist0 = MAX_DIST;
+        
+        {
+            {
+                position = positions[0];
+                samplpos = p - position;
+                axis = axiss[0];
+                theta = thetas[0];
+                rotation = rotmat(axis, theta);
+                scale = scales[0];
+                samplpos = mulVec(rotation, samplpos).xyz;
+                samplpos /= scale;
+                
+                switch (primitives[0]) {
+                    case BOX:
+                        dist = sdBox(samplpos, vec3(1,1,1), vec4(0.2,0.2,0,0));
+                        dist = opRound(dist, 0.1);
+                        break;
+                    case SPHERE:
+                        dist = sdSphere(samplpos, 0.75);
+                        break;
+                    case TORUS:
+                        float theta = 0.75 * 3.14;
+                        dist = sdCappedTorus(samplpos, vec2(sin(theta),cos(theta)), 1.0, 0.25 );
+                        break;
+                    case CAPPED_CONE:
+                        dist = sdCappedCone(samplpos, 1.0, 0.1, 0.75);
+                        break;
+                    case TRI_PRISM:
+                        dist = sdTriPrism(samplpos, 0.5, 0.8);
+                        break;
+                    case NGON_PRISM:
+                        dist = sdNgonPrism(samplpos, 0.5, 8, 0.75);
+                        break;
+                }
+                dist *= scale;
+                minDist0 = dist;
+            }
             
             {
-                {
-                    position = positions[0];
+                for (int i = 1; i < OBJECT_COUNT; i++) {
+                    position = positions[i];
                     samplpos = p - position;
-                    axis = axiss[0];
-                    theta = thetas[0];
+                    axis = axiss[i];
+                    theta = thetas[i];
                     rotation = rotmat(axis, theta);
-                    scale = scales[0];
+                    scale = scales[i];
                     samplpos = mulVec(rotation, samplpos).xyz;
                     samplpos /= scale;
                     
-                    switch (primitives[0]) {
+                    switch (primitives[i]) {
                         case BOX:
                             dist = sdBox(samplpos, vec3(1,1,1), vec4(0.2,0.2,0,0));
                             dist = opRound(dist, 0.1);
@@ -150,66 +188,29 @@ class Raymarching(bpy.types.Operator):
                             break;
                         case TORUS:
                             float theta = 0.75 * 3.14;
-                            dist = sdCappedTorus(samplpos, vec2(sin(theta), cos(theta)), 1.0, 0.25 );
+                            dist = sdCappedTorus(samplpos, vec2(sin(theta),cos(theta)), 1.0, 0.25 );
                             break;
                         case CAPPED_CONE:
                             dist = sdCappedCone(samplpos, 1.0, 0.1, 0.75);
                             break;
                         case TRI_PRISM:
-                            dist = sdTriPrism(samplpos, 0.5, 0.8);
+                            dist = sdTriPrism(samplpos, 0.8, 0.5);
                             break;
                         case NGON_PRISM:
-                            dist = sdNgonPrism(samplpos, 0.5, 8, 0.75);
+                            dist = sdNgonPrism(samplpos, 0.8, 0.5, 8);
                             break;
                     }
                     dist *= scale;
-                    minDist = dist;
-                }
-                
-                {
-                    for (int i = 1; i < OBJECT_COUNT; i++) {
-                        position = positions[i];
-                        samplpos = p - position;
-                        axis = axiss[i];
-                        theta = thetas[i];
-                        rotation = rotmat(axis, theta);
-                        scale = scales[i];
-                        samplpos = mulVec(rotation, samplpos).xyz;
-                        samplpos /= scale;
-                        
-                        switch (primitives[i]) {
-                            case BOX:
-                                dist = sdBox(samplpos, vec3(1,1,1), vec4(0.2,0.2,0,0));
-                                dist = opRound(dist, 0.1);
-                                break;
-                            case SPHERE:
-                                dist = sdSphere(samplpos, 0.75);
-                                break;
-                            case TORUS:
-                                float theta = 0.75 * 3.14;
-                                dist = sdCappedTorus(samplpos, vec2(sin(theta), cos(theta)), 1.0, 0.25 );
-                                break;
-                            case CAPPED_CONE:
-                                dist = sdCappedCone(samplpos, 1.0, 0.1, 0.75);
-                                break;
-                            case TRI_PRISM:
-                                dist = sdTriPrism(samplpos, 0.8, 0.5);
-                                break;
-                            case NGON_PRISM:
-                                dist = sdNgonPrism(samplpos, 0.8, 0.5, 8);
-                                break;
-                        }
-                        dist *= scale;
-                        
-                        k = 0.05;
-                        minDist = opRoundUnion(dist, minDist, k);
-                        //minDist = opUnion(dist, minDist);
-                        //minDist = opStairsUnion(dist, minDist, k, 3);
-                        //minDist = opSmoothUnion(dist, minDist, k);
-                        //minDist = opChampferUnion(dist, minDist, k);
-                    }
+                    
+                    k = 0.05;
+                    minDist0 = opRoundUnion(dist, minDist0, k);
+                    //minDist0 = opUnion(dist, minDist0);
+                    //minDist0 = opStairsUnion(dist, minDist0, k, 3);
+                    //minDist0 = opSmoothUnion(dist, minDist0, k);
+                    //minDist0 = opChampferUnion(dist, minDist0, k);
                 }
             }
+        }
     '''
 
     @classmethod
@@ -242,17 +243,17 @@ class Raymarching(bpy.types.Operator):
         # generate fragment shader
         frag_ = sc.frag_include_ + '''
         
-        layout(binding=0) readonly buffer in_prop_object { SDFObjectProp sdfObjectProps[]; };
-        layout(binding=1) readonly buffer in_prop_box { SDFBoxProp sdfBoxProps[]; };
-        layout(binding=2) readonly buffer in_prop_sphere { SDfSphereProp sdfSphereProps[]; };
-        layout(binding=3) readonly buffer in_prop_cylinder { SDFCylinderProp sdfCylinderProps[]; };
-        layout(binding=4) readonly buffer in_prop_torus { SDFTorusProp sdfTorusProps; };
-        layout(binding=5) readonly buffer in_prop_cone { SDFConeProp sdfConeProps[]; };
-        layout(binding=6) readonly buffer in_prop_pyramid { SDFPyramidProp sdfPyramidProps[]; };
-        layout(binding=7) readonly buffer in_prop_truncated_pyramid { SDFTruncatedPyramidProp sdfTruncatedPyramidProps[]; };
-        layout(binding=8) readonly buffer in_prop_hex_prism { SDFPrismProp sdfHexPrismProps[]; };
-        layout(binding=9) readonly buffer in_prop_tri_prism { SDFPrismProp sdfTriPrismProps[]; };
-        layout(binding=10) readonly buffer in_prop_ngon_prism { SDFNgonPrismProp sdfNgonPrismProps[]; };
+        layout(binding=20) readonly buffer in_prop_object { SDFObjectProp sdfObjectProps[]; };
+        layout(binding=21) readonly buffer in_prop_box { SDFBoxProp sdfBoxProps[]; };
+        layout(binding=22) readonly buffer in_prop_sphere { SDfSphereProp sdfSphereProps[]; };
+        layout(binding=23) readonly buffer in_prop_cylinder { SDFCylinderProp sdfCylinderProps[]; };
+        layout(binding=24) readonly buffer in_prop_torus { SDFTorusProp sdfTorusProps[]; };
+        layout(binding=25) readonly buffer in_prop_cone { SDFConeProp sdfConeProps[]; };
+        layout(binding=26) readonly buffer in_prop_pyramid { SDFPyramidProp sdfPyramidProps[]; };
+        layout(binding=27) readonly buffer in_prop_truncated_pyramid { SDFTruncatedPyramidProp sdfTruncatedPyramidProps[]; };
+        layout(binding=28) readonly buffer in_prop_hex_prism { SDFPrismProp sdfHexPrismProps[]; };
+        layout(binding=29) readonly buffer in_prop_tri_prism { SDFPrismProp sdfTriPrismProps[]; };
+        layout(binding=30) readonly buffer in_prop_ngon_prism { SDFNgonPrismProp sdfNgonPrismProps[]; };
         
         in vec3 pos;
         in vec3 orthoRayDir;
@@ -284,11 +285,9 @@ class Raymarching(bpy.types.Operator):
                 
         float getDist(vec3 p) {
         
-            float minDist = MAX_DIST;
-            
         ''' + cls.dist_ + '''
         
-            return minDist;
+            return minDist0;
         }
         vec2 raymarch(vec3 ro, vec3 rd) {
             float dO = 0;
@@ -356,12 +355,16 @@ class Raymarching(bpy.types.Operator):
     def recreate_shader(cls):
         if cls.shader != None:
             del cls.shader
+        print('-------------------------------------------------------------------------')
+        print('Distance Shader')
+        print(cls.get_frag())
         cls.shader = gpu.types.GPUShader(cls.get_vert(), cls.get_frag())
 
     # Update the distance function part of the shader
     @classmethod
     def update_distance_function(cls, dist):
         cls.dist_ = dist
+        cls.recreate_shader_requested = True
 
     # Set the OpenGL context retrieved from ModernGL
     @classmethod
