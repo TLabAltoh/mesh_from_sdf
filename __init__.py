@@ -27,6 +27,12 @@ from mesh_from_sdf.pointer import *
 from mesh_from_sdf.gizmo.box import *
 from mesh_from_sdf.gizmo.cylinder import *
 from mesh_from_sdf.gizmo.torus import *
+from mesh_from_sdf.gizmo.cone import *
+from mesh_from_sdf.gizmo.pyramid import *
+from mesh_from_sdf.gizmo.truncated_pyramid import *
+from mesh_from_sdf.gizmo.hex_prism import *
+from mesh_from_sdf.gizmo.tri_prism import *
+from mesh_from_sdf.gizmo.ngon_prism import *
 from mesh_from_sdf.util.material import *
 from mesh_from_sdf.util.moderngl import *
 from mesh_from_sdf.util.algorithm import *
@@ -635,11 +641,11 @@ class SDF2MESH_PT_Panel(Panel):
             if len(scene.sdf_object_pointer_list) > 1:
                 
                 col_r_0 = col_r.column()
-                col_r_0.enabled = context.scene.sdf_object_pointer_list_index > 0
+                col_r_0.enabled = scene.sdf_object_pointer_list_index > 0
                 col_r_0.operator('mesh_from_sdf.hierarchy_reorder', text='', icon='TRIA_UP').direction = 'UP'
                     
                 col_r_1 = col_r.column()
-                col_r_1.enabled = (context.scene.sdf_object_pointer_list_index > -1) and (context.scene.sdf_object_pointer_list_index < len(context.scene.sdf_object_pointer_list) - 1)
+                col_r_1.enabled = (scene.sdf_object_pointer_list_index > -1) and (context.scene.sdf_object_pointer_list_index < len(scene.sdf_object_pointer_list) - 1)
                 col_r_1.operator('mesh_from_sdf.hierarchy_reorder', text='', icon='TRIA_DOWN').direction = 'DOWN'
                     
                 if SDF2MESH_PT_Panel.is_pointer_list_index_validity(scene):
@@ -907,7 +913,8 @@ def on_depsgraph_update(scene):
         if update.is_updated_transform:
             for obj in bpy.context.selected_objects:
                 if obj.sdf_prop.enabled:
-                    ShaderBufferFactory.update_object_common_buffer(ctx, bpy.context, obj.sdf_prop.index)
+                    pass
+                    # ShaderBufferFactory.update_object_common_buffer(ctx, bpy.context, obj.sdf_prop.index)
             print('[on_depsgraph_update] update transform')
 
 
@@ -929,6 +936,12 @@ def register():
     gizmo.box.register()
     gizmo.cylinder.register()
     gizmo.torus.register()
+    gizmo.cone.register()
+    gizmo.pyramid.register()
+    gizmo.truncated_pyramid.register()
+    gizmo.hex_prism.register()
+    gizmo.tri_prism.register()
+    gizmo.ngon_prism.register()
 
     bpy.types.OUTLINER_MT_object.append(sdf_object_delete_handler)
     bpy.types.VIEW3D_MT_object.append(sdf_object_delete_handler)
@@ -970,7 +983,13 @@ def unregister():
 
     gizmo.box.unregister()
     gizmo.cylinder.unregister()
-    gizmo.torus.register()
+    gizmo.torus.unregister()
+    gizmo.cone.unregister()
+    gizmo.pyramid.unregister()
+    gizmo.truncated_pyramid.unregister()
+    gizmo.hex_prism.unregister()
+    gizmo.tri_prism.unregister()
+    gizmo.ngon_prism.unregister()
 
     marching_cube.unregister()
     raymarching.unregister()

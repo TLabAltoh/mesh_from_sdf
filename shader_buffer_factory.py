@@ -958,7 +958,7 @@ class ShaderBufferFactory(object):
         return cls.tri_prism_buffer
     
     @classmethod
-    def generate_tri_prism_buffer(cls, ctx, context):
+    def _generate_tri_prism_buffer(cls, ctx, context):
         
         # If the buffer has already been allocated, release it
         cls.release_tri_prism_buffer()
@@ -1050,7 +1050,7 @@ class ShaderBufferFactory(object):
         return cls.ngon_prism_buffer
     
     @classmethod
-    def generate_ngon_prism_buffer(cls, ctx, context):
+    def _generate_ngon_prism_buffer(cls, ctx, context):
         
         # If the buffer has already been allocated, release it
         cls.release_ngon_prism_buffer()

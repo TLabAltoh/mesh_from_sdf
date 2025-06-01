@@ -207,7 +207,7 @@ class SDFTorusPointer(SDFPrimitivePointer):
         self.__class__.update_primitive_mesh_end(prev_mode)
         
         # Updateing Storage Buffre Objects
-        ShaderBufferFactory.update_torus_buffer(ctx, context, self.index, self.sub_index)
+        ShaderBufferFactory.update_torus_buffer(ctx, context, this.index, this.sub_index)
     
     radius: bpy.props.FloatVectorProperty(
         name='Radius',
@@ -264,7 +264,7 @@ class SDFPyramidPointer(SDFPrimitivePointer):
         self.__class__.update_primitive_mesh_end(prev_mode)
         
         # Updateing Storage Buffre Objects
-        ShaderBufferFactory.update_pyramid_buffer(ctx, context, self.index, self.sub_index)
+        ShaderBufferFactory.update_pyramid_buffer(ctx, context, this.index, this.sub_index)
         
     width: bpy.props.FloatProperty(
         name='Width',
@@ -318,7 +318,6 @@ class SDFPyramidPointer(SDFPrimitivePointer):
             bm.verts.new(vert)
         bm.verts.ensure_lookup_table()
         for face in faces:
-            print(len(bm.verts))
             vert_tuple = tuple(bm.verts[i] for i in face)
             bm.faces.new(vert_tuple)
             
@@ -338,7 +337,7 @@ class SDFTruncatedPyramidPointer(SDFPrimitivePointer):
         self.__class__.update_primitive_mesh_end(prev_mode)
         
         # Updateing Storage Buffre Objects
-        ShaderBufferFactory.update_truncated_pyramid_buffer(ctx, context, self.index, self.sub_index)
+        ShaderBufferFactory.update_truncated_pyramid_buffer(ctx, context, this.index, this.sub_index)
         
     width_0: bpy.props.FloatProperty(
         name='Lower Width',
@@ -412,7 +411,6 @@ class SDFTruncatedPyramidPointer(SDFPrimitivePointer):
             bm.verts.new(vert)
         bm.verts.ensure_lookup_table()
         for face in faces:
-            print(len(bm.verts))
             vert_tuple = tuple(bm.verts[i] for i in face)
             bm.faces.new(vert_tuple)
             
@@ -441,7 +439,7 @@ class SDFPrismPointer(SDFPrimitivePointer):
         # Updateing Prism Mesh and Storage Buffre Objects
         # Determine how many angles you are with an if statement.    
         prev_mode = self.__class__.update_primitive_mesh_begin(context)
-        update_prism_mesh_and_buffer_by_prism_type[this.primitive_type](ctx, context, this.index, this.sub_index)
+        self.update_prism_mesh_and_buffer_by_prism_type[this.primitive_type](ctx, context, this.index, this.sub_index)
         self.__class__.update_primitive_mesh_end(prev_mode)
     
     def on_ngon_prism_prop_update(self, context):
