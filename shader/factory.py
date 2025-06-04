@@ -7,8 +7,7 @@ class ShaderFactory(object):
     __distance_function_by_primitive_type = {'Box':'''
                 sdfBoxProp = sdfBoxProps[sdfBoxPropIdx++];
                 dist = sdBox(samplpos, sdfBoxProp.br.xyz, sdfBoxProp.cr);
-                // dist = opRound(dist, sdfBoxProp.br.w);
-                dist = sdBox(samplpos, vec3(1.0, 1.0, 1.0), vec4(0.0, 0.0, 0.0, 0.0));
+                dist = opRound(dist, sdfBoxProp.br.w);
             ''',
             'Sphere':'''
                 sdfSphereProp = sdfSphereProps[sdfSpherePropIdx++];
@@ -30,17 +29,17 @@ class ShaderFactory(object):
             ''',
             'Pyramid':'''
                 sdfPyramidProp = sdfPyramidProps[sdfPyramidPropIdx++];
-                dist = sdPyramid(samplpos, sdfTorusProp.hw, sdfTorusProp.hd, sdfTorusProp.hh);
-                dist = opRound(dist, sdfTorusProp.rd);
+                dist = sdPyramid(samplpos, sdfPyramidProp.hw, sdfPyramidProp.hd, sdfPyramidProp.hh);
+                dist = opRound(dist, sdfPyramidProp.rd);
             ''',
             'Truncated Pyramid':'''
                 sdfTruncatedPyramidProp = sdfTruncatedPyramidProps[sdfTruncatedPyramidPropIdx++];
-                dist = sdTruncatedPyramid(samplpos, sdfTorusProp.hw0, sdfTorusProp.hd0, sdfTorusProp.hw1, sdfTorusProp.hd1, sdfTorusProp.hh);
-                dist = opRound(dist, sdfTorusProp.rd);
+                dist = sdTruncatedPyramid(samplpos, sdfTruncatedPyramidProp.hw0, sdfTruncatedPyramidProp.hd0, sdfTruncatedPyramidProp.hw1, sdfTruncatedPyramidProp.hd1, sdfTruncatedPyramidProp.hh);
+                dist = opRound(dist, sdfTruncatedPyramidProp.rd);
             ''',
             'Hexagonal Prism':'''
                 sdfHexPrismProp = sdfHexPrismProps[sdfHexPrismPropIdx++];
-                dist = sdHexPrism(samplpos, sdfHexPrismProp.h);
+                dist = sdHexPrism(samplpos, sdfHexPrismProp.h, sdfHexPrismProp.ra);
                 dist = opRound(dist, sdfHexPrismProp.rd);
             ''',
             'Triangular Prism':'''
@@ -67,7 +66,7 @@ class ShaderFactory(object):
             SDFTorusProp sdfTorusProp; uint sdfTorusPropIdx = 0;
             SDFConeProp sdfConeProp; uint sdfConePropIdx = 0;
             SDFPyramidProp sdfPyramidProp; uint sdfPyramidPropIdx = 0;
-            SDFPyramidProp sdfTruncatedPyramidProp; uint sdfTruncatedPyramidPropIdx = 0;
+            SDFTruncatedPyramidProp sdfTruncatedPyramidProp; uint sdfTruncatedPyramidPropIdx = 0;
             SDFPrismProp sdfHexPrismProp; uint sdfHexPrismPropIdx = 0;
             SDFPrismProp sdfTriPrismProp; uint sdfTriPrismPropIdx = 0;
             SDFNgonPrismProp sdfNgonPrismProp; uint sdfNgonPrismPropIdx = 0;
@@ -80,13 +79,11 @@ class ShaderFactory(object):
         f_common = '''
                 sdfObjectProp = sdfObjectProps[sdfObjectPropIdx++];
                 position = sdfObjectProp.ps.xyz;
-                // position = vec3(0,0,0);
                 samplpos = p - position;
-                // rotation = qua2mat(sdfObjectProp.qu);
-                // scale = sdfObjectProp.ps.w;
-                scale = 1.0;
-                // samplpos = mulVec(rotation, samplpos).xyz;
-                // samplpos /= scale;
+                rotation = qua2mat(sdfObjectProp.qu);
+                scale = sdfObjectProp.ps.w;
+                samplpos = mulVec(rotation, samplpos).xyz;
+                samplpos /= scale;
                 
                 k0 = sdfObjectProp.bl.x;
                 k1 = sdfObjectProp.bl.y;'''

@@ -45,7 +45,6 @@ class ShaderBufferFactory(object):
     # Build all buffers
     @classmethod
     def generate_all(cls, ctx, context):
-        
         cls.generate_object_common_buffer(ctx, context)        
         cls.generate_box_buffer(ctx, context)
         cls.generate_sphere_buffer(ctx, context)
@@ -75,7 +74,7 @@ class ShaderBufferFactory(object):
         # If the buffer has already been allocated, release it
         cls.release_object_common_buffer()
         
-        dsize = 10 # position (3), scale (1), quaternion (4), blend (2)
+        dsize = 12 # position (3), scale (1), quaternion (4), blend (4)
         alist = context.scene.sdf_object_pointer_list
         narray = np.empty(len(alist) * dsize, dtype='float32')
         
@@ -100,10 +99,16 @@ class ShaderBufferFactory(object):
             narray[offset + 7] = r[3]
             narray[offset + 8] = bl_0
             narray[offset + 9] = bl_1
+            # narray[offset + 10] = 0
+            # narray[offset + 11] = 0
 
         # Generate a buffer to bind to the shader using np.array as source
-        cls.object_common_buffer = ctx.buffer(narray.tobytes())
-        print('[generate_object_common_buffer] object_common:', narray)
+        buf = ctx.buffer(narray.tobytes())
+        cls.object_common_buffer = buf
+        buf.bind_to_storage_buffer(0)
+        
+        print('\n', '[generate_object_common_buffer] object_common:', narray, '\n')
+        
         return cls.object_common_buffer
     
     # Generate buffer for SDFObjectProperty
@@ -119,7 +124,7 @@ class ShaderBufferFactory(object):
     @classmethod
     def _update_object_common_buffer(cls, ctx, context, i):
         
-        dsize = 10 # position (3), scale (1), quaternion (4), blend (2)
+        dsize = 12 # position (3), scale (1), quaternion (4), blend (4)
         alist = context.scene.sdf_object_pointer_list
         narray = np.empty(dsize, dtype='float32')
         
@@ -143,12 +148,14 @@ class ShaderBufferFactory(object):
         narray[7] = r[3]
         narray[8] = bl_0
         narray[9] = bl_1
+        # narray[10] = 0
+        # narray[11] = 0
         
         buf = cls.object_common_buffer
-        buf.write(narray.tobytes(), i * dsize)
-        buf.bind_to_storage_buffer(20)
+        # buf.write(narray.tobytes(), i * dsize)
         
-        print('[update_object_common_buffer] index:', i, 'narray:', narray)
+        print('\n', '[update_object_common_buffer] index:', i, 'narray:', narray, '\n')
+        
         return cls.object_common_buffer
 
     # Reflects the specified element of the SDFObjectProperty list in the buffer
@@ -156,7 +163,7 @@ class ShaderBufferFactory(object):
     def update_object_common_buffer(cls, ctx, context, i):
 
         # If the element of the list is 0, the buffer is not used and shall be released.
-        if len(context.scene.sdf_object_pointer_list) > 0:
+        if len(context.scene.sdf_object_pointer_list) == 0:
             return cls.release_object_common_buffer()
         
         # If buffer is set to None for some reason, a new buffer is created here.
@@ -225,9 +232,10 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.box_buffer = buf
-        buf.bind_to_storage_buffer(21)
+        buf.bind_to_storage_buffer(1)
         
-        print('[generate_box_buffer] narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_box_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.box_buffer
     
     @classmethod
@@ -278,14 +286,15 @@ class ShaderBufferFactory(object):
         buf = cls.box_buffer
         buf.write(narray.tobytes(), sub_i * dsize)
         
-        print('[generate_box_buffer] index:', i, 'narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_box_buffer] index:', i, 'narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.box_buffer
     
     @classmethod
     def update_box_buffer(cls, ctx, context, i, sub_i):
 
         # If the element of the list is 0, the buffer is not used and shall be released.
-        if len(context.scene.sdf_box_pointer_list) > 0:
+        if len(context.scene.sdf_box_pointer_list) == 0:
             return cls.release_box_buffer()
         
         # If buffer is set to None for some reason, a new buffer is created here.
@@ -330,9 +339,10 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.sphere_buffer = buf
-        buf.bind_to_storage_buffer(22)
+        buf.bind_to_storage_buffer(2)
         
-        print('[generate_sphere_buffer] narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_sphere_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.sphere_buffer
 
     @classmethod
@@ -360,14 +370,15 @@ class ShaderBufferFactory(object):
         buf = cls.sphere_buffer
         buf.write(narray.tobytes(), sub_i * dsize)
         
-        print('[generate_sphere_buffer] index:', i, 'narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_sphere_buffer] index:', i, 'narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.sphere_buffer
 
     @classmethod
     def update_sphere_buffer(cls, ctx, context, i, sub_i):
 
         # If the element of the list is 0, the buffer is not used and shall be released.
-        if len(context.scene.sdf_sphere_pointer_list) > 0:
+        if len(context.scene.sdf_sphere_pointer_list) == 0:
             return cls.release_sphere_buffer()
         
         # If buffer is set to None for some reason, a new buffer is created here.
@@ -404,9 +415,9 @@ class ShaderBufferFactory(object):
             object = pointer.object
             sdf_prop = object.sdf_prop
             
-            height = pointer.height
+            height = pointer.height * 0.5
             radius = pointer.radius
-            round = min(radius, height * 0.5) * sdf_prop.round
+            round = min(radius, height) * sdf_prop.round
             
             offset = i * dsize
             narray[offset + 0] = height - round
@@ -417,9 +428,10 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.cylinder_buffer = buf
-        buf.bind_to_storage_buffer(23)
+        buf.bind_to_storage_buffer(3)
         
-        print('[generate_cylinder_buffer] narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_cylinder_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.cylinder_buffer
 
     @classmethod
@@ -440,9 +452,9 @@ class ShaderBufferFactory(object):
         object = pointer.object
         sdf_prop = object.sdf_prop
         
-        height = pointer.height
+        height = pointer.height * 0.5
         radius = pointer.radius
-        round = min(radius, height * 0.5) * sdf_prop.round
+        round = min(radius, height) * sdf_prop.round
         
         narray[0] = height - round
         narray[1] = radius - round
@@ -452,14 +464,15 @@ class ShaderBufferFactory(object):
         buf = cls.cylinder_buffer
         buf.write(narray.tobytes(), sub_i * dsize)
         
-        print('[generate_cylinder_buffer] narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_cylinder_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.cylinder_buffer
 
     @classmethod
     def update_cylinder_buffer(cls, ctx, context, i, sub_i):
 
         # If the element of the list is 0, the buffer is not used and shall be released.
-        if len(context.scene.sdf_cylinder_pointer_list) > 0:
+        if len(context.scene.sdf_cylinder_pointer_list) == 0:
             return cls.release_cylinder_buffer()
         
         # If buffer is set to None for some reason, a new buffer is created here.
@@ -497,7 +510,7 @@ class ShaderBufferFactory(object):
             sdf_prop = object.sdf_prop
             
             radius = pointer.radius
-            fill = pointer.fill * 2 * math.pi
+            fill = pointer.fill * math.pi
             
             offset = i * dsize
             narray[offset + 0] = radius[0]
@@ -508,9 +521,10 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.torus_buffer = buf
-        buf.bind_to_storage_buffer(24)
+        buf.bind_to_storage_buffer(4)
         
-        print('[generate_torus_buffer] narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_torus_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.torus_buffer
 
     @classmethod
@@ -532,7 +546,7 @@ class ShaderBufferFactory(object):
         sdf_prop = object.sdf_prop
         
         radius = pointer.radius
-        fill = pointer.fill * 2 * math.pi
+        fill = pointer.fill * math.pi
         
         narray[0] = radius[0]
         narray[1] = radius[1]
@@ -542,14 +556,15 @@ class ShaderBufferFactory(object):
         buf = cls.torus_buffer
         buf.write(narray.tobytes(), sub_i * dsize)
         
-        print('[generate_torus_buffer] narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_torus_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.torus_buffer
 
     @classmethod
     def update_torus_buffer(cls, ctx, context, i, sub_i):
 
         # If the element of the list is 0, the buffer is not used and shall be released.
-        if len(context.scene.sdf_torus_pointer_list) > 0:
+        if len(context.scene.sdf_torus_pointer_list) == 0:
             return cls.release_torus_buffer()
         
         # If buffer is set to None for some reason, a new buffer is created here.
@@ -587,8 +602,8 @@ class ShaderBufferFactory(object):
             sdf_prop = object.sdf_prop
             
             radius = pointer.radius
-            height = pointer.height
-            round = min(radius[0], radius[1], height * 0.5) * sdf_prop.round
+            height = pointer.height * 0.5
+            round = min(radius[0], radius[1], height) * sdf_prop.round
             
             offset = i * dsize
             narray[offset + 0] = height - round
@@ -599,9 +614,10 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.cone_buffer = buf
-        buf.bind_to_storage_buffer(25)
+        buf.bind_to_storage_buffer(5)
         
-        print('[generate_cone_buffer] narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_cone_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.cone_buffer
 
     @classmethod
@@ -623,8 +639,8 @@ class ShaderBufferFactory(object):
         sdf_prop = object.sdf_prop
         
         radius = pointer.radius
-        height = pointer.height
-        round = min(radius[0], radius[1], height * 0.5) * sdf_prop.round
+        height = pointer.height * 0.5
+        round = min(radius[0], radius[1], height) * sdf_prop.round
         
         narray[0] = height - round
         narray[1] = radius[0] - round
@@ -634,14 +650,15 @@ class ShaderBufferFactory(object):
         buf = cls.cone_buffer
         buf.write(narray.tobytes(), sub_i * dsize)
         
-        print('[generate_cone_buffer] narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_cone_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.cone_buffer
 
     @classmethod
     def update_cone_buffer(cls, ctx, context, i, sub_i):
 
         # If the element of the list is 0, the buffer is not used and shall be released.
-        if len(context.scene.sdf_cone_pointer_list) > 0:
+        if len(context.scene.sdf_cone_pointer_list) == 0:
             return cls.release_cone_buffer()
         
         # If buffer is set to None for some reason, a new buffer is created here.
@@ -693,9 +710,10 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.pyramid_buffer = buf
-        buf.bind_to_storage_buffer(26)
+        buf.bind_to_storage_buffer(6)
         
-        print('[generate_pyramid_buffer] narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_pyramid_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.pyramid_buffer
 
     @classmethod
@@ -729,14 +747,15 @@ class ShaderBufferFactory(object):
         buf = cls.pyramid_buffer
         buf.write(narray.tobytes(), sub_i * dsize)
         
-        print('[generate_pyramid_buffer] narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_pyramid_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.pyramid_buffer
 
     @classmethod
     def update_pyramid_buffer(cls, ctx, context, i, sub_i):
 
         # If the element of the list is 0, the buffer is not used and shall be released.
-        if len(context.scene.sdf_pyramid_pointer_list) > 0:
+        if len(context.scene.sdf_pyramid_pointer_list) == 0:
             return cls.release_pyramid_buffer()
         
         # If buffer is set to None for some reason, a new buffer is created here.
@@ -791,9 +810,10 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.truncated_pyramid_buffer = buf
-        buf.bind_to_storage_buffer(27)
+        buf.bind_to_storage_buffer(7)
         
-        print('[generate_truncated_pyramid_buffer] narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_truncated_pyramid_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.truncated_pyramid_buffer
 
     @classmethod
@@ -834,14 +854,15 @@ class ShaderBufferFactory(object):
         buf = cls.truncated_pyramid_buffer
         buf.write(narray.tobytes(), sub_i * dsize)
         
-        print('[generate_truncated_pyramid_buffer] narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_truncated_pyramid_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.truncated_pyramid_buffer
 
     @classmethod
     def update_truncated_pyramid_buffer(cls, ctx, context, i, sub_i):
 
         # If the element of the list is 0, the buffer is not used and shall be released.
-        if len(context.scene.sdf_truncated_pyramid_pointer_list) > 0:
+        if len(context.scene.sdf_truncated_pyramid_pointer_list) == 0:
             return cls.release_truncated_pyramid_buffer()
         
         # If buffer is set to None for some reason, a new buffer is created here.
@@ -878,9 +899,9 @@ class ShaderBufferFactory(object):
             object = pointer.object
             sdf_prop = object.sdf_prop
             
-            height = pointer.height
-            radius = pointer.radius
-            round = min(radius, height * 0.5) * sdf_prop.round
+            height = pointer.height * 0.5
+            radius = pointer.radius * math.sqrt(3) / 2
+            round = min(radius, height) * sdf_prop.round
             
             offset = i * dsize
             narray[offset + 0] = height - round
@@ -891,9 +912,10 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.hex_prism_buffer = buf
-        buf.bind_to_storage_buffer(28)
+        buf.bind_to_storage_buffer(8)
         
-        print('[generate_hex_prism_buffer] narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_hex_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.hex_prism_buffer
 
     @classmethod
@@ -914,9 +936,9 @@ class ShaderBufferFactory(object):
         object = pointer.object
         sdf_prop = object.sdf_prop
         
-        height = pointer.height
-        radius = pointer.radius
-        round = min(radius, height * 0.5) * sdf_prop.round
+        height = pointer.height * 0.5
+        radius = pointer.radius * math.sqrt(3) / 2
+        round = min(radius, height) * sdf_prop.round
         
         narray[0] = height - round
         narray[1] = radius - round
@@ -926,14 +948,15 @@ class ShaderBufferFactory(object):
         buf = cls.hex_prism_buffer
         buf.write(narray.tobytes(), sub_i * dsize)
         
-        print('[generate_hex_prism_buffer] narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_hex_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.hex_prism_buffer
 
     @classmethod
     def update_hex_prism_buffer(cls, ctx, context, i, sub_i):
 
         # If the element of the list is 0, the buffer is not used and shall be released.
-        if len(context.scene.sdf_hex_prism_pointer_list) > 0:
+        if len(context.scene.sdf_hex_prism_pointer_list) == 0:
             return cls.release_hex_prism_buffer()
         
         # If buffer is set to None for some reason, a new buffer is created here.
@@ -971,9 +994,9 @@ class ShaderBufferFactory(object):
             object = pointer.object
             sdf_prop = object.sdf_prop
             
-            height = pointer.height
+            height = pointer.height * 0.5
             radius = pointer.radius
-            round = min(radius, height * 0.5) * sdf_prop.round
+            round = min(radius, height) * sdf_prop.round
             
             offset = i * dsize
             narray[offset + 0] = height - round
@@ -984,9 +1007,10 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.tri_prism_buffer = buf
-        buf.bind_to_storage_buffer(29)
+        buf.bind_to_storage_buffer(9)
         
-        print('[generate_tri_prism_buffer] narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_tri_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.tri_prism_buffer
 
     @classmethod
@@ -1007,9 +1031,9 @@ class ShaderBufferFactory(object):
         object = pointer.object
         sdf_prop = object.sdf_prop
         
-        height = pointer.height
+        height = pointer.height * 0.5
         radius = pointer.radius
-        round = min(radius, height * 0.5) * sdf_prop.round
+        round = min(radius, height) * sdf_prop.round
         
         narray[0] = height - round
         narray[1] = radius - round
@@ -1019,14 +1043,15 @@ class ShaderBufferFactory(object):
         buf = cls.tri_prism_buffer
         buf.write(narray.tobytes(), sub_i * dsize)
         
-        print('[generate_tri_prism_buffer] narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_tri_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.tri_prism_buffer
 
     @classmethod
     def update_tri_prism_buffer(cls, ctx, context, i, sub_i):
 
         # If the element of the list is 0, the buffer is not used and shall be released.
-        if len(context.scene.sdf_tri_prism_pointer_list) > 0:
+        if len(context.scene.sdf_tri_prism_pointer_list) == 0:
             return cls.release_tri_prism_buffer()
         
         # If buffer is set to None for some reason, a new buffer is created here.
@@ -1063,9 +1088,9 @@ class ShaderBufferFactory(object):
             object = pointer.object
             sdf_prop = object.sdf_prop
             
-            height = pointer.height
+            height = pointer.height * 0.5
             radius = pointer.radius
-            round = min(radius, height * 0.5) * sdf_prop.round
+            round = min(radius, height) * sdf_prop.round
             nsides = pointer.nsides
             
             offset = i * dsize
@@ -1077,9 +1102,10 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.ngon_prism_buffer = buf
-        buf.bind_to_storage_buffer(30)
+        buf.bind_to_storage_buffer(10)
         
-        print('[generate_ngon_prism_buffer] narray:', narray, 'buf:', buf.read())
+        print('\n', '[generate_ngon_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        
         return cls.ngon_prism_buffer
 
     @classmethod
@@ -1100,9 +1126,9 @@ class ShaderBufferFactory(object):
         object = pointer.object
         sdf_prop = object.sdf_prop
         
-        height = pointer.height
-        radius = pointer.adius
-        round = min(radius, height * 0.5) * sdf_prop.round
+        height = pointer.height * 0.5
+        radius = pointer.radius
+        round = min(radius, height) * sdf_prop.round
         nsides = pointer.nsides
         
         narray[0] = height - round
@@ -1113,21 +1139,22 @@ class ShaderBufferFactory(object):
         buf = cls.ngon_prism_buffer
         buf.write(narray.tobytes(), sub_i * dsize)
         
-        print('[generate_ngon_prism_buffer] narray:', narray, 'buf:', buf.read())
+        print('\n','[generate_ngon_prism_buffer] narray:', narray, 'buf:', buf.read(),'\n')
+        
         return cls.ngon_prism_buffer
 
     @classmethod
-    def update_mgon_prism_buffer(cls, ctx, context, i, sub_i):
+    def update_ngon_prism_buffer(cls, ctx, context, i, sub_i):
 
         # If the element of the list is 0, the buffer is not used and shall be released.
-        if len(context.scene.sdf_mgon_prism_pointer_list) > 0:
-            return cls.release_mgon_prism_buffer()
+        if len(context.scene.sdf_ngon_prism_pointer_list) == 0:
+            return cls.release_ngon_prism_buffer()
         
         # If buffer is set to None for some reason, a new buffer is created here.
-        if cls.mgon_prism_buffer == None:
-            return cls._generate_mgon_prism_buffer(ctx, context)
+        if cls.ngon_prism_buffer == None:
+            return cls._generate_ngon_prism_buffer(ctx, context)
         
-        return cls._update_mgon_prism_buffer(ctx, context, i, sub_i)
+        return cls._update_ngon_prism_buffer(ctx, context, i, sub_i)
     
     @classmethod
     def release_ngon_prism_buffer(cls):
@@ -1154,32 +1181,5 @@ class ShaderBufferFactory(object):
     @classmethod
     def release_glsl_buffer(cls):
         pass
-        
-# ctx.buffer example:
-#    count_buf = cls.ctx.buffer(data=b'\x00\x00\x00\x00')
-#    count_buf.bind_to_storage_buffer(0)
-#    tri_siz = 3*3+1
-#    out_buf = np.empty((cls.max_triangle_count,tri_siz),dtype=np.float32).tobytes()
-#    out_buf = cls.ctx.buffer(out_buf) # 128 --> 400MB, 256 --> 3019 MB (map error !)
-#    out_buf.bind_to_storage_buffer(1)
-#    compute_shader["boxOffset"].value = np.array([x,y,z])
-#    compute_shader.run(group_x=cls.BOX_DIM_X//cls.LOCAL_X,group_y=cls.BOX_DIM_Y//cls.LOCAL_Y,group_z=cls.BOX_DIM_Z//cls.LOCAL_Z)
-
-#    count = count_buf.read()
-#    count = np.frombuffer(count,dtype='uint32')[0]
-#    verts = out_buf.read()
-#    verts = np.frombuffer(verts,dtype='float32')
-#    verts = verts.reshape((int(len(verts)/tri_siz),tri_siz))
-#    verts = verts[:count,:tri_siz-1]
-#    verts = verts.reshape(int(len(verts)*9/3),3)
-#    
-#    total_count = total_count+count
-#    if total_verts is None:
-#        total_verts = verts
-#    else:
-#        total_verts = np.concatenate((total_verts, verts),axis=0)
-#    
-#    count_buf.release()
-#    out_buf.release()
 
     pass

@@ -1,7 +1,9 @@
 import bpy
+import math
 import bmesh
-from mesh_from_sdf.shader_buffer_factory import *
+import mathutils
 from mesh_from_sdf.util.pointer_list import *
+from mesh_from_sdf.shader.buffer_factory import *
 from bpy.types import PropertyGroup
 from bpy.props import PointerProperty, FloatProperty, IntProperty, StringProperty
 
@@ -221,7 +223,8 @@ class SDFTorusPointer(SDFPrimitivePointer):
         name='Fill',
         description='',
         min=0.0,
-        default=1.0,
+        max=1.0,
+        default=0.75,
         update=on_prop_update)
         
     @classmethod
@@ -483,7 +486,10 @@ class SDFPrismPointer(SDFPrimitivePointer):
         
         height = self.height
         radius = self.radius
-        bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=radius, depth=height, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+        rotation_euler = object.rotation_euler
+        rotation_euler = mathutils.Euler((rotation_euler[0], rotation_euler[1], rotation_euler[2]), 'XYZ')
+        rotation_euler.rotate_axis('Z', 45*0.5)
+        bpy.ops.mesh.primitive_cylinder_add(vertices=6, radius=radius, depth=height, enter_editmode=False, align='CURSOR', location=object.location, rotation=rotation_euler, scale=object.scale)
         
     @classmethod
     def update_tri_prism_mesh(cls, pointer):
@@ -504,7 +510,10 @@ class SDFPrismPointer(SDFPrimitivePointer):
         nsides = self.nsides
         height = self.height
         radius = self.radius
-        bpy.ops.mesh.primitive_cylinder_add(vertices=nsides, radius=radius, depth=height, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+        rotation_euler = object.rotation_euler
+        rotation_euler = mathutils.Euler((rotation_euler[0], rotation_euler[1], rotation_euler[2]), 'XYZ')
+        # rotation_euler.rotate_axis('Z', 45*0.75)
+        bpy.ops.mesh.primitive_cylinder_add(vertices=nsides, radius=radius, depth=height, enter_editmode=False, align='CURSOR', location=object.location, rotation=rotation_euler, scale=object.scale)
 
 
 class SDFGLSLPointer(SDFPrimitivePointer):

@@ -7,8 +7,8 @@ import numpy as np
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
-from mesh_from_sdf import sdf_common as sc
-from mesh_from_sdf import marching_tables as mt
+from mesh_from_sdf import marching_tables
+from mesh_from_sdf.shader import common
 
 
 class MarchingCube(object):
@@ -17,7 +17,7 @@ class MarchingCube(object):
 
     #version 430
     
-    ''' + sc.frag_include_ + '''
+    ''' + common.include_struct_ + '''
     
     #define LOCAL_X 8
     #define LOCAL_Y 8
@@ -51,7 +51,7 @@ class MarchingCube(object):
     uniform float isoLevel;
     const ivec3 localSize = ivec3(LOCAL_X,LOCAL_Y,LOCAL_Z);
     const ivec3 boxDim = ivec3(BOX_DIM_X,BOX_DIM_Y,BOX_DIM_Z);
-    ''' + sc.include_ + '''
+    ''' + common.include_frag_ + '''
     float getDist(vec3 p) {
         return sdBox(p, vec3(1,1,1), 0.1);
         //return sdTorus(p, 1.0, 0.25);
@@ -157,13 +157,13 @@ class MarchingCube(object):
         compute_shader["isoRange"].value = np.array([-0.1,0.1])
         compute_shader["isoLevel"].value = 0.5
         compute_shader["boxSize"].value = np.array([cls.BOX_SIZE_X,cls.BOX_SIZE_Y,cls.BOX_SIZE_Z])
-        in_buf = cls.ctx.buffer(mt.edges)
+        in_buf = cls.ctx.buffer(marching_tables.edges)
         in_buf.bind_to_storage_buffer(2)
-        in_buf = cls.ctx.buffer(mt.triangulation)
+        in_buf = cls.ctx.buffer(marching_tables.triangulation)
         in_buf.bind_to_storage_buffer(3)
-        in_buf = cls.ctx.buffer(mt.corner_index_a_from_edge)
+        in_buf = cls.ctx.buffer(marching_tables.corner_index_a_from_edge)
         in_buf.bind_to_storage_buffer(4)
-        in_buf = cls.ctx.buffer(mt.corner_index_b_from_edge)
+        in_buf = cls.ctx.buffer(marching_tables.corner_index_b_from_edge)
         in_buf.bind_to_storage_buffer(5)
 
         total_count = 0

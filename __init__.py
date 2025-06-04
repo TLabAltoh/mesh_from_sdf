@@ -21,8 +21,8 @@ from bpy.app.handlers import persistent
 from mesh_from_sdf.raymarching import *
 from mesh_from_sdf.marching_cube import *
 from mesh_from_sdf.marching_tables import *
-from mesh_from_sdf.shader_factory import *
-from mesh_from_sdf.shader_buffer_factory import *
+from mesh_from_sdf.shader.factory import *
+from mesh_from_sdf.shader.buffer_factory import *
 from mesh_from_sdf.pointer import *
 from mesh_from_sdf.gizmo.box import *
 from mesh_from_sdf.gizmo.cylinder import *
@@ -37,6 +37,7 @@ from mesh_from_sdf.util.material import *
 from mesh_from_sdf.util.moderngl import *
 from mesh_from_sdf.util.algorithm import *
 from mesh_from_sdf.util.pointer_list import *
+from mesh_from_sdf.render_engine import *
 from bpy.app.handlers import persistent
 from bpy.types import Panel, Operator, UIList, PropertyGroup
 from bpy.props import PointerProperty, EnumProperty, FloatProperty, IntProperty, StringProperty, BoolProperty, CollectionProperty
@@ -922,7 +923,6 @@ def on_depsgraph_update(scene):
             for obj in bpy.context.selected_objects:
                 if obj.sdf_prop.enabled:
                     ShaderBufferFactory.update_object_common_buffer(ctx, bpy.context, obj.sdf_prop.index)
-            print('[on_depsgraph_update] update transform')
 
 
 global ctx, test_global
@@ -937,8 +937,9 @@ def register():
     for c in classes:
         bpy.utils.register_class(c)
 
-    raymarching.register()
     marching_cube.register()
+    raymarching.register()
+    render_engine.register()
     
     gizmo.box.register()
     gizmo.cylinder.register()
@@ -998,6 +999,7 @@ def unregister():
     gizmo.tri_prism.unregister()
     gizmo.ngon_prism.unregister()
 
+    render_engine.unregister()
     marching_cube.unregister()
     raymarching.unregister()
     

@@ -8,8 +8,8 @@ from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
 from mathutils.geometry import intersect_line_plane
-from mesh_from_sdf import sdf_common as sc
-from mesh_from_sdf.shader_buffer_factory import ShaderBufferFactory
+from mesh_from_sdf.shader import common
+from mesh_from_sdf.shader.buffer_factory import ShaderBufferFactory
 
 
 class Raymarching(bpy.types.Operator):
@@ -75,13 +75,6 @@ class Raymarching(bpy.types.Operator):
                     for region in area.regions:
                         if region.type == 'WINDOW':
                             region.tag_redraw()
-
-    # A library of utilities for coordinate transformations and quaternions for both vertex and fragment shaders.
-    include_ = '''
-        vec4 mulVec(mat4 matrix, vec3 a) {
-            return matrix * vec4(a, 1);
-        }
-         '''
 
     dist_ = '''
         const vec3 positions[OBJECT_COUNT] = { 
@@ -226,7 +219,7 @@ class Raymarching(bpy.types.Operator):
         uniform mat4 u_ViewMatrix;
         uniform mat4 u_CameraRotationMatrix;
 
-        ''' + cls.include_ + '''
+        ''' + common.include_ + '''
         
         void main() {
             pos = in_pos;
@@ -241,19 +234,19 @@ class Raymarching(bpy.types.Operator):
     @classmethod
     def get_frag(cls):
         # generate fragment shader
-        frag_ = sc.frag_include_ + '''
+        frag_ = common.include_ + common.include_struct_ + '''
         
-        layout(binding=20) readonly buffer in_prop_object { SDFObjectProp sdfObjectProps[]; };
-        layout(binding=21) readonly buffer in_prop_box { SDFBoxProp sdfBoxProps[]; };
-        layout(binding=22) readonly buffer in_prop_sphere { SDfSphereProp sdfSphereProps[]; };
-        layout(binding=23) readonly buffer in_prop_cylinder { SDFCylinderProp sdfCylinderProps[]; };
-        layout(binding=24) readonly buffer in_prop_torus { SDFTorusProp sdfTorusProps[]; };
-        layout(binding=25) readonly buffer in_prop_cone { SDFConeProp sdfConeProps[]; };
-        layout(binding=26) readonly buffer in_prop_pyramid { SDFPyramidProp sdfPyramidProps[]; };
-        layout(binding=27) readonly buffer in_prop_truncated_pyramid { SDFTruncatedPyramidProp sdfTruncatedPyramidProps[]; };
-        layout(binding=28) readonly buffer in_prop_hex_prism { SDFPrismProp sdfHexPrismProps[]; };
-        layout(binding=29) readonly buffer in_prop_tri_prism { SDFPrismProp sdfTriPrismProps[]; };
-        layout(binding=30) readonly buffer in_prop_ngon_prism { SDFNgonPrismProp sdfNgonPrismProps[]; };
+        layout(binding=0) readonly buffer in_prop_object { SDFObjectProp sdfObjectProps[]; };
+        layout(binding=1) readonly buffer in_prop_box { SDFBoxProp sdfBoxProps[]; };
+        layout(binding=2) readonly buffer in_prop_sphere { SDfSphereProp sdfSphereProps[]; };
+        layout(binding=3) readonly buffer in_prop_cylinder { SDFCylinderProp sdfCylinderProps[]; };
+        layout(binding=4) readonly buffer in_prop_torus { SDFTorusProp sdfTorusProps[]; };
+        layout(binding=5) readonly buffer in_prop_cone { SDFConeProp sdfConeProps[]; };
+        layout(binding=6) readonly buffer in_prop_pyramid { SDFPyramidProp sdfPyramidProps[]; };
+        layout(binding=7) readonly buffer in_prop_truncated_pyramid { SDFTruncatedPyramidProp sdfTruncatedPyramidProps[]; };
+        layout(binding=8) readonly buffer in_prop_hex_prism { SDFPrismProp sdfHexPrismProps[]; };
+        layout(binding=9) readonly buffer in_prop_tri_prism { SDFPrismProp sdfTriPrismProps[]; };
+        layout(binding=10) readonly buffer in_prop_ngon_prism { SDFNgonPrismProp sdfNgonPrismProps[]; };
         
         in vec3 pos;
         in vec3 orthoRayDir;
@@ -281,7 +274,7 @@ class Raymarching(bpy.types.Operator):
         #define TRI_PRISM 5
         #define NGON_PRISM 6
         
-        ''' + sc.include_ + cls.include_ + '''
+        ''' + common.include_frag_ + '''
                 
         float getDist(vec3 p) {
         
@@ -355,8 +348,6 @@ class Raymarching(bpy.types.Operator):
     def recreate_shader(cls):
         if cls.shader != None:
             del cls.shader
-        print('-------------------------------------------------------------------------')
-        print('Distance Shader')
         print(cls.get_frag())
         cls.shader = gpu.types.GPUShader(cls.get_vert(), cls.get_frag())
 
@@ -390,6 +381,8 @@ class Raymarching(bpy.types.Operator):
         cls.shader.uniform_float("u_CameraPosition", cls.config["u_CameraPosition"])
         cls.shader.uniform_float("u_CameraRotationMatrix", cls.config["u_CameraRotationMatrix"])
         
+        ShaderBufferFactory.generate_all(cls.ctx, bpy.context)
+        
         batch = batch_for_shader(cls.shader, 'TRIS', {"in_pos": cls.config["vertices"]}, indices=cls.indices,)
         gpu.state.blend_set("ALPHA") 
         gpu.state.depth_test_set('LESS_EQUAL')
@@ -399,33 +392,16 @@ class Raymarching(bpy.types.Operator):
         gpu.state.blend_set("NONE")
         cls.tag_redraw_all_3dviews()
 
-    # Variable that holds the handler obtained when the drawing event is registered 
-    # (this handler is needed to cancel the drawing event)
-    __handle = None
-
-    # Registration of drawing events
-    @classmethod
-    def start(cls):
-        cls.__handle = bpy.types.SpaceView3D.draw_handler_add(cls.draw, (), 'WINDOW', 'POST_VIEW')
-
-    # Release drawing events
-    @classmethod
-    def stop(cls):
-        bpy.types.SpaceView3D.draw_handler_remove(cls.__handle, 'WINDOW')
-        cls.__handle = None
-
 
 classes = []
 
 def register():
     for c in classes:
         bpy.utils.register_class(c)
-        
-    Raymarching.start()
 
 def unregister():
     
-    Raymarching.stop()
+    Raymarching.pause = True
     
     for c in classes:
         bpy.utils.unregister_class(c)

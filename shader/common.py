@@ -1,6 +1,13 @@
 
-# A library of distance functions and mathematical utilities.
+# Utilities for functions used by both vertex and fragment shaders.
 include_ = '''
+        vec4 mulVec(mat4 matrix, vec3 a) {
+            return matrix * vec4(a, 1);
+        }
+'''
+
+# A library of distance functions and mathematical utilities.
+include_frag_ = '''
         mat4 rotmat(vec3 axis, in float angle) {
             axis = normalize(axis);
             float s = sin(angle);
@@ -16,9 +23,9 @@ include_ = '''
         // https://qiita.com/ukonpower/items/ebafd19fcb33f37ed273
         mat4 qua2mat( in vec4 q ){
             mat4 m = mat4(
-                1.0 - 2.0 * pow( q.y, 2.0 ) - 2.0 * pow( q.z, 2.0 ), 2.0 * q.x * q.y + 2.0 * q.w * q.z, 2.0 * q.x * q.z - 2.0 * q.w * q.y, 0.0,
-                2.0 * q.x * q.y - 2.0 * q.w * q.z, 1.0 - 2.0 * pow( q.x, 2.0 ) - 2.0 * pow( q.z, 2.0 ), 2.0 * q.y * q.z + 2.0 * q.w * q.x, 0.0,
-                2.0 * q.x * q.z + 2.0 * q.w * q.y, 2.0 * q.y * q.z - 2.0 * q.w * q.x, 1.0 - 2.0 * pow( q.x, 2.0 ) - 2.0 * pow( q.y, 2.0 ), 0.0,
+                +1.0 - 2.0 * pow( q.x, 2.0 ) - 2.0 * pow( q.y, 2.0 ), +2.0 * q.z * q.x + 2.0 * q.w * q.y, +2.0 * q.z * q.y - 2.0 * q.w * q.x, 0.0,
+                -2.0 * q.z * q.y - 2.0 * q.w * q.x, -2.0 * q.x * q.y + 2.0 * q.w * q.z, -1.0 + 2.0 * pow( q.z, 2.0 ) + 2.0 * pow( q.x, 2.0 ), 0.0,
+                +2.0 * q.z * q.x - 2.0 * q.w * q.y, +1.0 - 2.0 * pow( q.z, 2.0 ) - 2.0 * pow( q.y, 2.0 ), +2.0 * q.x * q.y + 2.0 * q.w * q.z, 0.0,
                 0.0, 0.0, 0.0, 1.0
             );
             return m;
@@ -206,19 +213,21 @@ include_ = '''
         }
         float sdTriPrism( in vec3 p, in float h, in float r ) {
             vec3 q = abs(p);
-            return max(q.z-h,max(q.x*0.866025+p.y*0.5,-p.y)-r*0.5);
+            return max(q.y-h,max(q.x*0.866025+p.z*0.5,-p.z)-r*0.5);
         }
-        float sdHexPrism( in vec3 p, in float h, in float r ) {
+        float sdHexPrism( vec3 p, in float h, in float r ) {
             const vec3 k = vec3(-0.8660254, 0.5, 0.57735);
             p = abs(p);
-            p.xy -= 2.0*min(dot(k.xy, p.xy), 0.0)*k.xy;
+            p.xz -= 2.0*min(dot(k.xy, p.xz), 0.0)*k.xy;
             vec2 d = vec2(
-                length(p.xy-vec2(clamp(p.x,-k.z*r,k.z*r), r))*sign(p.y-r),
-                p.z-h );
+                length(p.xz-vec2(clamp(p.x,-k.z*r,k.z*r), r))*sign(p.z-r),
+                p.y-h );
             return min(max(d.x,d.y),0.0) + length(max(d,0.0));
         }
-        float sdNgonPrism( in vec3 p, in float h, in float r, in float n) { // n: nsides
+        float sdNgonPrism( vec3 p, in float h, in float r, in float n) { // n: nsides
             const float PI = 3.14159;
+        
+            p = p.zxy;
         
             float theta, dist, side = n - 0.5, _h;
             vec2 a, b = vec2(r, 0), ba, pa;
@@ -247,16 +256,20 @@ include_ = '''
                 side -= sign((b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x));
             }
             
-            return opExtrusion(p, sign(side) * dist, h);
+            return opExtrusion(p, sign(side) * abs(dist), h);
         }
 '''
 
 # A library of fragment shader
-frag_include_ = '''
+# Investigation needed: For SDFObjectProp, when vec2 was used for the variable bl, 
+# the data of the n+1 element of object_common_buffer was shifted 2 bytes behind 
+# the intended position. This problem was solved by specifying vec4 for variable 
+# bl, but needs to be investigated.
+include_struct_ = '''
         struct SDFObjectProp {
             vec4 ps;  // position and scale
             vec4 qu;  // quaternion
-            vec2 bl;  // blend
+            vec4 bl;  // blend
         };
         struct SDFBoxProp {
             vec4 br; // bound and round
@@ -306,6 +319,6 @@ frag_include_ = '''
             float h;  // height
             float ra; // radius
             float rd; // round
-            uint n;   // nsides
+            float n;  // nsides
         };
 '''
