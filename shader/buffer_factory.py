@@ -1,6 +1,7 @@
 import moderngl
 import math
 import struct
+import mathutils
 import numpy as np
 
 # Class for generating and updating Storage Buffer Objects to be bound to shaders
@@ -93,13 +94,13 @@ class ShaderBufferFactory(object):
             p = mat.to_translation()
             r = mat.to_quaternion()
             s = mat.to_scale()
-            po = sdf_prop.position_offset
+            po = r @ mathutils.Vector(sdf_prop.position_offset) * s[0]
             bl_0, bl_1 = cls.__get_blend_props[sdf_prop.blend_type](sdf_prop)
             
             offset = i * dsize
-            narray[offset + 0] = p[0] + (po[0] * s[0])
-            narray[offset + 1] = p[1] + (po[1] * s[0])
-            narray[offset + 2] = p[2] + (po[2] * s[0])
+            narray[offset + 0] = p[0] + po[0]
+            narray[offset + 1] = p[1] + po[1]
+            narray[offset + 2] = p[2] + po[2]
             narray[offset + 3] = s[0]
             narray[offset + 4] = r[0]
             narray[offset + 5] = r[1]
@@ -145,12 +146,13 @@ class ShaderBufferFactory(object):
         p = mat.to_translation()
         r = mat.to_quaternion()
         s = mat.to_scale()
-        po = sdf_prop.position_offset
+        po = r @ mathutils.Vector(sdf_prop.position_offset) * s[0]
         bl_0, bl_1 = cls.__get_blend_props[sdf_prop.blend_type](sdf_prop)
         
-        narray[0] = p[0] + (po[0] * s[0])
-        narray[1] = p[1] + (po[1] * s[0])
-        narray[2] = p[2] + (po[2] * s[0])
+        
+        narray[0] = p[0] + po[0]
+        narray[1] = p[1] + po[1]
+        narray[2] = p[2] + po[2]
         narray[3] = s[0]
         narray[4] = r[0]
         narray[5] = r[1]
