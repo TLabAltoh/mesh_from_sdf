@@ -373,6 +373,10 @@ class Raymarching(bpy.types.Operator):
             cls.recreate_shader()
             cls.recreate_shader_requested = False
         
+#        buf = ShaderBufferFactory.get_object_common_buffer()
+#        if buf != None:
+#            print('buf', buf.read())
+        
         cls.shader.bind()
         cls.update_config()
         cls.shader.uniform_bool("u_IsPers", cls.config["u_IsPers"])
@@ -381,7 +385,8 @@ class Raymarching(bpy.types.Operator):
         cls.shader.uniform_float("u_CameraPosition", cls.config["u_CameraPosition"])
         cls.shader.uniform_float("u_CameraRotationMatrix", cls.config["u_CameraRotationMatrix"])
         
-        ShaderBufferFactory.generate_all(cls.ctx, bpy.context)
+        ShaderBufferFactory.bind_to_storage_buffer()
+#        ShaderBufferFactory.generate_all(cls.ctx, bpy.context)
         
         batch = batch_for_shader(cls.shader, 'TRIS', {"in_pos": cls.config["vertices"]}, indices=cls.indices,)
         gpu.state.blend_set("ALPHA") 

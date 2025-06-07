@@ -57,11 +57,20 @@ class SDFBoxPointer(SDFPrimitivePointer):
         default=(1.0,1.0,1.0),
         update=on_prop_update)
         
-    round: bpy.props.FloatVectorProperty(
+    round: FloatProperty(
+       name='Round',
+       description='',
+       min=0.0,
+       max=1.0,
+       default=0.0,
+       update=on_prop_update)
+        
+    corner_round: bpy.props.FloatVectorProperty(
         name='Corner Round',
         description='Radius of 4 corners viewed from z-plane',
         size=4,
         min=0.0,
+        max=1.0,
         default=(0,0,0,0),
         update=on_prop_update)
         
@@ -144,6 +153,14 @@ class SDFCylinderPointer(SDFPrimitivePointer):
         default=1.0,
         update=on_prop_update)
         
+    round: FloatProperty(
+       name='Round',
+       description='',
+       min=0.0,
+       max=1.0,
+       default=0.0,
+       update=on_prop_update)
+        
     @classmethod
     def update_cylinder_mesh(cls, pointer):
         object = pointer.object
@@ -184,6 +201,14 @@ class SDFConePointer(SDFPrimitivePointer):
         min=0.0,
         default=(0.75,0.25),
         update=on_prop_update)
+        
+    round: FloatProperty(
+       name='Round',
+       description='',
+       min=0.0,
+       max=1.0,
+       default=0.0,
+       update=on_prop_update)
         
     @classmethod
     def update_cone_mesh(cls, pointer):
@@ -290,6 +315,14 @@ class SDFPyramidPointer(SDFPrimitivePointer):
         default=2.0,
         update=on_prop_update)
         
+    round: FloatProperty(
+       name='Round',
+       description='',
+       min=0.0,
+       max=1.0,
+       default=0.0,
+       update=on_prop_update)
+        
     @classmethod
     def update_pyramid_mesh(cls, pointer):
         object = pointer.object
@@ -376,6 +409,14 @@ class SDFTruncatedPyramidPointer(SDFPrimitivePointer):
         min=0.0,
         default=2.0,
         update=on_prop_update)
+        
+    round: FloatProperty(
+       name='Round',
+       description='',
+       min=0.0,
+       max=1.0,
+       default=0.0,
+       update=on_prop_update)
         
     @classmethod
     def update_truncated_pyramid_mesh(cls, pointer):
@@ -478,6 +519,14 @@ class SDFPrismPointer(SDFPrimitivePointer):
         default=6,
         update=on_ngon_prism_prop_update)
         
+    round: FloatProperty(
+       name='Round',
+       description='',
+       min=0.0,
+       max=1.0,
+       default=0.0,
+       update=on_prop_update)
+        
     @classmethod
     def update_hex_prism_mesh(cls, pointer):
         object = pointer.object
@@ -529,6 +578,14 @@ class SDFGLSLPointer(SDFPrimitivePointer):
         min=0.0,
         default=(1.0,1.0,1.0),
         update=on_prop_update)
+    
+    round: FloatProperty(
+       name='Round',
+       description='',
+       min=0.0,
+       max=1.0,
+       default=0.0,
+       update=on_prop_update)
     
     shader_path: StringProperty(
         name='Shader PATH',

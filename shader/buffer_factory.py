@@ -25,6 +25,12 @@ class ShaderBufferFactory(object):
     tri_prism_buffer = None
     ngon_prism_buffer = None
     glsl_buffer = None
+    active_buffers = {}
+    
+    @classmethod
+    def bind_to_storage_buffer(cls):
+        for k, v in cls.active_buffers.items():
+            v.bind_to_storage_buffer(k)
     
     # Free all buffers
     @classmethod
@@ -105,7 +111,8 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.object_common_buffer = buf
-        buf.bind_to_storage_buffer(0)
+        cls.active_buffers[0] = cls.object_common_buffer
+        # buf.bind_to_storage_buffer(0)
         
         print('\n', '[generate_object_common_buffer] object_common:', narray, '\n')
         
@@ -152,7 +159,7 @@ class ShaderBufferFactory(object):
         # narray[11] = 0
         
         buf = cls.object_common_buffer
-        # buf.write(narray.tobytes(), i * dsize)
+        buf.write(narray.tobytes(), i * dsize * 4)
         
         print('\n', '[update_object_common_buffer] index:', i, 'narray:', narray, '\n')
         
@@ -176,6 +183,7 @@ class ShaderBufferFactory(object):
     @classmethod
     def release_object_common_buffer(cls):
         if cls.object_common_buffer != None:
+            del cls.active_buffers[0]
             cls.object_common_buffer.release()
         cls.object_comon_buffer = None
 
@@ -206,17 +214,17 @@ class ShaderBufferFactory(object):
                 pointer.bound[1],
                 pointer.bound[2]
             ]
-            round = min(bound) * sdf_prop.round * 0.5
+            round = min(bound) * pointer.round * 0.5
             bound[0] = bound[0] - round
             bound[1] = bound[1] - round
             bound[2] = bound[2] - round
             
-            mnhalf = min(bound[0], bound[1]) * 0.5
+            mnhalf = min(bound[0], bound[1])
             cround = (
-                pointer.round[0] * mnhalf,
-                pointer.round[1] * mnhalf,
-                pointer.round[2] * mnhalf,
-                pointer.round[3] * mnhalf
+                pointer.corner_round[0] * mnhalf,
+                pointer.corner_round[1] * mnhalf,
+                pointer.corner_round[2] * mnhalf,
+                pointer.corner_round[3] * mnhalf
             )
             
             offset = i * dsize
@@ -232,7 +240,8 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.box_buffer = buf
-        buf.bind_to_storage_buffer(1)
+        cls.active_buffers[1] = cls.box_buffer
+        # buf.bind_to_storage_buffer(1)
         
         print('\n', '[generate_box_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -261,17 +270,20 @@ class ShaderBufferFactory(object):
             pointer.bound[1],
             pointer.bound[2]
         ]
-        round = min(bound) * sdf_prop.round * 0.5
+        round = min(bound) * pointer.round * 0.5
+        
+        print('\n', '[round amount]', round, '\n')
+        
         bound[0] = bound[0] - round
         bound[1] = bound[1] - round
         bound[2] = bound[2] - round
         
-        mnhalf = min(bound[0], bound[1]) * 0.5
+        mnhalf = min(bound[0], bound[2])
         cround = (
-            pointer.round[0] * mnhalf,
-            pointer.round[1] * mnhalf,
-            pointer.round[2] * mnhalf,
-            pointer.round[3] * mnhalf
+            pointer.corner_round[0] * mnhalf,
+            pointer.corner_round[1] * mnhalf,
+            pointer.corner_round[2] * mnhalf,
+            pointer.corner_round[3] * mnhalf
         )
         
         narray[0] = bound[0]
@@ -284,7 +296,7 @@ class ShaderBufferFactory(object):
         narray[7] = cround[3]
         
         buf = cls.box_buffer
-        buf.write(narray.tobytes(), sub_i * dsize)
+        buf.write(narray.tobytes(), sub_i * dsize * 4)
         
         print('\n', '[generate_box_buffer] index:', i, 'narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -306,6 +318,7 @@ class ShaderBufferFactory(object):
     @classmethod
     def release_box_buffer(cls):
         if cls.box_buffer != None:
+            del cls.active_buffers[1]
             cls.box_buffer.release()
         cls.box_buffer = None
 
@@ -339,7 +352,8 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.sphere_buffer = buf
-        buf.bind_to_storage_buffer(2)
+        cls.active_buffers[2] = cls.sphere_buffer
+        # buf.bind_to_storage_buffer(2)
         
         print('\n', '[generate_sphere_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -368,7 +382,7 @@ class ShaderBufferFactory(object):
         narray[0] = radius
         
         buf = cls.sphere_buffer
-        buf.write(narray.tobytes(), sub_i * dsize)
+        buf.write(narray.tobytes(), sub_i * dsize * 4)
         
         print('\n', '[generate_sphere_buffer] index:', i, 'narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -390,6 +404,7 @@ class ShaderBufferFactory(object):
     @classmethod
     def release_sphere_buffer(cls):
         if cls.sphere_buffer != None:
+            del cls.active_buffers[2]
             cls.sphere_buffer.release()
         cls.sphere_buffer = None
     
@@ -417,7 +432,7 @@ class ShaderBufferFactory(object):
             
             height = pointer.height * 0.5
             radius = pointer.radius
-            round = min(radius, height) * sdf_prop.round
+            round = min(radius, height) * pointer.round
             
             offset = i * dsize
             narray[offset + 0] = height - round
@@ -428,7 +443,8 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.cylinder_buffer = buf
-        buf.bind_to_storage_buffer(3)
+        cls.active_buffers[3] = cls.cylinder_buffer
+        # buf.bind_to_storage_buffer(3)
         
         print('\n', '[generate_cylinder_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -454,7 +470,7 @@ class ShaderBufferFactory(object):
         
         height = pointer.height * 0.5
         radius = pointer.radius
-        round = min(radius, height) * sdf_prop.round
+        round = min(radius, height) * pointer.round
         
         narray[0] = height - round
         narray[1] = radius - round
@@ -462,7 +478,7 @@ class ShaderBufferFactory(object):
         # narray[3] = 0 # dummy
         
         buf = cls.cylinder_buffer
-        buf.write(narray.tobytes(), sub_i * dsize)
+        buf.write(narray.tobytes(), sub_i * dsize * 4)
         
         print('\n', '[generate_cylinder_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -484,6 +500,7 @@ class ShaderBufferFactory(object):
     @classmethod
     def release_cylinder_buffer(cls):
         if cls.cylinder_buffer != None:
+            del cls.active_buffers[3]
             cls.cylinder_buffer.release()
         cls.cylinder_buffer = None
 
@@ -521,7 +538,8 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.torus_buffer = buf
-        buf.bind_to_storage_buffer(4)
+        cls.active_buffers[4] = cls.torus_buffer
+        # buf.bind_to_storage_buffer(4)
         
         print('\n', '[generate_torus_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -554,7 +572,7 @@ class ShaderBufferFactory(object):
         narray[3] = math.cos(fill)
         
         buf = cls.torus_buffer
-        buf.write(narray.tobytes(), sub_i * dsize)
+        buf.write(narray.tobytes(), sub_i * dsize * 4)
         
         print('\n', '[generate_torus_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -576,6 +594,7 @@ class ShaderBufferFactory(object):
     @classmethod
     def release_torus_buffer(cls):
         if cls.torus_buffer != None:
+            del cls.active_buffers[4]
             cls.torus_buffer.release()
         cls.torus_buffer = None
     
@@ -603,7 +622,7 @@ class ShaderBufferFactory(object):
             
             radius = pointer.radius
             height = pointer.height * 0.5
-            round = min(radius[0], radius[1], height) * sdf_prop.round
+            round = min(radius[0], radius[1], height) * pointer.round
             
             offset = i * dsize
             narray[offset + 0] = height - round
@@ -614,7 +633,8 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.cone_buffer = buf
-        buf.bind_to_storage_buffer(5)
+        cls.active_buffers[5] = cls.cone_buffer
+        # buf.bind_to_storage_buffer(5)
         
         print('\n', '[generate_cone_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -640,7 +660,7 @@ class ShaderBufferFactory(object):
         
         radius = pointer.radius
         height = pointer.height * 0.5
-        round = min(radius[0], radius[1], height) * sdf_prop.round
+        round = min(radius[0], radius[1], height) * pointer.round
         
         narray[0] = height - round
         narray[1] = radius[0] - round
@@ -648,7 +668,7 @@ class ShaderBufferFactory(object):
         narray[3] = round
         
         buf = cls.cone_buffer
-        buf.write(narray.tobytes(), sub_i * dsize)
+        buf.write(narray.tobytes(), sub_i * dsize * 4)
         
         print('\n', '[generate_cone_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -670,6 +690,7 @@ class ShaderBufferFactory(object):
     @classmethod
     def release_cone_buffer(cls):
         if cls.cone_buffer != None:
+            del cls.active_buffers[5]
             cls.cone_buffer.release()
         cls.cone_buffer = None
     
@@ -699,7 +720,7 @@ class ShaderBufferFactory(object):
             hwidth = pointer.width * 0.5
             hdepth = pointer.depth * 0.5
             hheight = pointer.height * 0.5
-            round = min(hwidth, hdepth, hheight) * sdf_prop.round
+            round = min(hwidth, hdepth, hheight) * pointer.round
             
             offset = i * dsize
             narray[offset + 0] = hwidth - round
@@ -710,7 +731,8 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.pyramid_buffer = buf
-        buf.bind_to_storage_buffer(6)
+        cls.active_buffers[6] = cls.pyramid_buffer
+        # buf.bind_to_storage_buffer(6)
         
         print('\n', '[generate_pyramid_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -737,7 +759,7 @@ class ShaderBufferFactory(object):
         hwidth = pointer.width * 0.5
         hdepth = pointer.depth * 0.5
         hheight = pointer.height * 0.5
-        round = min(hwidth, hdepth, hheight) * sdf_prop.round
+        round = min(hwidth, hdepth, hheight) * pointer.round
         
         narray[0] = hwidth - round
         narray[1] = hdepth - round
@@ -745,7 +767,7 @@ class ShaderBufferFactory(object):
         narray[3] = round
         
         buf = cls.pyramid_buffer
-        buf.write(narray.tobytes(), sub_i * dsize)
+        buf.write(narray.tobytes(), sub_i * dsize * 4)
         
         print('\n', '[generate_pyramid_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -767,6 +789,7 @@ class ShaderBufferFactory(object):
     @classmethod
     def release_pyramid_buffer(cls):
         if cls.pyramid_buffer != None:
+            del cls.active_buffers[6]
             cls.pyramid_buffer.release()
         cls.pyramid_buffer = None
 
@@ -797,7 +820,7 @@ class ShaderBufferFactory(object):
             hwidth_1 = pointer.width_1 * 0.5
             hdepth_1 = pointer.depth_1 * 0.5
             hheight = pointer.height * 0.5
-            round = min(hwidth_0, hdepth_0, hwidth_1, hdepth_1, hheight) * sdf_prop.round
+            round = min(hwidth_0, hdepth_0, hwidth_1, hdepth_1, hheight) * pointer.round
             
             offset = i * dsize
             narray[offset + 0] = hwidth_0 - round
@@ -810,7 +833,8 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.truncated_pyramid_buffer = buf
-        buf.bind_to_storage_buffer(7)
+        cls.active_buffers[7] = cls.truncated_pyramid_buffer
+        # buf.bind_to_storage_buffer(7)
         
         print('\n', '[generate_truncated_pyramid_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -842,7 +866,7 @@ class ShaderBufferFactory(object):
         hwidth_1 = pointer.width_1 * 0.5
         hdepth_1 = pointer.depth_1 * 0.5
         hheight = pointer.height * 0.5
-        round = min(hwidth_0, hdepth_0, hwidth_1, hdepth_1, hheight) * sdf_prop.round
+        round = min(hwidth_0, hdepth_0, hwidth_1, hdepth_1, hheight) * pointer.round
         
         narray[0] = hwidth_0 - round
         narray[1] = hdepth_0 - round
@@ -852,7 +876,7 @@ class ShaderBufferFactory(object):
         narray[5] = round
         
         buf = cls.truncated_pyramid_buffer
-        buf.write(narray.tobytes(), sub_i * dsize)
+        buf.write(narray.tobytes(), sub_i * dsize * 4)
         
         print('\n', '[generate_truncated_pyramid_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -874,6 +898,7 @@ class ShaderBufferFactory(object):
     @classmethod
     def release_truncated_pyramid_buffer(cls):
         if cls.truncated_pyramid_buffer != None:
+            del cls.active_buffers[7]
             cls.truncated_pyramid_buffer.release()
         cls.truncated_pyramid_buffer = None
 
@@ -901,7 +926,7 @@ class ShaderBufferFactory(object):
             
             height = pointer.height * 0.5
             radius = pointer.radius * math.sqrt(3) / 2
-            round = min(radius, height) * sdf_prop.round
+            round = min(radius, height) * pointer.round
             
             offset = i * dsize
             narray[offset + 0] = height - round
@@ -912,7 +937,8 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.hex_prism_buffer = buf
-        buf.bind_to_storage_buffer(8)
+        cls.active_buffers[8] = cls.hex_prism_buffer
+        # buf.bind_to_storage_buffer(8)
         
         print('\n', '[generate_hex_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -938,7 +964,7 @@ class ShaderBufferFactory(object):
         
         height = pointer.height * 0.5
         radius = pointer.radius * math.sqrt(3) / 2
-        round = min(radius, height) * sdf_prop.round
+        round = min(radius, height) * pointer.round
         
         narray[0] = height - round
         narray[1] = radius - round
@@ -946,7 +972,7 @@ class ShaderBufferFactory(object):
         # narray[3] = 0 # dummy
         
         buf = cls.hex_prism_buffer
-        buf.write(narray.tobytes(), sub_i * dsize)
+        buf.write(narray.tobytes(), sub_i * dsize * 4)
         
         print('\n', '[generate_hex_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -968,6 +994,7 @@ class ShaderBufferFactory(object):
     @classmethod
     def release_hex_prism_buffer(cls):
         if cls.hex_prism_buffer != None:
+            del cls.active_buffers[8]
             cls.hex_prism_buffer.release()
         cls.hex_prism_buffer = None
 
@@ -996,7 +1023,7 @@ class ShaderBufferFactory(object):
             
             height = pointer.height * 0.5
             radius = pointer.radius
-            round = min(radius, height) * sdf_prop.round
+            round = min(radius, height) * pointer.round
             
             offset = i * dsize
             narray[offset + 0] = height - round
@@ -1007,7 +1034,8 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.tri_prism_buffer = buf
-        buf.bind_to_storage_buffer(9)
+        cls.active_buffers[9] = cls.tri_prism_buffer
+        # buf.bind_to_storage_buffer(9)
         
         print('\n', '[generate_tri_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -1033,7 +1061,7 @@ class ShaderBufferFactory(object):
         
         height = pointer.height * 0.5
         radius = pointer.radius
-        round = min(radius, height) * sdf_prop.round
+        round = min(radius, height) * pointer.round
         
         narray[0] = height - round
         narray[1] = radius - round
@@ -1041,7 +1069,7 @@ class ShaderBufferFactory(object):
         # narray[3] = 0 # dummy
         
         buf = cls.tri_prism_buffer
-        buf.write(narray.tobytes(), sub_i * dsize)
+        buf.write(narray.tobytes(), sub_i * dsize * 4)
         
         print('\n', '[generate_tri_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -1063,6 +1091,7 @@ class ShaderBufferFactory(object):
     @classmethod
     def release_tri_prism_buffer(cls):
         if cls.tri_prism_buffer != None:
+            del cls.active_buffers[9]
             cls.tri_prism_buffer.release()
         cls.tri_prism_buffer = None
     
@@ -1090,7 +1119,7 @@ class ShaderBufferFactory(object):
             
             height = pointer.height * 0.5
             radius = pointer.radius
-            round = min(radius, height) * sdf_prop.round
+            round = min(radius, height) * pointer.round
             nsides = pointer.nsides
             
             offset = i * dsize
@@ -1102,7 +1131,8 @@ class ShaderBufferFactory(object):
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
         cls.ngon_prism_buffer = buf
-        buf.bind_to_storage_buffer(10)
+        cls.active_buffers[10] = cls.ngon_prism_buffer
+        # buf.bind_to_storage_buffer(10)
         
         print('\n', '[generate_ngon_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
@@ -1128,7 +1158,7 @@ class ShaderBufferFactory(object):
         
         height = pointer.height * 0.5
         radius = pointer.radius
-        round = min(radius, height) * sdf_prop.round
+        round = min(radius, height) * pointer.round
         nsides = pointer.nsides
         
         narray[0] = height - round
@@ -1137,7 +1167,7 @@ class ShaderBufferFactory(object):
         narray[3] = nsides
         
         buf = cls.ngon_prism_buffer
-        buf.write(narray.tobytes(), sub_i * dsize)
+        buf.write(narray.tobytes(), sub_i * dsize * 4)
         
         print('\n','[generate_ngon_prism_buffer] narray:', narray, 'buf:', buf.read(),'\n')
         
@@ -1159,6 +1189,7 @@ class ShaderBufferFactory(object):
     @classmethod
     def release_ngon_prism_buffer(cls):
         if cls.ngon_prism_buffer != None:
+            del cls.active_buffers[10]
             cls.ngon_prism_buffer.release()
         cls.ngon_prism_buffer = None
     

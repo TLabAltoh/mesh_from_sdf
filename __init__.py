@@ -306,14 +306,6 @@ class SDFProperty(PropertyGroup):
         default=0.5,
         update=on_prop_update)
            
-    round: FloatProperty(
-       name='Round',
-       description='',
-       min=0.0,
-       max=1.0,
-       default=0.0,
-       update=on_prop_update)
-           
     prev_primitive_type: EnumProperty(
         description='',
         items=primitive_types)
@@ -677,17 +669,16 @@ class SDF2MESH_PT_Panel(Panel):
 draw_sdf_object_property_by_primitive_type = {'Box': lambda context, col, item: (
                                                 sub_item := context.scene.sdf_box_pointer_list[item.sub_index],
                                                 col.prop(sub_item, 'bound'),
-                                                col.prop(sub_item, 'round'),
-                                                col.prop(item, 'round')),
+                                                col.prop(sub_item, 'corner_round'),
+                                                col.prop(sub_item, 'round')),
                                               'Sphere': lambda context, col, item: (
                                                 sub_item := context.scene.sdf_sphere_pointer_list[item.sub_index],
-                                                col.prop(sub_item, 'radius'),
-                                                col.prop(item, 'round')),
+                                                col.prop(sub_item, 'radius')),
                                               'Cylinder': lambda context, col, item: (
                                                 sub_item := context.scene.sdf_cylinder_pointer_list[item.sub_index],
                                                 col.prop(sub_item, 'height'),
                                                 col.prop(sub_item, 'radius'),
-                                                col.prop(item, 'round')),
+                                                col.prop(sub_item, 'round')),
                                               'Torus': lambda context, col, item: (
                                                 sub_item := context.scene.sdf_torus_pointer_list[item.sub_index],
                                                 col.prop(sub_item, 'radius'),
@@ -696,13 +687,13 @@ draw_sdf_object_property_by_primitive_type = {'Box': lambda context, col, item: 
                                                 sub_item := context.scene.sdf_cone_pointer_list[item.sub_index],
                                                 col.prop(sub_item, 'height'),
                                                 col.prop(sub_item, 'radius'),
-                                                col.prop(item, 'round')),
+                                                col.prop(sub_item, 'round')),
                                               'Pyramid': lambda context, col, item: (
                                                 sub_item := context.scene.sdf_pyramid_pointer_list[item.sub_index],
                                                 col.prop(sub_item, 'width'),
                                                 col.prop(sub_item, 'depth'),
                                                 col.prop(sub_item, 'height'),
-                                                col.prop(item, 'round')),
+                                                col.prop(sub_item, 'round')),
                                               'Truncated Pyramid': lambda context, col, item: (
                                                 sub_item := context.scene.sdf_truncated_pyramid_pointer_list[item.sub_index],
                                                 col.prop(sub_item, 'width_0'),
@@ -710,28 +701,28 @@ draw_sdf_object_property_by_primitive_type = {'Box': lambda context, col, item: 
                                                 col.prop(sub_item, 'width_1'),
                                                 col.prop(sub_item, 'depth_1'),
                                                 col.prop(sub_item, 'height'),
-                                                col.prop(item, 'round')),
+                                                col.prop(sub_item, 'round')),
                                               'Hexagonal Prism': lambda context, col, item: (
                                                 sub_item := context.scene.sdf_hex_prism_pointer_list[item.sub_index],
                                                 col.prop(sub_item, 'radius'),
                                                 col.prop(sub_item, 'height'),
-                                                col.prop(item, 'round')),
+                                                col.prop(sub_item, 'round')),
                                               'Triangular Prism': lambda context, col, item: (
                                                 sub_item := context.scene.sdf_tri_prism_pointer_list[item.sub_index],
                                                 col.prop(sub_item, 'radius'),
                                                 col.prop(sub_item, 'height'),
-                                                col.prop(item, 'round')),
+                                                col.prop(sub_item, 'round')),
                                               'Ngon Prism': lambda context, col, item: (
                                                 sub_item := context.scene.sdf_ngon_prism_pointer_list[item.sub_index],
                                                 col.prop(sub_item, 'radius'),
                                                 col.prop(sub_item, 'height'),
                                                 col.prop(sub_item, 'nsides'),
-                                                col.prop(item, 'round')),
+                                                col.prop(sub_item, 'round')),
                                               'GLSL': lambda context, col, item: (
                                                 sub_item := context.scene.sdf_glsl_pointer_list[item.sub_index],
                                                 col.prop(sub_item, 'shader_path'),
                                                 col.prop(sub_item, 'bound'),
-                                                col.prop(item, 'round'))}
+                                                col.prop(sub_item, 'round'))}
                                                 
 draw_blend_property_by_blend_type = {'No Blending': lambda col, item: (),
                                      'Smooth': lambda col, item: col.prop(item, 'blend_smooth'),
@@ -922,6 +913,7 @@ def on_depsgraph_update(scene):
         if update.is_updated_transform:
             for obj in bpy.context.selected_objects:
                 if obj.sdf_prop.enabled:
+                    # print('\n', '[update_transform]', obj.name, '\n')
                     ShaderBufferFactory.update_object_common_buffer(ctx, bpy.context, obj.sdf_prop.index)
 
 

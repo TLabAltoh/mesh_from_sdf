@@ -15,120 +15,120 @@ class MarchingCube(object):
 
     basic_shader = '''
 
-    #version 430
+        #version 430
     
-    ''' + common.include_struct_ + '''
+        #define LOCAL_X 8
+        #define LOCAL_Y 8
+        #define LOCAL_Z 8
+        #define BOX_DIM_X 128
+        #define BOX_DIM_Y 128
+        #define BOX_DIM_Z 128
     
-    #define LOCAL_X 8
-    #define LOCAL_Y 8
-    #define LOCAL_Z 8
-    #define BOX_DIM_X 128
-    #define BOX_DIM_Y 128
-    #define BOX_DIM_Z 128
+        ''' + common.include_struct_ + '''
 
-    struct Vec3f { 
-        float x;
-        float y;
-        float z;
-    };
-    struct Triangle {
-        Vec3f c;
-        Vec3f b;
-        Vec3f a;
-        float d;
-    };
-
-    layout(local_size_x=LOCAL_X,local_size_y=LOCAL_Y,local_size_z=LOCAL_Z) in;
-    layout(binding=0) buffer inout_0 { uint count; };
-    layout(binding=1) writeonly buffer out_0 { Triangle output[]; };
-    layout(binding=2) readonly buffer in_1 { uint edge[]; };
-    layout(binding=3) readonly buffer in_2 { int triangulation[][16]; };
-    layout(binding=4) readonly buffer in_3 { uint cornerIndexAFromEdge[]; };
-    layout(binding=5) readonly buffer in_4 { uint cornerIndexBFromEdge[]; };
-    uniform vec2 isoRange;
-    uniform vec3 boxSize;
-    uniform vec3 boxOffset;
-    uniform float isoLevel;
-    const ivec3 localSize = ivec3(LOCAL_X,LOCAL_Y,LOCAL_Z);
-    const ivec3 boxDim = ivec3(BOX_DIM_X,BOX_DIM_Y,BOX_DIM_Z);
-    ''' + common.include_frag_ + '''
-    float getDist(vec3 p) {
-        return sdBox(p, vec3(1,1,1), 0.1);
-        //return sdTorus(p, 1.0, 0.25);
-    }
-    float saturate(float x, float min, float max) {
-        if (max<=min) return min;
-        return (clamp(x,min,max)-min)/(max-min);
-    }
-    float saturate(float x, vec2 range) {
-        return saturate(x,range.x,range.y);
-    }
-    vec3 interpolateVerts(vec4 v1, vec4 v2) {
-        if (v2.w-v1.w==0) return (v2.xyz+v1.xyz)*0.5;
-        float t = (isoLevel-v1.w)/(v2.w-v1.w);
-        return v1.xyz+t*(v2.xyz-v1.xyz);
-    }
-    int indexFromCoord(int x, int y, int z) {
-        return z*LOCAL_Z*LOCAL_Y+y*LOCAL_X+x;
-    }
-    vec3f vecn2vecnf(vec3 a) {
-        return vec3f(a.x,a.y,a.z);
-    }
-    void main() {
-        const ivec3 group_xyz = ivec3(gl_WorkGroupID);
-        const ivec3 thread_xyz = ivec3(gl_LocalInvocationID);
-        const ivec3 box_xyz = group_xyz*localSize+thread_xyz;
-        
-        const vec3 tmp0 = 0.5*vec3(boxDim);
-        const vec3 tmp2 = 1.0/tmp0*boxSize;
-        const vec3 tmp1 = box_xyz-tmp0*(vec3(1,1,1)+boxOffset);
-        const vec3 cubeCornersOffset[8] = {
-            (tmp1+vec3(0,0,0))*tmp2,
-            (tmp1+vec3(1,0,0))*tmp2,
-            (tmp1+vec3(1,0,1))*tmp2,
-            (tmp1+vec3(0,0,1))*tmp2,
-            (tmp1+vec3(0,1,0))*tmp2,
-            (tmp1+vec3(1,1,0))*tmp2,
-            (tmp1+vec3(1,1,1))*tmp2,
-            (tmp1+vec3(0,1,1))*tmp2
+        struct vec3f { 
+            float x;
+            float y;
+            float z;
         };
-        const vec4 cubeCorners[8] = {
-            vec4(cubeCornersOffset[0], saturate(getDist(cubeCornersOffset[0]), isoRange)),
-            vec4(cubeCornersOffset[1], saturate(getDist(cubeCornersOffset[1]), isoRange)),
-            vec4(cubeCornersOffset[2], saturate(getDist(cubeCornersOffset[2]), isoRange)),
-            vec4(cubeCornersOffset[3], saturate(getDist(cubeCornersOffset[3]), isoRange)),
-            vec4(cubeCornersOffset[4], saturate(getDist(cubeCornersOffset[4]), isoRange)),
-            vec4(cubeCornersOffset[5], saturate(getDist(cubeCornersOffset[5]), isoRange)),
-            vec4(cubeCornersOffset[6], saturate(getDist(cubeCornersOffset[6]), isoRange)),
-            vec4(cubeCornersOffset[7], saturate(getDist(cubeCornersOffset[7]), isoRange))
+        struct Triangle {
+            vec3f c;
+            vec3f b;
+            vec3f a;
+            float d;
         };
-        
-        int cubeIndex = 0;
-        if (cubeCorners[0].w < isoLevel) cubeIndex |= 1;
-        if (cubeCorners[1].w < isoLevel) cubeIndex |= 2;
-        if (cubeCorners[2].w < isoLevel) cubeIndex |= 4;
-        if (cubeCorners[3].w < isoLevel) cubeIndex |= 8;
-        if (cubeCorners[4].w < isoLevel) cubeIndex |= 16;
-        if (cubeCorners[5].w < isoLevel) cubeIndex |= 32;
-        if (cubeCorners[6].w < isoLevel) cubeIndex |= 64;
-        if (cubeCorners[7].w < isoLevel) cubeIndex |= 128;
-        
-        for (uint i = 0; triangulation[cubeIndex][i] != -1; i +=3) {
-            uint a0 = cornerIndexAFromEdge[triangulation[cubeIndex][i+0]];
-            uint b0 = cornerIndexBFromEdge[triangulation[cubeIndex][i+0]];
 
-            uint a1 = cornerIndexAFromEdge[triangulation[cubeIndex][i+1]];
-            uint b1 = cornerIndexBFromEdge[triangulation[cubeIndex][i+1]];
-
-            uint a2 = cornerIndexAFromEdge[triangulation[cubeIndex][i+2]];
-            uint b2 = cornerIndexBFromEdge[triangulation[cubeIndex][i+2]];
-            
-            uint index = atomicAdd(count,1);
-            output[index].c = vecn2vecnf(interpolateVerts(cubeCorners[a0], cubeCorners[b0]));
-            output[index].b = vecn2vecnf(interpolateVerts(cubeCorners[a1], cubeCorners[b1]));
-            output[index].a = vecn2vecnf(interpolateVerts(cubeCorners[a2], cubeCorners[b2]));
+        layout(local_size_x=LOCAL_X,local_size_y=LOCAL_Y,local_size_z=LOCAL_Z) in;
+        layout(binding=0) buffer inout_0 { uint count; };
+        layout(binding=1) writeonly buffer out_0 { Triangle triangles[]; };
+        layout(binding=2) readonly buffer in_1 { uint edge[]; };
+        layout(binding=3) readonly buffer in_2 { int triangulation[][16]; };
+        layout(binding=4) readonly buffer in_3 { uint cornerIndexAFromEdge[]; };
+        layout(binding=5) readonly buffer in_4 { uint cornerIndexBFromEdge[]; };
+        uniform vec2 isoRange;
+        uniform vec3 boxSize;
+        uniform vec3 boxOffset;
+        uniform float isoLevel;
+        const ivec3 localSize = ivec3(LOCAL_X,LOCAL_Y,LOCAL_Z);
+        const ivec3 boxDim = ivec3(BOX_DIM_X,BOX_DIM_Y,BOX_DIM_Z);
+        ''' + common.include_frag_ + '''
+        float getDist(vec3 p) {
+            return sdBox(p, vec3(1,1,1), vec4(0.2,0.2,0,0));
+            //return sdTorus(p, 1.0, 0.25);
         }
-    } 
+        float saturate(float x, float min, float max) {
+            if (max<=min) return min;
+            return (clamp(x,min,max)-min)/(max-min);
+        }
+        float saturate(float x, vec2 range) {
+            return saturate(x,range.x,range.y);
+        }
+        vec3 interpolateVerts(vec4 v1, vec4 v2) {
+            if (v2.w-v1.w==0) return (v2.xyz+v1.xyz)*0.5;
+            float t = (isoLevel-v1.w)/(v2.w-v1.w);
+            return v1.xyz+t*(v2.xyz-v1.xyz);
+        }
+        int indexFromCoord(int x, int y, int z) {
+            return z*LOCAL_Z*LOCAL_Y+y*LOCAL_X+x;
+        }
+        vec3f vecn2vecnf(vec3 a) {
+            return vec3f(a.x,a.y,a.z);
+        }
+        void main() {
+            const ivec3 group_xyz = ivec3(gl_WorkGroupID);
+            const ivec3 thread_xyz = ivec3(gl_LocalInvocationID);
+            const ivec3 box_xyz = group_xyz*localSize+thread_xyz;
+            
+            const vec3 tmp0 = 0.5*vec3(boxDim);
+            const vec3 tmp2 = 1.0/tmp0*boxSize;
+            const vec3 tmp1 = box_xyz-tmp0*(vec3(1,1,1)+boxOffset);
+            const vec3 cubeCornersOffset[8] = {
+                (tmp1+vec3(0,0,0))*tmp2,
+                (tmp1+vec3(1,0,0))*tmp2,
+                (tmp1+vec3(1,0,1))*tmp2,
+                (tmp1+vec3(0,0,1))*tmp2,
+                (tmp1+vec3(0,1,0))*tmp2,
+                (tmp1+vec3(1,1,0))*tmp2,
+                (tmp1+vec3(1,1,1))*tmp2,
+                (tmp1+vec3(0,1,1))*tmp2
+            };
+            const vec4 cubeCorners[8] = {
+                vec4(cubeCornersOffset[0], saturate(getDist(cubeCornersOffset[0]), isoRange)),
+                vec4(cubeCornersOffset[1], saturate(getDist(cubeCornersOffset[1]), isoRange)),
+                vec4(cubeCornersOffset[2], saturate(getDist(cubeCornersOffset[2]), isoRange)),
+                vec4(cubeCornersOffset[3], saturate(getDist(cubeCornersOffset[3]), isoRange)),
+                vec4(cubeCornersOffset[4], saturate(getDist(cubeCornersOffset[4]), isoRange)),
+                vec4(cubeCornersOffset[5], saturate(getDist(cubeCornersOffset[5]), isoRange)),
+                vec4(cubeCornersOffset[6], saturate(getDist(cubeCornersOffset[6]), isoRange)),
+                vec4(cubeCornersOffset[7], saturate(getDist(cubeCornersOffset[7]), isoRange))
+            };
+            
+            int cubeIndex = 0;
+            if (cubeCorners[0].w < isoLevel) cubeIndex |= 1;
+            if (cubeCorners[1].w < isoLevel) cubeIndex |= 2;
+            if (cubeCorners[2].w < isoLevel) cubeIndex |= 4;
+            if (cubeCorners[3].w < isoLevel) cubeIndex |= 8;
+            if (cubeCorners[4].w < isoLevel) cubeIndex |= 16;
+            if (cubeCorners[5].w < isoLevel) cubeIndex |= 32;
+            if (cubeCorners[6].w < isoLevel) cubeIndex |= 64;
+            if (cubeCorners[7].w < isoLevel) cubeIndex |= 128;
+            
+            for (uint i = 0; triangulation[cubeIndex][i] != -1; i +=3) {
+                uint a0 = cornerIndexAFromEdge[triangulation[cubeIndex][i+0]];
+                uint b0 = cornerIndexBFromEdge[triangulation[cubeIndex][i+0]];
+
+                uint a1 = cornerIndexAFromEdge[triangulation[cubeIndex][i+1]];
+                uint b1 = cornerIndexBFromEdge[triangulation[cubeIndex][i+1]];
+
+                uint a2 = cornerIndexAFromEdge[triangulation[cubeIndex][i+2]];
+                uint b2 = cornerIndexBFromEdge[triangulation[cubeIndex][i+2]];
+                
+                uint index = atomicAdd(count,1);
+                triangles[index].c = vecn2vecnf(interpolateVerts(cubeCorners[a0], cubeCorners[b0]));
+                triangles[index].b = vecn2vecnf(interpolateVerts(cubeCorners[a1], cubeCorners[b1]));
+                triangles[index].a = vecn2vecnf(interpolateVerts(cubeCorners[a2], cubeCorners[b2]));
+            }
+        } 
     '''
 
     ctx = None
@@ -152,6 +152,8 @@ class MarchingCube(object):
         view_layer.objects.active = new_object
 
         print('[Mesh Generation] start ...')
+
+        print('\n', cls.basic_shader, '\n')
 
         compute_shader = cls.ctx.compute_shader(cls.basic_shader)
         compute_shader["isoRange"].value = np.array([-0.1,0.1])
@@ -212,7 +214,7 @@ class MarchingCube(object):
 class SDF2MESH_OT_Generate(bpy.types.Operator):
 
     bl_idname = "mesh_from_sdf.ot_generate"
-    bl_label = "Generate sdf mesh"
+    bl_label = "Generate mesh from sdf"
     bl_description = "Generate a mesh from the SDF"
 
     def invoke(self, context, event):

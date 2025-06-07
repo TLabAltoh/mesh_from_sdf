@@ -142,7 +142,8 @@ include_frag_ = '''
         //
         // -----------------------------------------------------------------------------------------------
 
-        float sdBox( in vec3 p, in vec3 b, vec4 cr ) {
+        float sdBox( in vec3 p, vec3 b, vec4 cr ) {
+            b = b.xzy;
             cr.xy = which(cr.xy, cr.zw, (p.x>0.0));
             cr.x  = which(cr.x, cr.y, (p.y>0.0));
             vec2 q = abs(p.xy)-b.xy+cr.x;
