@@ -214,7 +214,7 @@ class ShaderBufferFactory(object):
                 pointer.bound[1],
                 pointer.bound[2]
             ]
-            round = min(bound) * pointer.round * 0.5
+            round = min(bound) * pointer.round
             bound[0] = bound[0] - round
             bound[1] = bound[1] - round
             bound[2] = bound[2] - round
@@ -270,7 +270,7 @@ class ShaderBufferFactory(object):
             pointer.bound[1],
             pointer.bound[2]
         ]
-        round = min(bound) * pointer.round * 0.5
+        round = min(bound) * pointer.round
         
         print('\n', '[round amount]', round, '\n')
         
@@ -820,13 +820,50 @@ class ShaderBufferFactory(object):
             hwidth_1 = pointer.width_1 * 0.5
             hdepth_1 = pointer.depth_1 * 0.5
             hheight = pointer.height * 0.5
-            round = min(hwidth_0, hdepth_0, hwidth_1, hdepth_1, hheight) * pointer.round
+            
+            height = pointer.height
+            round = hheight * pointer.round
+            
+            hwidth_idx_max, hwidth_idx_min = 0, 2
+            hdepth_idx_max, hdepth_idx_min = 1, 3
+            
+            if hwidth_0 > hwidth_1:
+                hwidth_max, hwidth_min = hwidth_0, hwidth_1
+                hwidth_idx_max, hwidth_idx_min = 0, 2
+            else:
+                hwidth_max, hwidth_min = hwidth_1, hwidth_0
+                hwidth_idx_max, hwidth_idx_min = 2, 0
+                
+            if hdepth_0 > hdepth_1:
+                hdepth_max, hdepth_min = hdepth_0, hdepth_1
+                hdepth_idx_max, hdepth_idx_min = 1, 3
+            else:
+                hdepth_max, hdepth_min = hdepth_1, hdepth_0
+                hdepth_idx_max, hdepth_idx_min = 3, 1
+                
+            theta_w0 = math.atan(height / (hwidth_max - hwidth_min)) if hwidth_max > hwidth_min else math.pi * 0.5
+            theta_w1 = theta_w0 * 0.5
+            
+            theta_d0 = math.atan(height / (hdepth_max - hdepth_min)) if hdepth_max > hdepth_min else math.pi * 0.5
+            theta_d1 = theta_d0 * 0.5
+            
+            padding_width_lim_min = hwidth_min * math.sin(theta_w0)
+            padding_depth_lim_min = hdepth_min * math.sin(theta_d0)
+            
+            round = min(round, padding_width_lim_min, padding_depth_lim_min)
+            ratio = round / height
+            
+            padding_width_max = round / math.tan(theta_w1)
+            padding_width_min = round / math.sin(theta_w0) - ratio * (hwidth_max - hwidth_min)
+            
+            padding_depth_max = round / math.tan(theta_d1)
+            padding_depth_min = round / math.sin(theta_d0) - ratio * (hdepth_max - hdepth_min)
             
             offset = i * dsize
-            narray[offset + 0] = hwidth_0 - round
-            narray[offset + 1] = hdepth_0 - round
-            narray[offset + 2] = hwidth_1 - round
-            narray[offset + 3] = hdepth_1 - round
+            narray[offset + hwidth_idx_max] = hwidth_max - padding_width_max
+            narray[offset + hwidth_idx_min] = hwidth_min - padding_width_min
+            narray[offset + hdepth_idx_max] = hdepth_max - padding_depth_max
+            narray[offset + hdepth_idx_min] = hdepth_min - padding_depth_min
             narray[offset + 4] = hheight - round
             narray[offset + 5] = round
 
@@ -866,12 +903,49 @@ class ShaderBufferFactory(object):
         hwidth_1 = pointer.width_1 * 0.5
         hdepth_1 = pointer.depth_1 * 0.5
         hheight = pointer.height * 0.5
-        round = min(hwidth_0, hdepth_0, hwidth_1, hdepth_1, hheight) * pointer.round
         
-        narray[0] = hwidth_0 - round
-        narray[1] = hdepth_0 - round
-        narray[2] = hwidth_1 - round
-        narray[3] = hdepth_1 - round
+        height = pointer.height
+        round = hheight * pointer.round
+        
+        hwidth_idx_max, hwidth_idx_min = 0, 2
+        hdepth_idx_max, hdepth_idx_min = 1, 3
+        
+        if hwidth_0 > hwidth_1:
+            hwidth_max, hwidth_min = hwidth_0, hwidth_1
+            hwidth_idx_max, hwidth_idx_min = 0, 2
+        else:
+            hwidth_max, hwidth_min = hwidth_1, hwidth_0
+            hwidth_idx_max, hwidth_idx_min = 2, 0
+            
+        if hdepth_0 > hdepth_1:
+            hdepth_max, hdepth_min = hdepth_0, hdepth_1
+            hdepth_idx_max, hdepth_idx_min = 1, 3
+        else:
+            hdepth_max, hdepth_min = hdepth_1, hdepth_0
+            hdepth_idx_max, hdepth_idx_min = 3, 1
+            
+        theta_w0 = math.atan(height / (hwidth_max - hwidth_min))
+        theta_w1 = theta_w0 * 0.5
+        
+        theta_d0 = math.atan(height / (hdepth_max - hdepth_min))
+        theta_d1 = theta_d0 * 0.5
+        
+        padding_width_lim_min = hwidth_min * math.sin(theta_w0)
+        padding_depth_lim_min = hdepth_min * math.sin(theta_d0)
+        
+        round = min(round, padding_width_lim_min, padding_depth_lim_min)
+        ratio = round / height
+        
+        padding_width_max = round / math.tan(theta_w1)
+        padding_width_min = round / math.sin(theta_w0) - ratio * (hwidth_max - hwidth_min)
+        
+        padding_depth_max = round / math.tan(theta_d1)
+        padding_depth_min = round / math.sin(theta_d0) - ratio * (hdepth_max - hdepth_min)
+        
+        narray[hwidth_idx_max] = hwidth_max - padding_width_max
+        narray[hwidth_idx_min] = hwidth_min - padding_width_min
+        narray[hdepth_idx_max] = hdepth_max - padding_depth_max
+        narray[hdepth_idx_min] = hdepth_min - padding_depth_min
         narray[4] = hheight - round
         narray[5] = round
         

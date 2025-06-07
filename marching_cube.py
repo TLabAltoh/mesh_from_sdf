@@ -39,12 +39,12 @@ class MarchingCube(object):
         };
 
         layout(local_size_x=LOCAL_X,local_size_y=LOCAL_Y,local_size_z=LOCAL_Z) in;
-        layout(binding=0) buffer inout_0 { uint count; };
-        layout(binding=1) writeonly buffer out_0 { Triangle triangles[]; };
-        layout(binding=2) readonly buffer in_1 { uint edge[]; };
-        layout(binding=3) readonly buffer in_2 { int triangulation[][16]; };
-        layout(binding=4) readonly buffer in_3 { uint cornerIndexAFromEdge[]; };
-        layout(binding=5) readonly buffer in_4 { uint cornerIndexBFromEdge[]; };
+        layout(binding=11) buffer inout_0 { uint count; };
+        layout(binding=12) writeonly buffer out_0 { Triangle triangles[]; };
+        layout(binding=13) readonly buffer in_1 { uint edge[]; };
+        layout(binding=14) readonly buffer in_2 { int triangulation[][16]; };
+        layout(binding=15) readonly buffer in_3 { uint cornerIndexAFromEdge[]; };
+        layout(binding=16) readonly buffer in_4 { uint cornerIndexBFromEdge[]; };
         uniform vec2 isoRange;
         uniform vec3 boxSize;
         uniform vec3 boxOffset;
@@ -143,6 +143,50 @@ class MarchingCube(object):
         cls.ctx = ctx
 
     @classmethod
+    def get_smallest_bounding_box(cls):
+        verts = []
+        for pointer in bpy.context.sdf_object_pointer_list:
+            object = pointer.object
+            verts += [object.matrix_world @ v.co for v in object.data.vertices]
+
+        points = np.asarray(verts)
+
+        means = np.mean(points, axis=1)
+        cov = np.cov(points, y = None,rowvar = 0,bias = 1)
+        v, vect = np.linalg.eig(cov)
+        tvect = np.transpose(vect)
+        points_r = np.dot(points, np.linalg.inv(tvect))
+        co_min = np.min(points_r, axis=0)
+        co_max = np.max(points_r, axis=0)
+
+        xmin, xmax = co_min[0], co_max[0]
+        ymin, ymax = co_min[1], co_max[1]
+        zmin, zmax = co_min[2], co_max[2]
+
+        xdif = (xmax - xmin) * 0.5
+        ydif = (ymax - ymin) * 0.5
+        zdif = (zmax - zmin) * 0.5
+
+        cx = xmin + xdif
+        cy = ymin + ydif
+        cz = zmin + zdif
+
+        corners = np.array([
+            [cx - xdif, cy - ydif, cz - zdif],
+            [cx - xdif, cy + ydif, cz - zdif],
+            [cx - xdif, cy + ydif, cz + zdif],
+            [cx - xdif, cy - ydif, cz + zdif],
+            [cx + xdif, cy + ydif, cz + zdif],
+            [cx + xdif, cy + ydif, cz - zdif],
+            [cx + xdif, cy - ydif, cz + zdif],
+            [cx + xdif, cy - ydif, cz - zdif],
+        ])
+
+        corners = np.dot(corners, tvect)
+        
+        return corners
+
+    @classmethod
     def generate(cls):
         view_layer = bpy.context.view_layer
         mesh = bpy.data.meshes.new("marching-cube")
@@ -160,13 +204,13 @@ class MarchingCube(object):
         compute_shader["isoLevel"].value = 0.5
         compute_shader["boxSize"].value = np.array([cls.BOX_SIZE_X,cls.BOX_SIZE_Y,cls.BOX_SIZE_Z])
         in_buf = cls.ctx.buffer(marching_tables.edges)
-        in_buf.bind_to_storage_buffer(2)
+        in_buf.bind_to_storage_buffer(13)
         in_buf = cls.ctx.buffer(marching_tables.triangulation)
-        in_buf.bind_to_storage_buffer(3)
+        in_buf.bind_to_storage_buffer(14)
         in_buf = cls.ctx.buffer(marching_tables.corner_index_a_from_edge)
-        in_buf.bind_to_storage_buffer(4)
+        in_buf.bind_to_storage_buffer(15)
         in_buf = cls.ctx.buffer(marching_tables.corner_index_b_from_edge)
-        in_buf.bind_to_storage_buffer(5)
+        in_buf.bind_to_storage_buffer(16)
 
         total_count = 0
         total_verts = None
@@ -175,11 +219,11 @@ class MarchingCube(object):
             for y in [-1,1]:
                 for z in [-1,1]:
                     count_buf = cls.ctx.buffer(data=b'\x00\x00\x00\x00')
-                    count_buf.bind_to_storage_buffer(0)
+                    count_buf.bind_to_storage_buffer(11)
                     tri_siz = 3*3+1
                     out_buf = np.empty((cls.max_triangle_count,tri_siz),dtype=np.float32).tobytes()
                     out_buf = cls.ctx.buffer(out_buf) # 128 --> 400MB, 256 --> 3019 MB (map error !)
-                    out_buf.bind_to_storage_buffer(1)
+                    out_buf.bind_to_storage_buffer(12)
                     compute_shader["boxOffset"].value = np.array([x,y,z])
                     compute_shader.run(group_x=cls.BOX_DIM_X//cls.LOCAL_X,group_y=cls.BOX_DIM_Y//cls.LOCAL_Y,group_z=cls.BOX_DIM_Z//cls.LOCAL_Z)
 
