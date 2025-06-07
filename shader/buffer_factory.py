@@ -1,5 +1,6 @@
 import moderngl
 import math
+import struct
 import numpy as np
 
 # Class for generating and updating Storage Buffer Objects to be bound to shaders
@@ -92,12 +93,13 @@ class ShaderBufferFactory(object):
             p = mat.to_translation()
             r = mat.to_quaternion()
             s = mat.to_scale()
+            po = sdf_prop.position_offset
             bl_0, bl_1 = cls.__get_blend_props[sdf_prop.blend_type](sdf_prop)
             
             offset = i * dsize
-            narray[offset + 0] = p[0]
-            narray[offset + 1] = p[1]
-            narray[offset + 2] = p[2]
+            narray[offset + 0] = p[0] + po[0]
+            narray[offset + 1] = p[1] + po[1]
+            narray[offset + 2] = p[2] + po[2]
             narray[offset + 3] = s[0]
             narray[offset + 4] = r[0]
             narray[offset + 5] = r[1]
@@ -143,11 +145,12 @@ class ShaderBufferFactory(object):
         p = mat.to_translation()
         r = mat.to_quaternion()
         s = mat.to_scale()
+        po = sdf_prop.position_offset
         bl_0, bl_1 = cls.__get_blend_props[sdf_prop.blend_type](sdf_prop)
         
-        narray[0] = p[0]
-        narray[1] = p[1]
-        narray[2] = p[2]
+        narray[0] = p[0] + po[0]
+        narray[1] = p[1] + po[1]
+        narray[2] = p[2] + po[2]
         narray[3] = s[0]
         narray[4] = r[0]
         narray[5] = r[1]
@@ -720,13 +723,31 @@ class ShaderBufferFactory(object):
             hwidth = pointer.width * 0.5
             hdepth = pointer.depth * 0.5
             hheight = pointer.height * 0.5
-            round = min(hwidth, hdepth, hheight) * pointer.round
+            
+            height = pointer.height
+            
+            theta_w0 = math.atan(height / hwidth)
+            theta_w1 = theta_w0 * 0.5
+            theta_d0 = math.atan(height / hdepth)
+            theta_d1 = theta_d0 * 0.5
+            
+            padding_width_lim_min = hwidth * math.tan(theta_w1)
+            padding_depth_lim_min = hdepth * math.tan(theta_d1)
+            
+            round = min(padding_width_lim_min, padding_depth_lim_min, hheight) * pointer.round
+            offst = round / math.cos(max(theta_w0, theta_d0))
+            
+            padding_width = round / math.tan(theta_w1)
+            padding_depth = round / math.tan(theta_d1)
             
             offset = i * dsize
-            narray[offset + 0] = hwidth - round
-            narray[offset + 1] = hdepth - round
-            narray[offset + 2] = hheight - round
+            narray[offset + 0] = hwidth - padding_width
+            narray[offset + 1] = hdepth - padding_depth
+            narray[offset + 2] = hheight - (round + offst) * 0.5
             narray[offset + 3] = round
+            
+            sdf_prop.position_offset[2] = -(offst-round)
+            
 
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
@@ -759,12 +780,29 @@ class ShaderBufferFactory(object):
         hwidth = pointer.width * 0.5
         hdepth = pointer.depth * 0.5
         hheight = pointer.height * 0.5
-        round = min(hwidth, hdepth, hheight) * pointer.round
+                
+        height = pointer.height
         
-        narray[0] = hwidth - round
-        narray[1] = hdepth - round
-        narray[2] = hheight - round
+        theta_w0 = math.atan(height / hwidth)
+        theta_w1 = theta_w0 * 0.5
+        theta_d0 = math.atan(height / hdepth)
+        theta_d1 = theta_d0 * 0.5
+        
+        padding_width_lim_min = hwidth * math.tan(theta_w1)
+        padding_depth_lim_min = hdepth * math.tan(theta_d1)
+        
+        round = min(padding_width_lim_min, padding_depth_lim_min, hheight) * pointer.round
+        offst = round / math.cos(max(theta_w0, theta_d0))
+        
+        padding_width = round / math.tan(theta_w1)
+        padding_depth = round / math.tan(theta_d1)
+        
+        narray[0] = hwidth - padding_width
+        narray[1] = hdepth - padding_depth
+        narray[2] = hheight - (round + offst) * 0.5
         narray[3] = round
+
+        sdf_prop.position_offset[2] = -(offst-round)
         
         buf = cls.pyramid_buffer
         buf.write(narray.tobytes(), sub_i * dsize * 4)

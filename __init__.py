@@ -40,7 +40,7 @@ from mesh_from_sdf.util.pointer_list import *
 from mesh_from_sdf.render_engine import *
 from bpy.app.handlers import persistent
 from bpy.types import Panel, Operator, UIList, PropertyGroup
-from bpy.props import PointerProperty, EnumProperty, FloatProperty, IntProperty, StringProperty, BoolProperty, CollectionProperty
+from bpy.props import PointerProperty, EnumProperty, FloatProperty, FloatVectorProperty, IntProperty, StringProperty, BoolProperty, CollectionProperty
 
 
 class SDFProperty(PropertyGroup):
@@ -264,6 +264,13 @@ class SDFProperty(PropertyGroup):
         description='',
         default=False,
         update=on_nest_prop_update)
+
+    position_offset: FloatVectorProperty(
+        name='Position Offset',
+        description='',
+        size=3,
+        default=(0.0,0.0,0.0),
+        update=on_prop_update)
 
     boolean_type: EnumProperty(
         name='Boolean',

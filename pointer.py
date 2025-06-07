@@ -5,7 +5,7 @@ import mathutils
 from mesh_from_sdf.util.pointer_list import *
 from mesh_from_sdf.shader.buffer_factory import *
 from bpy.types import PropertyGroup
-from bpy.props import PointerProperty, FloatProperty, IntProperty, StringProperty
+from bpy.props import PointerProperty, FloatProperty, FloatVectorProperty, IntProperty, StringProperty
 
 global ctx
 
@@ -49,7 +49,7 @@ class SDFBoxPointer(SDFPrimitivePointer):
         # Updateing Storage Buffre Objects
         ShaderBufferFactory.update_box_buffer(ctx, context, this.index, this.sub_index)
     
-    bound: bpy.props.FloatVectorProperty(
+    bound: FloatVectorProperty(
         name='Bound',
         description='Lengths of the three sides of a cube',
         size=3,
@@ -65,7 +65,7 @@ class SDFBoxPointer(SDFPrimitivePointer):
        default=0.0,
        update=on_prop_update)
         
-    corner_round: bpy.props.FloatVectorProperty(
+    corner_round: FloatVectorProperty(
         name='Corner Round',
         description='Radius of 4 corners viewed from z-plane',
         size=4,
@@ -139,14 +139,14 @@ class SDFCylinderPointer(SDFPrimitivePointer):
         # Updateing Storage Buffre Objects
         ShaderBufferFactory.update_cylinder_buffer(ctx, context, this.index, this.sub_index)
     
-    height: bpy.props.FloatProperty(
+    height: FloatProperty(
         name='Height',
         description='',
         min=0.0,
         default=2.0,
         update=on_prop_update)
         
-    radius: bpy.props.FloatProperty(
+    radius: FloatProperty(
         name='Radius',
         description='',
         min=0.0,
@@ -187,14 +187,14 @@ class SDFConePointer(SDFPrimitivePointer):
         # Updateing Storage Buffre Objects
         ShaderBufferFactory.update_cone_buffer(ctx, context, this.index, this.sub_index)
     
-    height: bpy.props.FloatProperty(
+    height: FloatProperty(
         name='Height',
         description='',
         min=0.0,
         default=2.0,
         update=on_prop_update)
     
-    radius: bpy.props.FloatVectorProperty(
+    radius: FloatVectorProperty(
         name='Radius',
         description='',
         size=2,
@@ -236,7 +236,7 @@ class SDFTorusPointer(SDFPrimitivePointer):
         # Updateing Storage Buffre Objects
         ShaderBufferFactory.update_torus_buffer(ctx, context, this.index, this.sub_index)
     
-    radius: bpy.props.FloatVectorProperty(
+    radius: FloatVectorProperty(
         name='Radius',
         description='',
         size=2,
@@ -244,7 +244,7 @@ class SDFTorusPointer(SDFPrimitivePointer):
         default=(0.75,0.25),
         update=on_prop_update)
         
-    fill: bpy.props.FloatProperty(
+    fill: FloatProperty(
         name='Fill',
         description='',
         min=0.0,
@@ -294,21 +294,21 @@ class SDFPyramidPointer(SDFPrimitivePointer):
         # Updateing Storage Buffre Objects
         ShaderBufferFactory.update_pyramid_buffer(ctx, context, this.index, this.sub_index)
         
-    width: bpy.props.FloatProperty(
+    width: FloatProperty(
         name='Width',
         description='',
         min=0.0,
         default=2.0,
         update=on_prop_update)
         
-    depth: bpy.props.FloatProperty(
+    depth: FloatProperty(
         name='Depth',
         description='',
         min=0.0,
         default=2.0,
         update=on_prop_update)
         
-    height: bpy.props.FloatProperty(
+    height: FloatProperty(
         name='Height',
         description='',
         min=0.0,
@@ -375,35 +375,35 @@ class SDFTruncatedPyramidPointer(SDFPrimitivePointer):
         # Updateing Storage Buffre Objects
         ShaderBufferFactory.update_truncated_pyramid_buffer(ctx, context, this.index, this.sub_index)
         
-    width_0: bpy.props.FloatProperty(
+    width_0: FloatProperty(
         name='Lower Width',
         description='',
         min=0.0,
         default=2.0,
         update=on_prop_update)
         
-    depth_0: bpy.props.FloatProperty(
+    depth_0: FloatProperty(
         name='Lower Depth',
         description='',
         min=0.0,
         default=2.0,
         update=on_prop_update)
         
-    width_1: bpy.props.FloatProperty(
+    width_1: FloatProperty(
         name='Upper Width',
         description='',
         min=0.0,
         default=1.5,
         update=on_prop_update)
         
-    depth_1: bpy.props.FloatProperty(
+    depth_1: FloatProperty(
         name='Upper Depth',
         description='',
         min=0.0,
         default=1.5,
         update=on_prop_update)
         
-    height: bpy.props.FloatProperty(
+    height: FloatProperty(
         name='Height',
         description='',
         min=0.0,
@@ -498,21 +498,21 @@ class SDFPrismPointer(SDFPrimitivePointer):
         # Updateing Storage Buffre Objects        
         ShaderBufferFactory.update_ngon_prism_buffer(ctx, context, this.index, this.sub_index)
     
-    radius: bpy.props.FloatProperty(
+    radius: FloatProperty(
         name='Radius',
         description='',
         min=0.0,
         default=1.0,
         update=on_prop_update)
         
-    height: bpy.props.FloatProperty(
+    height: FloatProperty(
         name='Height',
         description='',
         min=0.0,
         default=3.0,
         update=on_prop_update)
         
-    nsides: bpy.props.IntProperty(
+    nsides: IntProperty(
         name='N',
         description='',
         min=3,
@@ -571,7 +571,7 @@ class SDFGLSLPointer(SDFPrimitivePointer):
     def on_prop_update(self, context):
         pass
     
-    bound: bpy.props.FloatVectorProperty(
+    bound: FloatVectorProperty(
         name='Bound',
         description='',
         size=3,
