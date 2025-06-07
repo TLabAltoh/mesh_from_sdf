@@ -14,8 +14,9 @@ Add-on for mesh modeling with SDF in Blender.
 
 ## Start up
 1. Select `SDF2Mesh` from the toolbar to open the add-on hierarchy panel.
-2. Switch the 3D View render mode to `Render` or `Material`.
-3. Pressing the reload button displays the SDF objects registered in the hierarchy (Do this the first time you start Blender or activate this add-on).
+2. Changed `RenderEngine` to `MeshFromSDF`
+3. Switch the 3D View render mode to `Render` or `Material`.
+4. Pressing the reload button displays the SDF objects registered in the hierarchy (Do this the first time you start Blender or activate this add-on).
 
 ## Known Issue
 - Undo processing is not implemented for Gizmo operations on SDF primitives.
