@@ -153,6 +153,7 @@ class SDFPyramidWidgetGroup(GizmoGroup):
         gz_depth.matrix_offset = mathutils.Matrix.Translation((0,+height,0))
         
         gz_height = self.gizmo_height
+        gz_height.scale_basis = 1.0 / ob.scale[0]
         gz_height.matrix_basis = ob.matrix_world
 
 

@@ -97,9 +97,9 @@ class ShaderBufferFactory(object):
             bl_0, bl_1 = cls.__get_blend_props[sdf_prop.blend_type](sdf_prop)
             
             offset = i * dsize
-            narray[offset + 0] = p[0] + po[0]
-            narray[offset + 1] = p[1] + po[1]
-            narray[offset + 2] = p[2] + po[2]
+            narray[offset + 0] = p[0] + (po[0] * s[0])
+            narray[offset + 1] = p[1] + (po[1] * s[0])
+            narray[offset + 2] = p[2] + (po[2] * s[0])
             narray[offset + 3] = s[0]
             narray[offset + 4] = r[0]
             narray[offset + 5] = r[1]
@@ -148,9 +148,9 @@ class ShaderBufferFactory(object):
         po = sdf_prop.position_offset
         bl_0, bl_1 = cls.__get_blend_props[sdf_prop.blend_type](sdf_prop)
         
-        narray[0] = p[0] + po[0]
-        narray[1] = p[1] + po[1]
-        narray[2] = p[2] + po[2]
+        narray[0] = p[0] + (po[0] * s[0])
+        narray[1] = p[1] + (po[1] * s[0])
+        narray[2] = p[2] + (po[2] * s[0])
         narray[3] = s[0]
         narray[4] = r[0]
         narray[5] = r[1]
@@ -746,7 +746,7 @@ class ShaderBufferFactory(object):
             narray[offset + 2] = hheight - (round + offst) * 0.5
             narray[offset + 3] = round
             
-            sdf_prop.position_offset[2] = -(offst-round)
+            sdf_prop.position_offset[2] = -(offst-round) * 0.5
             
 
         # Generate a buffer to bind to the shader using np.array as source
@@ -802,7 +802,7 @@ class ShaderBufferFactory(object):
         narray[2] = hheight - (round + offst) * 0.5
         narray[3] = round
 
-        sdf_prop.position_offset[2] = -(offst-round)
+        sdf_prop.position_offset[2] = -(offst-round) * 0.5
         
         buf = cls.pyramid_buffer
         buf.write(narray.tobytes(), sub_i * dsize * 4)
