@@ -78,6 +78,7 @@ class SDFBoxWidgetGroup(GizmoGroup):
             bpy.ops.mesh_from_sdf.apply_gizmo_to_sdf_box()
 
         ob = context.object
+        scale_basis = 1 / ob.matrix_world.to_scale()[0]
         
         # When Gizmo is reselected, the setup function and the reflesh function 
         # are not called and the values registered in the first setup are used ?
@@ -90,7 +91,7 @@ class SDFBoxWidgetGroup(GizmoGroup):
         gz_bound_x.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(90.0), 4, 'Z')
         gz_bound_x.draw_style = 'BOX'
         gz_bound_x.length = 0.2
-        gz_bound_x.scale_basis = 1.0 / ob.scale[0]
+        gz_bound_x.scale_basis = scale_basis
 
         gz_bound_x.color = 1.0, 0.0, 0.0
         gz_bound_x.alpha = 0.5
@@ -103,7 +104,7 @@ class SDFBoxWidgetGroup(GizmoGroup):
         gz_bound_y.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(90.0), 4, 'Z')
         gz_bound_y.draw_style = 'BOX'
         gz_bound_y.length = 0.2
-        gz_bound_y.scale_basis = 1.0 / ob.scale[0]
+        gz_bound_y.scale_basis = scale_basis
 
         gz_bound_y.color = 0.0, 1.0, 0.0
         gz_bound_y.alpha = 0.5
@@ -116,7 +117,7 @@ class SDFBoxWidgetGroup(GizmoGroup):
         gz_bound_z.matrix_basis = ob.matrix_world
         gz_bound_z.draw_style = 'BOX'
         gz_bound_z.length = 0.2
-        gz_bound_z.scale_basis = 1.0 / ob.scale[0]
+        gz_bound_z.scale_basis = scale_basis
 
         gz_bound_z.color = 0.0, 0.0, 1.0
         gz_bound_z.alpha = 0.5
@@ -129,17 +130,18 @@ class SDFBoxWidgetGroup(GizmoGroup):
 
     def refresh(self, context):
         ob = context.object
+        scale_basis = 1 / ob.matrix_world.to_scale()[0]
         
         gz_bound_x = self.gizmo_bound_x
-        gz_bound_x.scale_basis = 1.0 / ob.scale[0]
+        gz_bound_x.scale_basis = scale_basis
         gz_bound_x.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(+90.0), 4, 'Y')
         
         gz_bound_y = self.gizmo_bound_y
-        gz_bound_y.scale_basis = 1.0 / ob.scale[0]
+        gz_bound_y.scale_basis = scale_basis
         gz_bound_y.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'X')
         
         gz_bound_z = self.gizmo_bound_z
-        gz_bound_z.scale_basis = 1.0 / ob.scale[0]
+        gz_bound_z.scale_basis = scale_basis
         gz_bound_z.matrix_basis = ob.matrix_world
 
 

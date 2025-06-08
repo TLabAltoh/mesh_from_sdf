@@ -83,6 +83,7 @@ class SDFConeWidgetGroup(GizmoGroup):
             bpy.ops.mesh_from_sdf.apply_gizmo_to_sdf_cone()
 
         ob = context.object
+        scale_basis = 1.0 / ob.matrix_world.to_scale()[0]
         
         # Gizmo Radius 0
         gz_radius_0 = self.gizmos.new("GIZMO_GT_arrow_3d")
@@ -90,7 +91,7 @@ class SDFConeWidgetGroup(GizmoGroup):
         gz_radius_0.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'Y')
         gz_radius_0.draw_style = 'BOX'
         gz_radius_0.length = 0.2
-        gz_radius_0.scale_basis = 1.0 / ob.scale[0]
+        gz_radius_0.scale_basis = scale_basis
 
         gz_radius_0.color = 1.0, 0.0, 0.0
         gz_radius_0.alpha = 0.5
@@ -103,7 +104,7 @@ class SDFConeWidgetGroup(GizmoGroup):
         gz_radius_1.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'Y')
         gz_radius_1.draw_style = 'BOX'
         gz_radius_1.length = 0.2
-        gz_radius_1.scale_basis = 1.0 / ob.scale[0]
+        gz_radius_1.scale_basis = scale_basis
 
         gz_radius_1.color = 0.0, 1.0, 0.0
         gz_radius_1.alpha = 0.5
@@ -116,7 +117,7 @@ class SDFConeWidgetGroup(GizmoGroup):
         gz_height.matrix_basis = ob.matrix_world
         gz_height.draw_style = 'BOX'
         gz_height.length = 0.2
-        gz_height.scale_basis = 1.0 / ob.scale[0]
+        gz_height.scale_basis = scale_basis
 
         gz_height.color = 0.0, 0.0, 1.0
         gz_height.alpha = 0.5
@@ -132,18 +133,19 @@ class SDFConeWidgetGroup(GizmoGroup):
         global radius, height
         
         ob = context.object
+        scale_basis = 1.0 / ob.matrix_world.to_scale()[0]
         
 #        pointer = bpy.context.scene.sdf_cone_pointer_list[ob.sdf_prop.sub_index]
 #        radius = pointer.radius
 #        height = pointer.height
         
         gz_radius_0 = self.gizmo_radius_0
-        gz_radius_0.scale_basis = 1.0 / ob.scale[0]
+        gz_radius_0.scale_basis = scale_basis
         gz_radius_0.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'Y')
         gz_radius_0.matrix_offset = mathutils.Matrix.Translation((-height,0,0))
         
         gz_radius_1 = self.gizmo_radius_1
-        gz_radius_1.scale_basis = 1.0 / ob.scale[0]
+        gz_radius_1.scale_basis = scale_basis
         gz_radius_1.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'Y')
         gz_radius_1.matrix_offset = mathutils.Matrix.Translation((+height,0,0))
         

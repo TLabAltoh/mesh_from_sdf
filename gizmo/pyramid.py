@@ -87,6 +87,7 @@ class SDFPyramidWidgetGroup(GizmoGroup):
             bpy.ops.mesh_from_sdf.apply_gizmo_to_sdf_pyramid()
 
         ob = context.object
+        scale_basis = 1.0 / ob.matrix_world.to_scale()[0]
         
 #        pointer = bpy.context.scene.sdf_pyramid_pointer_list[ob.sdf_prop.sub_index]
 #        width = pointer.width * 0.5
@@ -99,7 +100,7 @@ class SDFPyramidWidgetGroup(GizmoGroup):
         gz_width.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(+90.0), 4, 'Y')
         gz_width.draw_style = 'BOX'
         gz_width.length = 0.2
-        gz_width.scale_basis = 1.0 / ob.scale[0]
+        gz_width.scale_basis = scale_basis
 
         gz_width.color = 1.0, 0.0, 0.0
         gz_width.alpha = 0.5
@@ -112,7 +113,7 @@ class SDFPyramidWidgetGroup(GizmoGroup):
         gz_depth.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'X')
         gz_depth.draw_style = 'BOX'
         gz_depth.length = 0.2
-        gz_depth.scale_basis = 1.0 / ob.scale[0]
+        gz_depth.scale_basis = scale_basis
 
         gz_depth.color = 0.0, 1.0, 0.0
         gz_depth.alpha = 0.5
@@ -125,7 +126,7 @@ class SDFPyramidWidgetGroup(GizmoGroup):
         gz_height.matrix_basis = ob.matrix_world
         gz_height.draw_style = 'BOX'
         gz_height.length = 0.2
-        gz_height.scale_basis = 1.0 / ob.scale[0]
+        gz_height.scale_basis = scale_basis
 
         gz_height.color = 0.0, 0.0, 1.0
         gz_height.alpha = 0.5
@@ -141,19 +142,20 @@ class SDFPyramidWidgetGroup(GizmoGroup):
         global width, depth, height
         
         ob = context.object
+        scale_basis = 1.0 / ob.matrix_world.to_scale()[0]
         
         gz_width = self.gizmo_width
-        gz_width.scale_basis = 1.0 / ob.scale[0]
+        gz_width.scale_basis = scale_basis
         gz_width.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(+90.0), 4, 'Y')
         gz_width.matrix_offset = mathutils.Matrix.Translation((+height,0,0))
         
         gz_depth = self.gizmo_depth
-        gz_depth.scale_basis = 1.0 / ob.scale[0]
+        gz_depth.scale_basis = scale_basis
         gz_depth.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'X')
         gz_depth.matrix_offset = mathutils.Matrix.Translation((0,+height,0))
         
         gz_height = self.gizmo_height
-        gz_height.scale_basis = 1.0 / ob.scale[0]
+        gz_height.scale_basis = scale_basis
         gz_height.matrix_basis = ob.matrix_world
 
 

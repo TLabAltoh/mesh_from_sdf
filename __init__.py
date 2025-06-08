@@ -75,6 +75,21 @@ class SDFProperty(PropertyGroup):
                 return True
         return False
 
+    @classmethod
+    def reset_nested_object_transform(cls, object):
+        if object.parent == None:
+            return
+        
+        parent = object.parent
+        
+        parent_matrix_world = parent.matrix_world
+        parent_scale = parent.scale
+        parent_quaternion = parent.rotation_euler.to_quaternion()
+        
+        object.location = parent_matrix_world @ object.location
+        object.scale = parent_scale * object.scale
+        object.rotation_euler = (parent_quaternion @ object.rotation_euler.to_quaternion()).to_euler()
+
     # Update parentage relationships in the hierarchy according to the current state of nesting of SDF objects
     @classmethod
     def update_nest_prop(cls, context, self_index, self_nest):
@@ -82,14 +97,28 @@ class SDFProperty(PropertyGroup):
         
         pointer = context.scene.sdf_object_pointer_list[self_index]
         if (self_index == 0) or (self_nest == False):
-            pointer.object.parent = None
-            print('nest: ', False)
+            object = pointer.object
+            cls.reset_nested_object_transform(object)
+            object.parent = None
         else:
             for index in reversed(range(0, self_index)):
                 parent_pointer = context.scene.sdf_object_pointer_list[index]
-                if parent_pointer.object.sdf_prop.nest == False:
-                    pointer.object.parent = parent_pointer.object
-                    print('nest: ', True)
+                parent = parent_pointer.object
+                object = pointer.object
+                if parent.sdf_prop.nest == False:
+                    
+                    cls.reset_nested_object_transform(object)
+                    object.parent = None
+                    
+                    parent_matrix_world_inv = parent.matrix_world.inverted()
+                    parent_scale_inv = mathutils.Vector([1 / v for v in parent.scale])
+                    parent_quaternion_inv = parent.rotation_euler.to_quaternion().inverted()
+                    
+                    object.location = parent_matrix_world_inv @ object.location
+                    object.scale = parent_scale_inv * object.scale
+                    object.rotation_euler = (parent_quaternion_inv @ object.rotation_euler.to_quaternion()).to_euler()
+                    
+                    object.parent = parent
                     break
 
     def on_prop_update(self, context):
@@ -936,7 +965,9 @@ def on_depsgraph_update(scene):
             for obj in bpy.context.selected_objects:
                 if obj.sdf_prop.enabled:
                     # print('\n', '[update_transform]', obj.name, '\n')
-                    ShaderBufferFactory.update_object_common_buffer(ctx, bpy.context, obj.sdf_prop.index)
+                    ShaderBufferFactory.update_object_common_buffer(ctx, bpy.context, obj.sdf_prop.index)                    
+                    for child in obj.children:
+                        ShaderBufferFactory.update_object_common_buffer(ctx, bpy.context, child.sdf_prop.index)
 
 
 global ctx, test_global

@@ -74,6 +74,7 @@ class SDFNgonPrismWidgetGroup(GizmoGroup):
             bpy.ops.mesh_from_sdf.apply_gizmo_to_sdf_ngon_prism()
 
         ob = context.object
+        scale_basis = 1.0 / ob.matrix_world.to_scale()[0]
         
 #        pointer = bpy.context.scene.sdf_ngon_prism_pointer_list[ob.sdf_prop.sub_index]
 #        height = pointer.height * 0.5
@@ -85,7 +86,7 @@ class SDFNgonPrismWidgetGroup(GizmoGroup):
         gz_height.matrix_basis = ob.matrix_world
         gz_height.draw_style = 'BOX'
         gz_height.length = 0.2
-        gz_height.scale_basis = 1.0 / ob.scale[0]
+        gz_height.scale_basis = scale_basis
 
         gz_height.color = 0.0, 0.0, 1.0
         gz_height.alpha = 0.5
@@ -98,7 +99,7 @@ class SDFNgonPrismWidgetGroup(GizmoGroup):
         gz_radius.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'X')
         gz_radius.draw_style = 'BOX'
         gz_radius.length = 0.2
-        gz_radius.scale_basis = 1.0 / ob.scale[0]
+        gz_radius.scale_basis = scale_basis
 
         gz_radius.color = 0.0, 1.0, 0.0
         gz_radius.alpha = 0.5
@@ -110,13 +111,14 @@ class SDFNgonPrismWidgetGroup(GizmoGroup):
 
     def refresh(self, context):
         ob = context.object
+        scale_basis = 1.0 / ob.matrix_world.to_scale()[0]
         
         gz_height = self.gizmo_height
-        gz_height.scale_basis = 1.0 / ob.scale[0]
+        gz_height.scale_basis = scale_basis
         gz_height.matrix_basis = ob.matrix_world
         
         gz_radius = self.gizmo_radius
-        gz_radius.scale_basis = 1.0 / ob.scale[0]
+        gz_radius.scale_basis = scale_basis
         gz_radius.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'X')
 
 

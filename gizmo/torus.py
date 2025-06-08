@@ -85,8 +85,7 @@ class SDFTorusWidgetGroup(GizmoGroup):
             bpy.ops.mesh_from_sdf.apply_gizmo_to_sdf_torus()
 
         ob = context.object
-        
-        print(ob)
+        scale_basis = 1.0 / ob.matrix_world.to_scale()[0]
         
 #        pointer = bpy.context.scene.sdf_torus_pointer_list[ob.sdf_prop.sub_index]
 #        radius = pointer.radius
@@ -98,7 +97,7 @@ class SDFTorusWidgetGroup(GizmoGroup):
         gz_radius_0.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'Y')
         gz_radius_0.draw_style = 'BOX'
         gz_radius_0.length = 0.2
-        gz_radius_0.scale_basis = 1.0 / ob.scale[0]
+        gz_radius_0.scale_basis = scale_basis
 
         gz_radius_0.color = 1.0, 0.0, 0.0
         gz_radius_0.alpha = 0.5
@@ -111,7 +110,7 @@ class SDFTorusWidgetGroup(GizmoGroup):
         gz_radius_1.matrix_basis = ob.matrix_world
         gz_radius_1.draw_style = 'BOX'
         gz_radius_1.length = 0.2
-        gz_radius_1.scale_basis = 1.0 / ob.scale[0]
+        gz_radius_1.scale_basis = scale_basis
 
         gz_radius_1.color = 0.0, 1.0, 0.0
         gz_radius_1.alpha = 0.5
@@ -124,7 +123,7 @@ class SDFTorusWidgetGroup(GizmoGroup):
         gz_fill.matrix_basis = ob.matrix_world
         gz_fill.draw_style = 'BOX'
         gz_fill.length = 0.2
-        gz_fill.scale_basis = 1.0 / ob.scale[0]
+        gz_fill.scale_basis = scale_basis
 
         gz_fill.color = 0.0, 0.0, 1.0
         gz_fill.alpha = 0.5
@@ -140,14 +139,15 @@ class SDFTorusWidgetGroup(GizmoGroup):
         global radius, fill
         
         ob = context.object
+        scale_basis = 1.0 / ob.matrix_world.to_scale()[0]
         
         gz_radius_0 = self.gizmo_radius_0
-        gz_radius_0.scale_basis = 1.0 / ob.scale[0]
+        gz_radius_0.scale_basis = scale_basis
         gz_radius_0.matrix_basis = ob.matrix_world @ mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'Y')
         gz_radius_0.matrix_offset = mathutils.Matrix.Translation((0,0,radius[1]))
         
         gz_radius_1 = self.gizmo_radius_1
-        gz_radius_1.scale_basis = 1.0 / ob.scale[0]
+        gz_radius_1.scale_basis = scale_basis
         gz_radius_1.matrix_basis = ob.matrix_world
         gz_radius_1.matrix_offset = mathutils.Matrix.Translation((-radius[0],0,0))
         
