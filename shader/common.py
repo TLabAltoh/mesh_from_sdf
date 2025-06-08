@@ -212,9 +212,48 @@ include_frag_ = '''
             float d = sqrt(min(min(min(dot(d1, d1), dot(d2, d2)), dot(d3, d3)), dot(d4, d4)));
             return which(-d, d, max(max(h1, h2), abs(p.y) - hh) < 0.0);
         }
-        float sdTriPrism( in vec3 p, in float h, in float r ) {
-            vec3 q = abs(p);
-            return max(q.y-h,max(q.x*0.866025+p.z*0.5,-p.z)-r*0.5);
+        float sdTriPrism(vec3 p, float h, float r) {
+            const float PI = 3.14159;
+        
+            p = p.zxy;
+        
+            float dist, side = 3.0 - 0.5, _h;
+            vec2 a, b = vec2(r, 0), ba, pa;
+            
+            // i = 0, theta = 2 / 3 * PI
+            a = b;
+            b = vec2(r*-0.5, r*0.86602);
+            
+            ba = b-a;
+            pa = p.xy-a;
+            _h = clamp(dot(pa,ba)/dot(ba,ba),0.0,1.0);
+            
+            dist = length(pa-_h*ba);
+            side -= sign((b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x));
+            
+            // i = 1, theta = 2 / 3 * PI
+            a = b;
+            b = vec2(r*-0.5, r*-0.86602);
+            
+            ba = b-a;
+            pa = p.xy-a;
+            _h = clamp(dot(pa,ba)/dot(ba,ba),0.0,1.0);
+            
+            dist = min(length(pa-_h*ba),dist);
+            side -= sign((b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x));
+            
+            // i = 2, theta = 2 * PI
+            a = b;
+            b = vec2(r, 0.0);
+            
+            ba = b-a;
+            pa = p.xy-a;
+            _h = clamp(dot(pa,ba)/dot(ba,ba),0.0,1.0);
+            
+            dist = min(length(pa-_h*ba),dist);
+            side -= sign((b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x));
+            
+            return opExtrusion(p, sign(side) * abs(dist), h);
         }
         float sdHexPrism( vec3 p, in float h, in float r ) {
             const vec3 k = vec3(-0.8660254, 0.5, 0.57735);

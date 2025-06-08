@@ -621,6 +621,9 @@ class ShaderBufferFactory(object):
         alist = context.scene.sdf_cone_pointer_list
         narray = np.empty(len(alist) * dsize, dtype=np.float32)
         
+        # TODO: I need to modify the code so that when round = 1, 
+        # the side with the smaller radius makes a hemisphere.
+        
         for i, pointer in enumerate(alist):
             object = pointer.object
             sdf_prop = object.sdf_prop
@@ -1169,11 +1172,11 @@ class ShaderBufferFactory(object):
             
             height = pointer.height * 0.5
             radius = pointer.radius
-            round = min(radius, height) * pointer.round
+            round = min(radius * 0.5, height) * pointer.round
             
             offset = i * dsize
             narray[offset + 0] = height - round
-            narray[offset + 1] = radius - round
+            narray[offset + 1] = radius - round * 2
             narray[offset + 2] = round
             # narray[offset + 3] = 0 # dummy
 
@@ -1207,10 +1210,10 @@ class ShaderBufferFactory(object):
         
         height = pointer.height * 0.5
         radius = pointer.radius
-        round = min(radius, height) * pointer.round
+        round = min(radius * 0.5, height) * pointer.round
         
         narray[0] = height - round
-        narray[1] = radius - round
+        narray[1] = radius - round * 2
         narray[2] = round
         # narray[3] = 0 # dummy
         
@@ -1265,12 +1268,18 @@ class ShaderBufferFactory(object):
             
             height = pointer.height * 0.5
             radius = pointer.radius
-            round = min(radius, height) * pointer.round
             nsides = pointer.nsides
+            
+            theta = 0.5 * math.pi * (nsides - 2) / nsides
+            round = min(radius * math.sin(theta), height) * pointer.round
+            
+            tan_t = math.tan(theta)
+            cos_t = round / tan_t
+            sin_t = round
             
             offset = i * dsize
             narray[offset + 0] = height - round
-            narray[offset + 1] = radius - round
+            narray[offset + 1] = radius - math.sqrt(cos_t * cos_t + sin_t * sin_t)
             narray[offset + 2] = round
             narray[offset + 3] = nsides
 
@@ -1304,11 +1313,17 @@ class ShaderBufferFactory(object):
         
         height = pointer.height * 0.5
         radius = pointer.radius
-        round = min(radius, height) * pointer.round
         nsides = pointer.nsides
+
+        theta = 0.5 * math.pi * (nsides - 2) / nsides
+        round = min(radius * math.sin(theta), height) * pointer.round
+        
+        tan_t = math.tan(theta)
+        cos_t = round / tan_t
+        sin_t = round
         
         narray[0] = height - round
-        narray[1] = radius - round
+        narray[1] = radius - math.sqrt(cos_t * cos_t + sin_t * sin_t)
         narray[2] = round
         narray[3] = nsides
         
