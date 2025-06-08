@@ -703,9 +703,11 @@ class SDF2MESH_PT_Panel(Panel):
                     col_l.separator()
                     row_l = col_l.row()
                     pointer = scene.sdf_object_pointer_list[scene.sdf_object_pointer_list_index]
-                    if (pointer.object != None) and (scene.sdf_object_pointer_list_index > 0):
+                    if (pointer.object != None) and (len(pointer.object.children) == 0) and (scene.sdf_object_pointer_list_index > 0):
                         prop = pointer.object.sdf_prop
-                        row_l.prop(prop, "nest")
+                        row_l.prop(prop, 'nest')
+                    else:
+                        row_l.label(text='It is not possible to manipulate the nest property of the first object in the hierarchy or of an object with a child relationship')
                     row_l.operator('mesh_from_sdf.select_on_the_properties', text='Select on the properties')
             
             col_r.separator()
