@@ -147,6 +147,11 @@ class SDFProperty(PropertyGroup):
         new_pointer.object = prv_pointer.object
         PointerListUtil.recalc_sub_index(blist)
 
+    def reset_position_offset(self):
+        self.position_offset[0] = 0
+        self.position_offset[1] = 0
+        self.position_offset[2] = 0
+
     def on_primitive_type_change(self, context):
         global ctx
         # Undo works for this operation
@@ -174,26 +179,31 @@ class SDFProperty(PropertyGroup):
                 blist = None
                 alloc = None
                 if (primitive_type == 'Box') and (SDFProperty.contains_in_pointer_list(context.scene.sdf_box_pointer_list, prv_pointer.object) == False):
+                    self.reset_position_offset()
                     blist = context.scene.sdf_box_pointer_list
                     self.__class__._add_new_pointer(prv_pointer, new_pointer, blist)
                     SDFBoxPointer.update_box_mesh(prv_pointer)
                     alloc = lambda ctx, context: ShaderBufferFactory.generate_box_buffer(ctx, context)
                 elif (primitive_type == 'Sphere') and (SDFProperty.contains_in_pointer_list(context.scene.sdf_sphere_pointer_list, prv_pointer.object) == False):
+                    self.reset_position_offset()
                     blist = context.scene.sdf_sphere_pointer_list
                     self.__class__._add_new_pointer(prv_pointer, new_pointer, blist)
                     SDFSpherePointer.update_sphere_mesh(prv_pointer)
                     alloc = lambda ctx, context: ShaderBufferFactory.generate_sphere_buffer(ctx, context)
                 elif (primitive_type == 'Cylinder') and (SDFProperty.contains_in_pointer_list(context.scene.sdf_cylinder_pointer_list, prv_pointer.object) == False):
+                    self.reset_position_offset()
                     blist = context.scene.sdf_cylinder_pointer_list
                     self.__class__._add_new_pointer(prv_pointer, new_pointer, blist)
                     SDFCylinderPointer.update_cylinder_mesh(prv_pointer)
                     alloc = lambda ctx, context: ShaderBufferFactory.generate_cylinder_buffer(ctx, context)
                 elif (primitive_type == 'Cone') and (SDFProperty.contains_in_pointer_list(context.scene.sdf_cone_pointer_list, prv_pointer.object) == False):
+                    self.reset_position_offset()
                     blist = context.scene.sdf_cone_pointer_list
                     self.__class__._add_new_pointer(prv_pointer, new_pointer, blist)
                     SDFConePointer.update_cone_mesh(prv_pointer)
                     alloc = lambda ctx, context: ShaderBufferFactory.generate_cone_buffer(ctx, context)
                 elif (primitive_type == 'Torus') and (SDFProperty.contains_in_pointer_list(context.scene.sdf_torus_pointer_list, prv_pointer.object) == False):
+                    self.reset_position_offset()
                     # Torus has no argument to scale with primitive_add. Scaling is applied manually.
                     blist = context.scene.sdf_torus_pointer_list
                     self.__class__._add_new_pointer(prv_pointer, new_pointer, blist)
@@ -205,26 +215,31 @@ class SDFProperty(PropertyGroup):
                     SDFPyramidPointer.update_pyramid_mesh(prv_pointer)
                     alloc = lambda ctx, context: ShaderBufferFactory.generate_pyramid_buffer(ctx, context)
                 elif (primitive_type == 'Truncated Pyramid') and (SDFProperty.contains_in_pointer_list(context.scene.sdf_truncated_pyramid_pointer_list, prv_pointer.object) == False):
+                    self.reset_position_offset()
                     blist = context.scene.sdf_truncated_pyramid_pointer_list
                     self.__class__._add_new_pointer(prv_pointer, new_pointer, blist)
                     SDFTruncatedPyramidPointer.update_truncated_pyramid_mesh(prv_pointer)
                     alloc = lambda ctx, context: ShaderBufferFactory.generate_truncated_pyramid_buffer(ctx, context)
                 elif (primitive_type == 'Hexagonal Prism') and (SDFProperty.contains_in_pointer_list(context.scene.sdf_hex_prism_pointer_list, prv_pointer.object) == False):
+                    self.reset_position_offset()
                     blist = context.scene.sdf_hex_prism_pointer_list
                     self.__class__._add_new_pointer(prv_pointer, new_pointer, blist)
                     SDFPrismPointer.update_hex_prism_mesh(prv_pointer)
                     alloc = lambda ctx, context: ShaderBufferFactory.generate_hex_prism_buffer(ctx, context)
                 elif (primitive_type == 'Triangular Prism') and (SDFProperty.contains_in_pointer_list(context.scene.sdf_tri_prism_pointer_list, prv_pointer.object) == False):
+                    self.reset_position_offset()
                     blist = context.scene.sdf_tri_prism_pointer_list
                     self.__class__._add_new_pointer(prv_pointer, new_pointer, blist)
                     SDFPrismPointer.update_tri_prism_mesh(prv_pointer)
                     alloc = lambda ctx, context: ShaderBufferFactory.generate_tri_prism_buffer(ctx, context)
                 elif (primitive_type == 'Ngon Prism') and (SDFProperty.contains_in_pointer_list(context.scene.sdf_ngon_prism_pointer_list, prv_pointer.object) == False):
+                    self.reset_position_offset()
                     blist = context.scene.sdf_ngon_prism_pointer_list
                     self.__class__._add_new_pointer(prv_pointer, new_pointer, blist)
                     SDFPrismPointer.update_ngon_prism_mesh(prv_pointer)
                     alloc = lambda ctx, context: ShaderBufferFactory.generate_ngon_prism_buffer(ctx, context)
                 elif (primitive_type == 'GLSL') and (SDFProperty.contains_in_pointer_list(context.scene.sdf_glsl_pointer_list, prv_pointer.object) == False):
+                    self.reset_position_offset()
                     blist = context.scene.sdf_glsl_pointer_list
                     self.__class__._add_new_pointer(prv_pointer, new_pointer, blist)
                     SDFGLSLPointer.update_glsl_mesh(prv_pointer)
@@ -294,7 +309,7 @@ class SDFProperty(PropertyGroup):
     blend_step: IntProperty(
         name='Step',
         description='',
-        min=1,
+        min=0,
         default=1,
         update=on_prop_update)
 

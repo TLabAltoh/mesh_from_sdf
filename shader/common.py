@@ -104,14 +104,14 @@ include_frag_ = '''
             vec2 u = max(vec2(r - d0, r - d1), vec2(0));
             return max(r, min (d0, d1)) - length(u);
         }
-        float opRoundDifference( in float d0, in float d1, in float r )
-        {
-            return opRoundUnion(d0, -d1, r);
-        }
         float opRoundIntersection( in float d0, in float d1, in float r )
         {
             vec2 u = max(vec2(r + d0, r + d1), vec2(0));
             return min(-r, max (d0, d1)) + length(u);
+        }
+        float opRoundDifference( in float d0, in float d1, in float r )
+        {
+            return opRoundIntersection(d0, -d1, r);
         }
 
         // s: champferSize
@@ -119,17 +119,17 @@ include_frag_ = '''
             const float SQRT05 = 0.70710678118;
             return min(min(d0, d1), (d0 - s + d1)*SQRT05);
         }
-        float opChampferDifference( in float d0, in float d1, in float s) {
-            return opChampferUnion(d0, -d1, s);
-        }
         float opChampferIntersection( in float d0, in float d1, in float s) {
             const float SQRT05 = 0.70710678118;
             return max(max(d0, d1), (d0 + s + d1)*SQRT05);
         }
+        float opChampferDifference( in float d0, in float d1, in float s) {
+            return opChampferIntersection(d0, -d1, s);
+        }
         
-        float opStairsUnion( in float d0, in float d1, in float s, in float n) {
+        float opStairsUnion( in float d0, in float d1, in float s, float n) {
             float _s = s/n;
-            float u = d1-_s;
+            float u = d1-s;
             return min(min(d0,d1), 0.5 * (u + d0 + abs ((mod (u - d0 + _s, 2 * _s)) - _s)));
         }
         float opStairsDifference( in float d0, in float d1, in float s, in float n) {

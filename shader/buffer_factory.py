@@ -11,8 +11,8 @@ class ShaderBufferFactory(object):
     __get_blend_props = {'No Blending': lambda sdf_prop: (0, 0),
                          'Smooth' : lambda sdf_prop: (sdf_prop.blend_smooth, 0),
                          'Champfer' : lambda sdf_prop: (sdf_prop.blend_champfer_size, 0),
-                         'Steps' : lambda sdf_prop: (sdf_prop.blend_champfer_size, sdf_prop.blend_step),
-                         'Round' : lambda sdf_prop: (sdf_prop.blend_radius, 0)}
+                         'Steps' : lambda sdf_prop: (sdf_prop.blend_champfer_size, sdf_prop.blend_step + 1),
+                         'Round' : lambda sdf_prop: (sdf_prop.blend_round, 0)}
     
     # Buffer used for SDFObjectProperty
     object_common_buffer = None
@@ -625,14 +625,33 @@ class ShaderBufferFactory(object):
             object = pointer.object
             sdf_prop = object.sdf_prop
             
+            hheight = pointer.height * 0.5
             radius = pointer.radius
-            height = pointer.height * 0.5
-            round = min(radius[0], radius[1], height) * pointer.round
+            height = pointer.height
+            round = hheight * pointer.round
+
+            if radius[0] > radius[1]:
+                radius_max, radius_min = radius[0], radius[1]
+                radius_idx_max, radius_idx_min = 1, 2
+            else:
+                radius_max, radius_min = radius[1], radius[0]
+                radius_idx_max, radius_idx_min = 2, 1
+                
+            theta_r0 = math.atan(height / (radius_max - radius_min))
+            theta_r1 = theta_r0 * 0.5
+            
+            padding_radius_lim_min = radius_min * math.sin(theta_r0)
+            
+            round = min(round, padding_radius_lim_min)
+            ratio = round / height
+            
+            padding_radius_max = round / math.tan(theta_r1)
+            padding_radius_min = round / math.sin(theta_r0) - ratio * (radius_max - radius_min)
             
             offset = i * dsize
-            narray[offset + 0] = height - round
-            narray[offset + 1] = radius[0] - round
-            narray[offset + 2] = radius[1] - round
+            narray[offset + 0] = hheight - round
+            narray[offset + radius_idx_max] = radius_max - padding_radius_max
+            narray[offset + radius_idx_min] = radius_min - padding_radius_min
             narray[offset + 3] = round
 
         # Generate a buffer to bind to the shader using np.array as source
@@ -663,13 +682,32 @@ class ShaderBufferFactory(object):
         object = pointer.object
         sdf_prop = object.sdf_prop
         
+        hheight = pointer.height * 0.5
         radius = pointer.radius
-        height = pointer.height * 0.5
-        round = min(radius[0], radius[1], height) * pointer.round
+        height = pointer.height
+        round = hheight * pointer.round
+                
+        if radius[0] > radius[1]:
+            radius_max, radius_min = radius[0], radius[1]
+            radius_idx_max, radius_idx_min = 1, 2
+        else:
+            radius_max, radius_min = radius[1], radius[0]
+            radius_idx_max, radius_idx_min = 2, 1
+            
+        theta_r0 = math.atan(height / (radius_max - radius_min))
+        theta_r1 = theta_r0 * 0.5
         
-        narray[0] = height - round
-        narray[1] = radius[0] - round
-        narray[2] = radius[1] - round
+        padding_radius_lim_min = radius_min * math.sin(theta_r0)
+        
+        round = min(round, padding_radius_lim_min)
+        ratio = round / height
+        
+        padding_radius_max = round / math.tan(theta_r1)
+        padding_radius_min = round / math.sin(theta_r0) - ratio * (radius_max - radius_min)
+        
+        narray[0] = hheight - round
+        narray[radius_idx_max] = radius_max - padding_radius_max
+        narray[radius_idx_min] = radius_min - padding_radius_min
         narray[3] = round
         
         buf = cls.cone_buffer
@@ -863,10 +901,7 @@ class ShaderBufferFactory(object):
             
             height = pointer.height
             round = hheight * pointer.round
-            
-            hwidth_idx_max, hwidth_idx_min = 0, 2
-            hdepth_idx_max, hdepth_idx_min = 1, 3
-            
+                        
             if hwidth_0 > hwidth_1:
                 hwidth_max, hwidth_min = hwidth_0, hwidth_1
                 hwidth_idx_max, hwidth_idx_min = 0, 2
@@ -946,10 +981,7 @@ class ShaderBufferFactory(object):
         
         height = pointer.height
         round = hheight * pointer.round
-        
-        hwidth_idx_max, hwidth_idx_min = 0, 2
-        hdepth_idx_max, hdepth_idx_min = 1, 3
-        
+                
         if hwidth_0 > hwidth_1:
             hwidth_max, hwidth_min = hwidth_0, hwidth_1
             hwidth_idx_max, hwidth_idx_min = 0, 2

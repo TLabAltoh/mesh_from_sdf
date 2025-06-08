@@ -89,24 +89,24 @@ class ShaderFactory(object):
                 k1 = sdfObjectProp.bl.y;'''
         
         f_no_blend_merge_1 = {'Union' : 'minDist1 = opUnion(dist, minDist1);',
-                              'Diffrence' : 'minDist1 = opDiffrence(dist, minDist1);',
+                              'Difference' : 'minDist1 = opDifference(dist, minDist1);',
                               'Intersection' : 'minDist1 = opIntersection(dist, minDist1);'}
                             
         f_smooth_merge_1 = {'Union' : 'minDist1 = opSmoothUnion(dist, minDist1, k0);',
-                            'Diffrence' : 'minDist1 = opSmoothDiffrence(dist, minDist1, k0);',
+                            'Difference' : 'minDist1 = opSmoothDifference(dist, minDist1, k0);',
                             'Intersection' : 'minDist1 = opSmoothIntersection(dist, minDist1, k0);'}
         
         f_champfer_merge_1 = {'Union' : 'minDist1 = opChampferUnion(dist, minDist1, k0);',
-                              'Diffrence' : 'minDist1 = opChampferDiffrence(dist, minDist1, k0);',
-                              'Intersection' : 'minDist1 = opChampferIntersection(dist, minDist1, k0);'}
+                              'Difference' : 'minDist1 = opChampferDifference(minDist1, dist, k0);',
+                              'Intersection' : 'minDist1 = 0.5 * opChampferIntersection(minDist1, dist, k0);'}
         
         f_steps_merge_1 = {'Union' : 'minDist1 = opStairsUnion(dist, minDist1, k0, k1);',
-                           'Diffrence' : 'minDist1 = opStairsDiffrence(dist, minDist1, k0, k1);',
+                           'Difference' : 'minDist1 = opStairsDifference(minDist1, dist, k0, k1);',
                            'Intersection' : 'minDist1 = opStairsIntersection(dist, minDist1, k0, k1);'}
         
         f_round_merge_1 = {'Union' : 'minDist1 = opRoundUnion(dist, minDist1, k0);',
-                           'Diffrence' : 'minDist1 = opRoundDiffrence(dist, minDist1, k0);',
-                           'Intersection' : 'minDist1 = opRoundIntersection(dist, minDist1, k0);'}
+                           'Difference' : 'minDist1 = opRoundDifference(minDist1, dist, k0);',
+                           'Intersection' : 'minDist1 = 0.5 * opRoundIntersection(dist, minDist1, k0);'}
 
         f_blend_1 = {'No Blending': f_no_blend_merge_1,
                      'Smooth' : f_smooth_merge_1,
@@ -115,24 +115,24 @@ class ShaderFactory(object):
                      'Round' : f_round_merge_1}
 
         f_no_blend_merge_0 = {'Union' : 'minDist0 = opUnion(minDist1, minDist0);',
-                              'Diffrence' : 'minDist0 = opDiffrence(minDist1, minDist0);',
+                              'Difference' : 'minDist0 = opDifference(minDist1, minDist0);',
                               'Intersection' : 'minDist0 = opIntersection(minDist1, minDist0);'}
                             
         f_smooth_merge_0 = {'Union' : 'minDist0 = opSmoothUnion(minDist1, minDist0, k0);',
-                            'Diffrence' : 'minDist0 = opSmoothDiffrence(minDist1, minDist0, k0);',
+                            'Difference' : 'minDist0 = opSmoothDifference(minDist1, minDist0, k0);',
                             'Intersection' : 'minDist0 = opSmoothIntersection(minDist1, minDist0, k0);'}
         
         f_champfer_merge_0 = {'Union' : 'minDist0 = opChampferUnion(minDist1, minDist0, k0);',
-                              'Diffrence' : 'minDist0 = opChampferDiffrence(minDist1, minDist0, k0);',
-                              'Intersection' : 'minDist0 = opChampferIntersection(minDist1, minDist0, k0);'}
+                              'Difference' : 'minDist0 = opChampferDifference(minDist0, minDist1, k0);',
+                              'Intersection' : 'minDist0 = 0.5 * opChampferIntersection(minDist0, minDist1, k0);'}
         
         f_steps_merge_0 = {'Union' : 'minDist0 = opStairsUnion(minDist1, minDist0, k0, k1);',
-                           'Diffrence' : 'minDist0 = opStairsDiffrence(minDist1, minDist0, k0, k1);',
+                           'Difference' : 'minDist0 = opStairsDifference(minDist0, minDist1, k0, k1);',
                            'Intersection' : 'minDist0 = opStairsIntersection(minDist1, minDist0, k0, k1);'}
         
         f_round_merge_0 = {'Union' : 'minDist0 = opRoundUnion(minDist1, minDist0, k0);',
-                           'Diffrence' : 'minDist0 = opRoundDiffrence(minDist1, minDist0, k0);',
-                           'Intersection' : 'minDist0 = opRoundIntersection(minDist1, minDist0, k0);'}
+                           'Difference' : 'minDist0 = opRoundDifference(minDist0, minDist1, k0);',
+                           'Intersection' : 'minDist0 = 0.5 * opRoundIntersection(minDist1, minDist0, k0);'}
         
         f_blend_0 = {'No Blending' : f_no_blend_merge_0,
                      'Smooth' : f_smooth_merge_0,
