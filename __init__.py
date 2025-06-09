@@ -1007,7 +1007,7 @@ def register():
     
     # Display this list in the UI hierarchy on the scene view
     bpy.types.Scene.sdf_object_pointer_list = CollectionProperty(type = SDFObjectPointer)
-    bpy.types.Scene.sdf_object_pointer_list_index = IntProperty(name = 'Index for sdf_object_pointer_list', default = 0)
+    bpy.types.Scene.sdf_object_pointer_list_index = IntProperty(name = 'Index', default = 0)
     
     # List for sorting objects for each primitive when sdf_object_pointer_list is updated
     bpy.types.Scene.sdf_box_pointer_list = CollectionProperty(type = SDFBoxPointer)

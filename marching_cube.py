@@ -4,6 +4,7 @@ import gpu
 import moderngl
 import math
 import numpy as np
+from bpy.props import FloatProperty
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
@@ -143,9 +144,9 @@ class MarchingCube(object):
         cls.ctx = ctx
 
     @classmethod
-    def get_smallest_bounding_box(cls):
+    def get_smallest_bounding_box(cls, chunk_size):
         verts = []
-        for pointer in bpy.context.sdf_object_pointer_list:
+        for pointer in bpy.context.scene.sdf_object_pointer_list:
             object = pointer.object
             verts += [object.matrix_world @ v.co for v in object.data.vertices]
 
@@ -163,9 +164,29 @@ class MarchingCube(object):
         ymin, ymax = co_min[1], co_max[1]
         zmin, zmax = co_min[2], co_max[2]
 
-        xdif = (xmax - xmin) * 0.5
-        ydif = (ymax - ymin) * 0.5
-        zdif = (zmax - zmin) * 0.5
+        xran = xmax - xmin
+        yran = ymax - ymin
+        zran = zmax - zmin
+        
+        xran = int(xran / chunk_size) * chunk_size + 2 * chunk_size * (xran % chunk_size != 0)
+        yran = int(yran / chunk_size) * chunk_size + 2 * chunk_size * (yran % chunk_size != 0)
+        zran = int(zran / chunk_size) * chunk_size + 2 * chunk_size * (zran % chunk_size != 0)
+
+        xlen = xran / chunk_size
+        ylen = yran / chunk_size
+        zlen = zran / chunk_size
+
+        xmin = (xmax + xmin) * 0.5 - xran * 0.5
+        ymin = (ymax + ymin) * 0.5 - yran * 0.5
+        zmin = (zmax + zmin) * 0.5 - zran * 0.5
+        
+        xmax = xmin + xran
+        ymax = ymin + yran
+        zmax = zmin + zran
+
+        xdif = xran * 0.5
+        ydif = yran * 0.5
+        zdif = zran * 0.5
 
         cx = xmin + xdif
         cy = ymin + ydif
@@ -184,7 +205,7 @@ class MarchingCube(object):
 
         corners = np.dot(corners, tvect)
         
-        return corners
+        return corners, (xlen, ylen, zlen)
 
     @classmethod
     def generate(cls):
@@ -198,6 +219,20 @@ class MarchingCube(object):
         print('[Mesh Generation] start ...')
 
         print('\n', cls.basic_shader, '\n')
+        
+        chunk_size = bpy.context.scene.marching_cube_chunk_size
+        corners, chunk_count = cls.get_smallest_bounding_box(chunk_size)
+        
+        print('\n', 'chunk_count:', chunk_count, '\n')
+        
+        for corner in corners:
+            bpy.ops.mesh.primitive_uv_sphere_add(radius=0.1, enter_editmode=False, align='CURSOR', location=corner)
+            
+        return
+
+        cls.BOX_SIZE_X = chunk_size
+        cls.BOX_SIZE_Y = chunk_size
+        cls.BOX_SIZE_X = chunk_size
 
         compute_shader = cls.ctx.compute_shader(cls.basic_shader)
         compute_shader["isoRange"].value = np.array([-0.1,0.1])
@@ -215,9 +250,9 @@ class MarchingCube(object):
         total_count = 0
         total_verts = None
 
-        for x in [-1,1]:
-            for y in [-1,1]:
-                for z in [-1,1]:
+        for x in range(chunk_count[0]):
+            for y in range(chunk_count[1]):
+                for z in range(chunk_count[2]):
                     count_buf = cls.ctx.buffer(data=b'\x00\x00\x00\x00')
                     count_buf.bind_to_storage_buffer(11)
                     tri_siz = 3*3+1
@@ -279,6 +314,7 @@ class SDF2MESH_PT_Generate(bpy.types.Panel):
         op_cls = SDF2MESH_OT_Generate
 
         layout = self.layout
+        layout.prop(context.scene, 'marching_cube_chunk_size')
         layout.operator(op_cls.bl_idname, text="Generate", icon="PLAY")
 
 
@@ -290,6 +326,8 @@ classes = [
 def register():
     for c in classes:
         bpy.utils.register_class(c)
+    
+    bpy.types.Scene.marching_cube_chunk_size = FloatProperty(name = 'Chunk Size', default = 2.5)
 
 def unregister():
     for c in classes:
