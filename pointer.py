@@ -569,7 +569,16 @@ class SDFGLSLPointer(SDFPrimitivePointer):
     
     # Callback processing when updating properties.
     def on_prop_update(self, context):
-        pass
+        global ctx
+        this = self.object.sdf_prop
+
+        # Update mesh for primitive interactions
+        prev_mode = self.__class__.update_primitive_mesh_begin(context)
+        self.__class__.update_glsl_mesh(context.scene.sdf_object_pointer_list[this.index])
+        self.__class__.update_primitive_mesh_end(prev_mode)
+        
+        # Updateing Storage Buffre Objects
+        ShaderBufferFactory.update_glsl_buffer(ctx, context, this.index, this.sub_index)
     
     bound: FloatVectorProperty(
         name='Bound',
@@ -583,19 +592,35 @@ class SDFGLSLPointer(SDFPrimitivePointer):
        name='Round',
        description='',
        min=0.0,
-       max=1.0,
        default=0.0,
        update=on_prop_update)
     
     shader_path: StringProperty(
         name='Shader PATH',
         description='',
-        default='C:\\',
-        update=on_prop_update)
+        default='C:\\')
+        
+    shader_string: StringProperty(
+        name='Shader String',
+        description='',
+        default='{dist = 1e+10;}')
         
     @classmethod
     def update_glsl_mesh(cls, pointer):
-        pass
+        object = pointer.object
+        sdf_prop = object.sdf_prop
+        self = bpy.context.scene.sdf_glsl_pointer_list[sdf_prop.sub_index]
+        
+        bound = self.bound
+        bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
+
+        mesh = object.data
+        bm = bmesh.from_edit_mesh(mesh)
+        for i, vert in enumerate(bm.verts):
+            vert.co[0] = vert.co[0] * bound[0]
+            vert.co[1] = vert.co[1] * bound[1]
+            vert.co[2] = vert.co[2] * bound[2]
+        bmesh.update_edit_mesh(mesh)
     
     
 def set_context(context):

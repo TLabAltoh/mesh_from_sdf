@@ -33,6 +33,7 @@ from mesh_from_sdf.gizmo.truncated_pyramid import *
 from mesh_from_sdf.gizmo.hex_prism import *
 from mesh_from_sdf.gizmo.tri_prism import *
 from mesh_from_sdf.gizmo.ngon_prism import *
+from mesh_from_sdf.gizmo.glsl import *
 from mesh_from_sdf.util.material import *
 from mesh_from_sdf.util.moderngl import *
 from mesh_from_sdf.util.algorithm import *
@@ -352,7 +353,6 @@ class SDFProperty(PropertyGroup):
         name='Smooth',
         description='',
         min=0.0,
-        max=1.0,
         default=0.5,
         update=on_prop_update)
            
@@ -646,6 +646,35 @@ class SDF2MESH_OT_Select_On_The_List(Operator):
         return {'FINISHED'}
 
 
+class SDF2MESH_OT_Load_Distance_Function(Operator):
+    bl_idname = 'mesh_from_sdf.load_distance_function'
+    bl_label = 'Load Distance Function'
+    bl_description = 'Reads the distance function file at the specified path'
+    
+    def execute(self, context):
+        alist = context.scene.sdf_object_pointer_list
+        index = context.scene.sdf_object_pointer_list_index
+        pointer = alist[index]
+        if pointer.object != None:
+            object = pointer.object
+            sdf_prop = object.sdf_prop
+            sub_index = sdf_prop.sub_index
+            
+            glsl_pointer = context.scene.sdf_glsl_pointer_list[sub_index]
+            shader_path = glsl_pointer.shader_path
+            shader_file = open(shader_path, 'r')
+            glsl_pointer.shader_string = shader_file.read()
+            shader_file.close()
+            
+            # Generate shaders according to the current hierarchy
+            f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
+            print(f_dist)
+            Raymarching.update_distance_function(f_dist)
+            
+            bpy.ops.ed.undo_push(message='mesh_from_sdf.load_distance_function')
+        return {'FINISHED'}
+
+
 class SDF2MESH_OT_Select_On_The_Properties(Operator):
     bl_idname = 'mesh_from_sdf.select_on_the_properties'
     bl_label = 'Select on the properties'
@@ -773,6 +802,7 @@ draw_sdf_object_property_by_primitive_type = {'Box': lambda context, col, item: 
                                               'GLSL': lambda context, col, item: (
                                                 sub_item := context.scene.sdf_glsl_pointer_list[item.sub_index],
                                                 col.prop(sub_item, 'shader_path'),
+                                                col.operator('mesh_from_sdf.load_distance_function', text='Load Distance Function'),
                                                 col.prop(sub_item, 'bound'),
                                                 col.prop(sub_item, 'round'))}
                                                 
@@ -913,6 +943,7 @@ classes = [
     SDF2MESH_OT_List_Add,
     SDF2MESH_OT_List_Remove,
     SDF2MESH_OT_List_Reorder,
+    SDF2MESH_OT_Load_Distance_Function,
     SDF2MESH_OT_Select_On_The_List,
     SDF2MESH_OT_Select_On_The_Properties,
     SDF2MESH_PT_Panel,
@@ -996,6 +1027,7 @@ def register():
     gizmo.hex_prism.register()
     gizmo.tri_prism.register()
     gizmo.ngon_prism.register()
+    gizmo.glsl.register()
 
     bpy.types.OUTLINER_MT_object.append(sdf_object_delete_handler)
     bpy.types.VIEW3D_MT_object.append(sdf_object_delete_handler)
@@ -1044,6 +1076,7 @@ def unregister():
     gizmo.hex_prism.unregister()
     gizmo.tri_prism.unregister()
     gizmo.ngon_prism.unregister()
+    gizmo.glsl.unregister()
 
     render_engine.unregister()
     marching_cube.unregister()

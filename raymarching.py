@@ -258,6 +258,7 @@ class Raymarching(bpy.types.Operator):
         layout(binding=8) readonly buffer in_prop_hex_prism { SDFPrismProp sdfHexPrismProps[]; };
         layout(binding=9) readonly buffer in_prop_tri_prism { SDFPrismProp sdfTriPrismProps[]; };
         layout(binding=10) readonly buffer in_prop_ngon_prism { SDFNgonPrismProp sdfNgonPrismProps[]; };
+        layout(binding=11) readonly buffer in_prop_glsl { SDFGLSLProp sdfGLSLProps[]; };
         
         in vec3 pos;
         in vec3 orthoRayDir;
@@ -367,9 +368,14 @@ class Raymarching(bpy.types.Operator):
         if cls.pause:
             return
 
-        if (cls.shader is None) or cls.recreate_shader_requested:
-            cls.recreate_shader()
-            cls.recreate_shader_requested = False
+        try:
+            if (cls.shader is None) or cls.recreate_shader_requested:
+                cls.recreate_shader()
+                cls.recreate_shader_requested = False
+            if cls.shader is None:
+                return
+        except Exception as e:
+            cls.shader = None
         
         cls.shader.bind()
         cls.update_config()

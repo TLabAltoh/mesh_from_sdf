@@ -63,11 +63,12 @@ class MarchingCube(object):
         layout(binding=8) readonly buffer in_prop_hex_prism { SDFPrismProp sdfHexPrismProps[]; };
         layout(binding=9) readonly buffer in_prop_tri_prism { SDFPrismProp sdfTriPrismProps[]; };
         layout(binding=10) readonly buffer in_prop_ngon_prism { SDFNgonPrismProp sdfNgonPrismProps[]; };
+        layout(binding=11) readonly buffer in_prop_glsl { SDFGLSLProp sdfGLSLProps[]; };
         
-        layout(binding=11) buffer inout_0 { uint count; };
-        layout(binding=12) writeonly buffer out_0 { Triangle triangles[]; };
-        layout(binding=13) readonly buffer in_1 { uint edge[]; };
-        layout(binding=14) readonly buffer in_2 { int triangulation[][16]; };
+        layout(binding=12) buffer inout_0 { uint count; };
+        layout(binding=13) writeonly buffer out_0 { Triangle triangles[]; };
+        layout(binding=14) readonly buffer in_1 { uint edge[]; };
+        layout(binding=15) readonly buffer in_2 { int triangulation[][16]; };
         
         uniform vec2 isoRange;
         uniform vec3 chunkSize;
@@ -297,9 +298,9 @@ class MarchingCube(object):
         compute_shader["chunkSize"].value = np.array([chunk_size,chunk_size,chunk_size])
         
         in_buf = cls.ctx.buffer(marching_tables.edges)
-        in_buf.bind_to_storage_buffer(13)
-        in_buf = cls.ctx.buffer(marching_tables.triangulation)
         in_buf.bind_to_storage_buffer(14)
+        in_buf = cls.ctx.buffer(marching_tables.triangulation)
+        in_buf.bind_to_storage_buffer(15)
 
         ShaderBufferFactory.bind_to_storage_buffer()
 
@@ -313,11 +314,11 @@ class MarchingCube(object):
 #                    start = time.perf_counter()
                     
                     count_buf = cls.ctx.buffer(data=b'\x00\x00\x00\x00')
-                    count_buf.bind_to_storage_buffer(11)
+                    count_buf.bind_to_storage_buffer(12)
                     tri_siz = 3*3+1
                     out_buf = np.empty((cls.max_triangle_count,tri_siz),dtype=np.float32).tobytes()
                     out_buf = cls.ctx.buffer(out_buf) # 128 --> 400MB, 256 --> 3019 MB (map error !)
-                    out_buf.bind_to_storage_buffer(12)
+                    out_buf.bind_to_storage_buffer(13)
                     compute_shader["chunkOffset"].value = np.array([x,y,z])
                     compute_shader.run(group_x=cls.CHUNK_DIMENSION_X//cls.THREAD_DIMENSION_X,group_y=cls.CHUNK_DIMENSION_Y//cls.THREAD_DIMENSION_Y,group_z=cls.CHUNK_DIMENSION_Z//cls.THREAD_DIMENSION_Z)
 

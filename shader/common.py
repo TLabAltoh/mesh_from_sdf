@@ -363,4 +363,7 @@ include_struct_ = '''
             float rd; // round
             float n;  // nsides
         };
+        struct SDFGLSLProp {
+            vec4 br;  // bound and round
+        };
 '''

@@ -1363,15 +1363,106 @@ class ShaderBufferFactory(object):
         return cls.glsl_buffer
     
     @classmethod
-    def generate_glsl_buffer(cls, ctx, context):
-        pass
+    def _generate_glsl_buffer(cls, ctx, context):
+        
+        # If the buffer has already been allocated, release it
+        cls.release_glsl_buffer()
+        
+        dsize = 4 # bound (3), round (1)
+        alist = context.scene.sdf_glsl_pointer_list
+        narray = np.empty(len(alist) * dsize, dtype='float32')
+        
+        for i, pointer in enumerate(alist):
+            object = pointer.object
+            sdf_prop = object.sdf_prop
+            
+            bound = [
+                pointer.bound[0],
+                pointer.bound[1],
+                pointer.bound[2]
+            ]
+            round = min(bound) * pointer.round
+            bound[0] = bound[0] - round
+            bound[1] = bound[1] - round
+            bound[2] = bound[2] - round
+            
+            offset = i * dsize
+            narray[offset + 0] = bound[0]
+            narray[offset + 1] = bound[1]
+            narray[offset + 2] = bound[2]
+            narray[offset + 3] = round
 
+        # Generate a buffer to bind to the shader using np.array as source
+        buf = ctx.buffer(narray.tobytes())
+        cls.glsl_buffer = buf
+        cls.active_buffers[11] = cls.glsl_buffer
+        # buf.bind_to_storage_buffer(11)
+        
+        # print('\n', '[generate_glsl_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        
+        return cls.glsl_buffer
+    
+    @classmethod
+    def generate_glsl_buffer(cls, ctx, context):
+        if len(context.scene.sdf_glsl_pointer_list) > 0:
+            return cls._generate_glsl_buffer(ctx, context)
+        else:
+            return cls.release_glsl_buffer()
+    
+    @classmethod
+    def _update_glsl_buffer(cls, ctx, context, i, sub_i):
+                
+        dsize = 4 # bound (3), round (1)
+        alist = context.scene.sdf_glsl_pointer_list
+        narray = np.empty(dsize, dtype='float32')
+        
+        pointer = alist[sub_i]
+        object = pointer.object
+        sdf_prop = object.sdf_prop
+        
+        bound = [
+            pointer.bound[0],
+            pointer.bound[1],
+            pointer.bound[2]
+        ]
+        round = min(bound) * pointer.round
+        
+        print('\n', '[round amount]', round, '\n')
+        
+        bound[0] = bound[0] - round
+        bound[1] = bound[1] - round
+        bound[2] = bound[2] - round
+        
+        narray[0] = bound[0]
+        narray[1] = bound[1]
+        narray[2] = bound[2]
+        narray[3] = round
+        
+        buf = cls.glsl_buffer
+        buf.write(narray.tobytes(), sub_i * dsize * 4)
+        
+        # print('\n', '[generate_glsl_buffer] index:', i, 'narray:', narray, 'buf:', buf.read(), '\n')
+        
+        return cls.glsl_buffer
+    
     @classmethod
     def update_glsl_buffer(cls, ctx, context, i, sub_i):
-        pass
+
+        # If the element of the list is 0, the buffer is not used and shall be released.
+        if len(context.scene.sdf_glsl_pointer_list) == 0:
+            return cls.release_glsl_buffer()
+        
+        # If buffer is set to None for some reason, a new buffer is created here.
+        if cls.glsl_buffer == None:
+            return cls._generate_glsl_buffer(ctx, context)
+        
+        return cls._update_glsl_buffer(ctx, context, i, sub_i)
     
     @classmethod
     def release_glsl_buffer(cls):
-        pass
+        if cls.glsl_buffer != None:
+            del cls.active_buffers[1]
+            cls.glsl_buffer.release()
+        cls.glsl_buffer = None
 
     pass

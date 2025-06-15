@@ -1,3 +1,4 @@
+import bpy
 import moderngl
 
 # Class for generating and updating shaders based on SDF Object Property list
@@ -51,8 +52,22 @@ class ShaderFactory(object):
                 sdfNgonPrismProp = sdfNgonPrismProps[sdfNgonPrismPropIdx++];
                 dist = sdNgonPrism(samplpos, sdfNgonPrismProp.h, sdfNgonPrismProp.ra, sdfNgonPrismProp.n);
                 dist = opRound(dist, sdfNgonPrismProp.rd);
-            ''',
-            'GLSL':'{dist = 1000000000}'}
+            '''}
+
+    @classmethod
+    def __get_distance_function_by_primitive_type(cls, primitive_type, sub_idx):
+        
+        if primitive_type == 'GLSL':
+            return '''
+                {
+                    sdfGLSLProp = sdfGLSLProps[sdfGLSLPropIdx++];
+                    dist = 1e+10;
+                    ''' + bpy.context.scene.sdf_glsl_pointer_list[sub_idx].shader_string + '''
+                    dist = opRound(dist, sdfGLSLProp.br.w);
+                }
+            '''
+        
+        return cls.__distance_function_by_primitive_type[primitive_type]
 
     
     # Generate distance function for shaders based on SDF Object Property list
@@ -70,6 +85,7 @@ class ShaderFactory(object):
             SDFPrismProp sdfHexPrismProp; uint sdfHexPrismPropIdx = 0;
             SDFPrismProp sdfTriPrismProp; uint sdfTriPrismPropIdx = 0;
             SDFNgonPrismProp sdfNgonPrismProp; uint sdfNgonPrismPropIdx = 0;
+            SDFGLSLProp sdfGLSLProp; uint sdfGLSLPropIdx = 0;
             
             vec3 position, samplpos;
             mat4 rotation;
@@ -152,13 +168,14 @@ class ShaderFactory(object):
         boolean_type = sdf_prop.boolean_type
         blend_type = sdf_prop.blend_type
         nest = sdf_prop.nest
+        sub_idx = sdf_prop.sub_index
         
         f_merge_0 = ''
         f_merge_1 = ''
         
         f_dist = f_dist + '''
             {
-        ''' + f_common +  cls.__distance_function_by_primitive_type[primitive_type] + '''
+        ''' + f_common +  cls.__get_distance_function_by_primitive_type(primitive_type, sub_idx) + '''
                 dist *= scale;
                 
                 minDist1 = dist;'''
@@ -173,6 +190,7 @@ class ShaderFactory(object):
             boolean_type = sdf_prop.boolean_type
             blend_type = sdf_prop.blend_type
             nest = sdf_prop.nest
+            sub_idx = sdf_prop.sub_index
             
             break_loop = False
             if nest == False:
@@ -184,7 +202,7 @@ class ShaderFactory(object):
             }
             {
                 ''' + f_common + '''
-                    ''' + cls.__distance_function_by_primitive_type[primitive_type] + '''
+                    ''' + cls.__get_distance_function_by_primitive_type(primitive_type, sub_idx) + '''
                 dist *= scale;
                 
                 minDist1 = dist;'''
@@ -194,7 +212,7 @@ class ShaderFactory(object):
                 f_merge_1 = f_blend_1[blend_type][boolean_type]
                 # To align the indentation of the generated shaders, a tab-only string is inserted between them.
                 f_dist = f_dist + f_common + '''
-                    ''' + cls.__distance_function_by_primitive_type[primitive_type] + '''
+                    ''' + cls.__get_distance_function_by_primitive_type(primitive_type, sub_idx) + '''
                 dist *= scale;
                 
                 ''' + f_merge_1
@@ -210,6 +228,7 @@ class ShaderFactory(object):
             boolean_type = sdf_prop.boolean_type
             blend_type = sdf_prop.blend_type
             nest = sdf_prop.nest
+            sub_idx = sdf_prop.sub_index
 
             if nest == False:
                 f_dist = f_dist + '''
@@ -219,7 +238,7 @@ class ShaderFactory(object):
                 '''
 
                 f_dist = f_dist + f_common + '''
-                    ''' + cls.__distance_function_by_primitive_type[primitive_type] + '''
+                    ''' + cls.__get_distance_function_by_primitive_type(primitive_type, sub_idx) + '''
                 dist *= scale;
                 
                 minDist1 = dist;'''
@@ -228,7 +247,7 @@ class ShaderFactory(object):
             else:
                 f_merge_1 = f_blend_1[blend_type][boolean_type]
                 f_dist = f_dist + f_common + '''
-                    ''' + cls.__distance_function_by_primitive_type[primitive_type] + '''
+                    ''' + cls.__get_distance_function_by_primitive_type(primitive_type, sub_idx) + '''
                 dist *= scale;
                 
                 ''' + f_merge_1
