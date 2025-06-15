@@ -49,8 +49,10 @@ include_frag_ = '''
         float which(float v0, float v1, bool t) {
             return v0 * int(t) + v1 * (1.0 - int(t));
         }
-        
         vec2 which(vec2 v0, vec2 v1, bool t) {
+            return v0 * int(t) + v1 * (1.0 - int(t));
+        }
+        vec3 which(vec3 v0, vec3 v1, bool t) {
             return v0 * int(t) + v1 * (1.0 - int(t));
         }
 

@@ -1,3 +1,4 @@
+import time
 import bpy
 import bmesh
 import gpu
@@ -70,6 +71,10 @@ class MarchingCube(object):
         
         uniform vec2 isoRange;
         uniform vec3 chunkSize;
+        uniform vec3 forward;
+        uniform vec3 right;
+        uniform vec3 up;
+        uniform vec3 base;
         uniform vec3 chunkOffset;
         uniform float isoLevel;
         
@@ -94,9 +99,8 @@ class MarchingCube(object):
             return saturate(x,range.x,range.y);
         }
         vec3 interpolateVerts(vec4 v1, vec4 v2) {
-            if (v2.w-v1.w==0) return (v2.xyz+v1.xyz)*0.5;
             float t = (isoLevel-v1.w)/(v2.w-v1.w);
-            return v1.xyz+t*(v2.xyz-v1.xyz);
+            return which((v2.xyz+v1.xyz)*0.5,v1.xyz+t*(v2.xyz-v1.xyz),v2.w-v1.w==0);
         }
         int indexFromCoord(int x, int y, int z) {
             return z*THREAD_DIMENSION_Z*THREAD_DIMENSION_Y+y*THREAD_DIMENSION_X+x;
@@ -104,23 +108,26 @@ class MarchingCube(object):
         vec3f vecn2vecnf(vec3 a) {
             return vec3f(a.x,a.y,a.z);
         }
+        vec3 baseTransformation(vec3 v) {
+            return v.x * right + v.y * up + v.z * forward;
+        }
         void main() {
             const ivec3 GROUP_XYZ = ivec3(gl_WorkGroupID);
             const ivec3 THREAD_XYZ = ivec3(gl_LocalInvocationID);
             const ivec3 CHUNK_XYZ = GROUP_XYZ*THREAD_DIMENSION+THREAD_XYZ;
             
-            const vec3 TMP_0 = 0.5*vec3(CHUNK_DIMENSION);
-            const vec3 TMP_2 = 1.0/TMP_0*chunkSize;
-            const vec3 TMP_1 = CHUNK_XYZ-TMP_0*(vec3(1,1,1)+chunkOffset);
+            const vec3 TMP_0 = vec3(CHUNK_DIMENSION);
+            const vec3 TMP_2 = chunkSize/TMP_0;
+            const vec3 TMP_1 = CHUNK_XYZ+chunkOffset*TMP_0;
             const vec3 CUBE_CORNERS_OFFSET[8] = {
-                (TMP_1+vec3(0,0,0))*TMP_2,
-                (TMP_1+vec3(1,0,0))*TMP_2,
-                (TMP_1+vec3(1,0,1))*TMP_2,
-                (TMP_1+vec3(0,0,1))*TMP_2,
-                (TMP_1+vec3(0,1,0))*TMP_2,
-                (TMP_1+vec3(1,1,0))*TMP_2,
-                (TMP_1+vec3(1,1,1))*TMP_2,
-                (TMP_1+vec3(0,1,1))*TMP_2
+                baseTransformation((TMP_1+vec3(0,0,0))*TMP_2)+base,
+                baseTransformation((TMP_1+vec3(1,0,0))*TMP_2)+base,
+                baseTransformation((TMP_1+vec3(1,0,1))*TMP_2)+base,
+                baseTransformation((TMP_1+vec3(0,0,1))*TMP_2)+base,
+                baseTransformation((TMP_1+vec3(0,1,0))*TMP_2)+base,
+                baseTransformation((TMP_1+vec3(1,1,0))*TMP_2)+base,
+                baseTransformation((TMP_1+vec3(1,1,1))*TMP_2)+base,
+                baseTransformation((TMP_1+vec3(0,1,1))*TMP_2)+base
             };
             const vec4 CUBE_CORNERS[8] = {
                 vec4(CUBE_CORNERS_OFFSET[0], saturate(getDist(CUBE_CORNERS_OFFSET[0]), isoRange)),
@@ -134,15 +141,15 @@ class MarchingCube(object):
             };
             
             int cubeIndex = 0;
-            if (CUBE_CORNERS[0].w < isoLevel) cubeIndex |= 1;
-            if (CUBE_CORNERS[1].w < isoLevel) cubeIndex |= 2;
-            if (CUBE_CORNERS[2].w < isoLevel) cubeIndex |= 4;
-            if (CUBE_CORNERS[3].w < isoLevel) cubeIndex |= 8;
-            if (CUBE_CORNERS[4].w < isoLevel) cubeIndex |= 16;
-            if (CUBE_CORNERS[5].w < isoLevel) cubeIndex |= 32;
-            if (CUBE_CORNERS[6].w < isoLevel) cubeIndex |= 64;
-            if (CUBE_CORNERS[7].w < isoLevel) cubeIndex |= 128;
-            
+            cubeIndex |= 1 * int(CUBE_CORNERS[0].w < isoLevel);
+            cubeIndex |= 2 * int(CUBE_CORNERS[1].w < isoLevel);
+            cubeIndex |= 4 * int(CUBE_CORNERS[2].w < isoLevel);
+            cubeIndex |= 8 * int(CUBE_CORNERS[3].w < isoLevel);
+            cubeIndex |= 16 * int(CUBE_CORNERS[4].w < isoLevel);
+            cubeIndex |= 32 * int(CUBE_CORNERS[5].w < isoLevel);
+            cubeIndex |= 64 * int(CUBE_CORNERS[6].w < isoLevel);
+            cubeIndex |= 128 * int(CUBE_CORNERS[7].w < isoLevel);
+
             for (uint i = 0; triangulation[cubeIndex][i] != -1; i +=3) {
                 uint a0 = CORNER_INDEX_A_FROM_EDGE[triangulation[cubeIndex][i+0]];
                 uint b0 = CORNER_INDEX_B_FROM_EDGE[triangulation[cubeIndex][i+0]];
@@ -164,6 +171,12 @@ class MarchingCube(object):
     @classmethod
     def set_context(cls, ctx):
         cls.ctx = ctx
+
+    @classmethod
+    def _np_normalized(cls, x):
+        x_l2_norm = sum(x**2)**0.5
+        x_l2_normalized = x / x_l2_norm
+        return x_l2_normalized
 
     @classmethod
     def get_smallest_bounding_box(cls, chunk_size):
@@ -194,16 +207,16 @@ class MarchingCube(object):
         ylen = 1
         zlen = 1
 
-        if (xran > chunk_size) and (xran % chunk_size != 0):
-            xran = int(xran / chunk_size) * chunk_size + 2 * chunk_size
+        if xran > chunk_size:
+            xran = int(xran / chunk_size) * chunk_size + chunk_size
             xlen = int(xran / chunk_size)
             
-        if (yran > chunk_size) and (yran % chunk_size != 0):
-            yran = int(yran / chunk_size) * chunk_size + 2 * chunk_size
+        if yran > chunk_size:
+            yran = int(yran / chunk_size) * chunk_size + chunk_size
             ylen = int(yran / chunk_size)
             
-        if (zran > chunk_size) and (zran % chunk_size != 0):
-            zran = int(zran / chunk_size) * chunk_size + 2 * chunk_size
+        if zran > chunk_size:
+            zran = int(zran / chunk_size) * chunk_size + chunk_size
             zlen = int(zran / chunk_size)
 
         xmin = (xmax + xmin) * 0.5 - xran * 0.5
@@ -235,7 +248,11 @@ class MarchingCube(object):
 
         corners = np.dot(corners, tvect)
         
-        return corners, (xlen, ylen, zlen)
+        forward = cls._np_normalized(corners[4] - corners[5])
+        right = cls._np_normalized(corners[7] - corners[0])
+        up = cls._np_normalized(corners[2] - corners[3])
+        
+        return corners, (xlen, ylen, zlen), forward, right, up
 
     @classmethod
     def generate(cls, operator):
@@ -262,7 +279,7 @@ class MarchingCube(object):
         view_layer.objects.active = new_object
         
         chunk_size = bpy.context.scene.marching_cube_chunk_size
-        corners, chunk_count = cls.get_smallest_bounding_box(chunk_size)
+        corners, chunk_count, forward, right, up = cls.get_smallest_bounding_box(chunk_size)
         
         print('\n', 'chunk_count:', chunk_count, '\n')
         
@@ -273,6 +290,10 @@ class MarchingCube(object):
 
         compute_shader["isoRange"].value = np.array([-0.1,0.1])
         compute_shader["isoLevel"].value = 0.5
+        compute_shader["forward"].value = forward
+        compute_shader["right"].value = right
+        compute_shader["up"].value = up
+        compute_shader["base"].value = corners[0]
         compute_shader["chunkSize"].value = np.array([chunk_size,chunk_size,chunk_size])
         
         in_buf = cls.ctx.buffer(marching_tables.edges)
@@ -288,6 +309,9 @@ class MarchingCube(object):
         for x in range(chunk_count[0]):
             for y in range(chunk_count[1]):
                 for z in range(chunk_count[2]):
+                    
+                    start = time.perf_counter()
+                    
                     count_buf = cls.ctx.buffer(data=b'\x00\x00\x00\x00')
                     count_buf.bind_to_storage_buffer(11)
                     tri_siz = 3*3+1
@@ -313,6 +337,11 @@ class MarchingCube(object):
                     
                     count_buf.release()
                     out_buf.release()
+                    
+                    end = time.perf_counter()
+                    
+                    print(x,y,z,end=':')
+                    print('{:.2f}'.format((end-start)))
 
 
         in_buf.release()
