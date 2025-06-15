@@ -1,7 +1,12 @@
+<img src="media\overview.png"></img>
+
 # Mesh from SDF
 Add-on for mesh modeling with SDF in Blender.
 
 ## Features
+
+<video src="media\overview.mp4"></video>
+
 - Primitives
   - [x] Box
   - [x] Sphere
