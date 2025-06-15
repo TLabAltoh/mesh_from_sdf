@@ -1,4 +1,4 @@
-import time
+# import time
 import bpy
 import bmesh
 import gpu
@@ -262,7 +262,7 @@ class MarchingCube(object):
         dist = ShaderFactory.generate_distance_function(bpy.context.scene.sdf_object_pointer_list)
         glsl = cls.generate_glsl(dist)
 
-        print('\n', glsl, '\n')
+#        print('\n', glsl, '\n')
 
         try:
             compute_shader = cls.ctx.compute_shader(glsl)
@@ -281,7 +281,7 @@ class MarchingCube(object):
         chunk_size = bpy.context.scene.marching_cube_chunk_size
         corners, chunk_count, forward, right, up = cls.get_smallest_bounding_box(chunk_size)
         
-        print('\n', 'chunk_count:', chunk_count, '\n')
+#        print('\n', 'chunk_count:', chunk_count, '\n')
         
 #        for corner in corners:
 #            bpy.ops.mesh.primitive_uv_sphere_add(radius=0.1, enter_editmode=False, align='CURSOR', location=corner)
@@ -310,7 +310,7 @@ class MarchingCube(object):
             for y in range(chunk_count[1]):
                 for z in range(chunk_count[2]):
                     
-                    start = time.perf_counter()
+#                    start = time.perf_counter()
                     
                     count_buf = cls.ctx.buffer(data=b'\x00\x00\x00\x00')
                     count_buf.bind_to_storage_buffer(11)
@@ -338,10 +338,10 @@ class MarchingCube(object):
                     count_buf.release()
                     out_buf.release()
                     
-                    end = time.perf_counter()
+#                    end = time.perf_counter()
                     
-                    print(x,y,z,end=':')
-                    print('{:.2f}'.format((end-start)))
+#                    print(x,y,z,end=':')
+#                    print('{:.2f}'.format((end-start)))
 
 
         in_buf.release()
@@ -362,6 +362,7 @@ class SDF2MESH_OT_Generate(bpy.types.Operator):
 
     def invoke(self, context, event):
         MarchingCube.generate(self)
+        bpy.ops.ed.undo_push(message='mesh_from_sdf.ot_generate')
         return {'FINISHED'}
 
 

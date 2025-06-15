@@ -143,7 +143,6 @@ class SDFProperty(PropertyGroup):
         
         # Update the parent-child relationship based on the current nesting properties of the SDFObject
         self.__class__.update_nest_prop(context, self.index, self.nest)
-        
         # Updateing Storage Buffre Objects
         ShaderBufferFactory.update_object_common_buffer(ctx, context, self.index)
         
@@ -618,7 +617,7 @@ class SDF2MESH_OT_List_Reorder(Operator):
         alloc_1(ctx, context, index_1, sub_index_1)
         ShaderBufferFactory.update_object_common_buffer(ctx, context, index_0)
         ShaderBufferFactory.update_object_common_buffer(ctx, context, index_1)
-            
+        
         # Generate shaders according to the current hierarchy
         f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
         print(f_dist)

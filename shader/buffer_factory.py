@@ -117,7 +117,7 @@ class ShaderBufferFactory(object):
         cls.active_buffers[0] = cls.object_common_buffer
         # buf.bind_to_storage_buffer(0)
         
-        print('\n', '[generate_object_common_buffer] object_common:', narray, '\n')
+        # print('\n', '[generate_object_common_buffer] object_common:', narray, '\n')
         
         return cls.object_common_buffer
     
@@ -166,7 +166,7 @@ class ShaderBufferFactory(object):
         buf = cls.object_common_buffer
         buf.write(narray.tobytes(), i * dsize * 4)
         
-        print('\n', '[update_object_common_buffer] index:', i, 'narray:', narray, '\n')
+        # print('\n', '[update_object_common_buffer] index:', i, 'narray:', narray, '\n')
         
         return cls.object_common_buffer
 
@@ -248,7 +248,7 @@ class ShaderBufferFactory(object):
         cls.active_buffers[1] = cls.box_buffer
         # buf.bind_to_storage_buffer(1)
         
-        print('\n', '[generate_box_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_box_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.box_buffer
     
@@ -303,7 +303,7 @@ class ShaderBufferFactory(object):
         buf = cls.box_buffer
         buf.write(narray.tobytes(), sub_i * dsize * 4)
         
-        print('\n', '[generate_box_buffer] index:', i, 'narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_box_buffer] index:', i, 'narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.box_buffer
     
@@ -360,7 +360,7 @@ class ShaderBufferFactory(object):
         cls.active_buffers[2] = cls.sphere_buffer
         # buf.bind_to_storage_buffer(2)
         
-        print('\n', '[generate_sphere_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_sphere_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.sphere_buffer
 
@@ -389,7 +389,7 @@ class ShaderBufferFactory(object):
         buf = cls.sphere_buffer
         buf.write(narray.tobytes(), sub_i * dsize * 4)
         
-        print('\n', '[generate_sphere_buffer] index:', i, 'narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_sphere_buffer] index:', i, 'narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.sphere_buffer
 
@@ -451,7 +451,7 @@ class ShaderBufferFactory(object):
         cls.active_buffers[3] = cls.cylinder_buffer
         # buf.bind_to_storage_buffer(3)
         
-        print('\n', '[generate_cylinder_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_cylinder_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.cylinder_buffer
 
@@ -485,7 +485,7 @@ class ShaderBufferFactory(object):
         buf = cls.cylinder_buffer
         buf.write(narray.tobytes(), sub_i * dsize * 4)
         
-        print('\n', '[generate_cylinder_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_cylinder_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.cylinder_buffer
 
@@ -546,7 +546,7 @@ class ShaderBufferFactory(object):
         cls.active_buffers[4] = cls.torus_buffer
         # buf.bind_to_storage_buffer(4)
         
-        print('\n', '[generate_torus_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_torus_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.torus_buffer
 
@@ -579,7 +579,7 @@ class ShaderBufferFactory(object):
         buf = cls.torus_buffer
         buf.write(narray.tobytes(), sub_i * dsize * 4)
         
-        print('\n', '[generate_torus_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_torus_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.torus_buffer
 
@@ -663,7 +663,7 @@ class ShaderBufferFactory(object):
         cls.active_buffers[5] = cls.cone_buffer
         # buf.bind_to_storage_buffer(5)
         
-        print('\n', '[generate_cone_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_cone_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.cone_buffer
 
@@ -716,7 +716,7 @@ class ShaderBufferFactory(object):
         buf = cls.cone_buffer
         buf.write(narray.tobytes(), sub_i * dsize * 4)
         
-        print('\n', '[generate_cone_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_cone_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.cone_buffer
 
@@ -798,7 +798,7 @@ class ShaderBufferFactory(object):
         cls.active_buffers[6] = cls.pyramid_buffer
         # buf.bind_to_storage_buffer(6)
         
-        print('\n', '[generate_pyramid_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_pyramid_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.pyramid_buffer
 
@@ -850,7 +850,7 @@ class ShaderBufferFactory(object):
         buf = cls.pyramid_buffer
         buf.write(narray.tobytes(), sub_i * dsize * 4)
         
-        print('\n', '[generate_pyramid_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_pyramid_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.pyramid_buffer
 
@@ -951,7 +951,7 @@ class ShaderBufferFactory(object):
         cls.active_buffers[7] = cls.truncated_pyramid_buffer
         # buf.bind_to_storage_buffer(7)
         
-        print('\n', '[generate_truncated_pyramid_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_truncated_pyramid_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.truncated_pyramid_buffer
 
@@ -1027,7 +1027,7 @@ class ShaderBufferFactory(object):
         buf = cls.truncated_pyramid_buffer
         buf.write(narray.tobytes(), sub_i * dsize * 4)
         
-        print('\n', '[generate_truncated_pyramid_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_truncated_pyramid_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.truncated_pyramid_buffer
 
@@ -1089,7 +1089,7 @@ class ShaderBufferFactory(object):
         cls.active_buffers[8] = cls.hex_prism_buffer
         # buf.bind_to_storage_buffer(8)
         
-        print('\n', '[generate_hex_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_hex_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.hex_prism_buffer
 
@@ -1123,7 +1123,7 @@ class ShaderBufferFactory(object):
         buf = cls.hex_prism_buffer
         buf.write(narray.tobytes(), sub_i * dsize * 4)
         
-        print('\n', '[generate_hex_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_hex_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.hex_prism_buffer
 
@@ -1186,7 +1186,7 @@ class ShaderBufferFactory(object):
         cls.active_buffers[9] = cls.tri_prism_buffer
         # buf.bind_to_storage_buffer(9)
         
-        print('\n', '[generate_tri_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_tri_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.tri_prism_buffer
 
@@ -1220,7 +1220,7 @@ class ShaderBufferFactory(object):
         buf = cls.tri_prism_buffer
         buf.write(narray.tobytes(), sub_i * dsize * 4)
         
-        print('\n', '[generate_tri_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_tri_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.tri_prism_buffer
 
@@ -1289,7 +1289,7 @@ class ShaderBufferFactory(object):
         cls.active_buffers[10] = cls.ngon_prism_buffer
         # buf.bind_to_storage_buffer(10)
         
-        print('\n', '[generate_ngon_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_ngon_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
         return cls.ngon_prism_buffer
 
@@ -1330,7 +1330,7 @@ class ShaderBufferFactory(object):
         buf = cls.ngon_prism_buffer
         buf.write(narray.tobytes(), sub_i * dsize * 4)
         
-        print('\n','[generate_ngon_prism_buffer] narray:', narray, 'buf:', buf.read(),'\n')
+        # print('\n','[generate_ngon_prism_buffer] narray:', narray, 'buf:', buf.read(),'\n')
         
         return cls.ngon_prism_buffer
 
