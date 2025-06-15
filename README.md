@@ -1,6 +1,34 @@
 # Mesh from SDF
 Add-on for mesh modeling with SDF in Blender.
 
+## Features
+- Primitives
+  - [x] Box
+  - [x] Sphere
+  - [x] Cylinder
+  - [x] Torus
+  - [x] Cone
+  - [x] Pyramid
+  - [x] Truncated Pyramid
+  - [x] Hexagonal Prism
+  - [x] Triangular Prism
+  - [ ] Spline
+  - [x] Distance Function (External files written in GLSL format)
+- [x] SDF to Mesh Conversion (Based on Marching Cube)
+- Boolean Operations 
+  - [x] Union
+  - [x] Diffrence
+  - [x] Intersection
+- Blend Types
+  - [x] No Blending
+  - [x] Smooth
+  - [x] Champfer
+  - [x] Steps
+  - [x] Round
+- [ ] Mirror
+- [ ] Repeat
+
+
 ## Requirements
 - Blender 4.x (Development and testing is being done with this Blender version)
 - Windows 10 / 11 (Not tested on MacOS and Linux)
