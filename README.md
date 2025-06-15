@@ -3,9 +3,9 @@
 # Mesh from SDF
 Add-on for mesh modeling with SDF in Blender.
 
-## Features
+<video src="https://github.com/user-attachments/assets/bf59eaa9-c745-4b4f-9cd6-fea1d25ea2fb"></video>
 
-<video src="media\overview.mp4"></video>
+## Features
 
 - Primitives
   - [x] Box
