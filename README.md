@@ -1,4 +1,4 @@
-<img src="media\overview.png"></img>
+<img src="media\overview.jpg"></img>
 
 # Mesh from SDF
 Add-on for mesh modeling with SDF in Blender.
