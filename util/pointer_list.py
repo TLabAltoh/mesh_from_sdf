@@ -13,7 +13,7 @@ sdf_object_pointer_list_by_primitive_type = {'Box': lambda context: context.scen
                                      'Hexagonal Prism': lambda context: context.scene.sdf_hex_prism_pointer_list,
                                      'Triangular Prism': lambda context: context.scene.sdf_tri_prism_pointer_list,
                                      'Ngon Prism': lambda context: context.scene.sdf_ngon_prism_pointer_list,
-                                     'GLSL': lambda context: context.scene.sdf_glsl_prism_pointer_list}
+                                     'GLSL': lambda context: context.scene.sdf_glsl_pointer_list}
 
 
 class PointerListUtil(object):
@@ -54,15 +54,25 @@ class PointerListUtil(object):
                 continue
             cache.append(pointer.object)
 
+    # Refresh a specific (single) pointer_list
     @classmethod
     def refresh_pointer_list(cls, context, primitive_type):
         global sdf_object_pointer_list_by_primitive_type
         cls.__refresh_pointer_list(sdf_object_pointer_list_by_primitive_type[primitive_type](context))
-            
+
+    # Refresh specific(s) pointer_list(s)
     @classmethod
     def refresh_pointer_lists(cls, context, primitive_types):
         for primitive_type in primitive_types:
             cls.refresh_pointer_list(context, primitive_type)
+            
+    # Refresh all pointer_lists
+    @classmethod
+    def refresh_all_pointer_list(cls, context):
+        global sdf_object_pointer_list_by_primitive_type
+        for reflesh_pointer_list_handler in sdf_object_pointer_list_by_primitive_type.values():
+            reflesh_pointer_list_handler(context)
+        cls.__refresh_pointer_list(context.scene.sdf_object_pointer_list)
             
     @classmethod
     def __delete_from_sub_pointer_list(cls, alist, target):

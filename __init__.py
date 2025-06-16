@@ -34,6 +34,7 @@ from mesh_from_sdf.gizmo.hex_prism import *
 from mesh_from_sdf.gizmo.tri_prism import *
 from mesh_from_sdf.gizmo.ngon_prism import *
 from mesh_from_sdf.gizmo.glsl import *
+from mesh_from_sdf.util.view import *
 from mesh_from_sdf.util.material import *
 from mesh_from_sdf.util.moderngl import *
 from mesh_from_sdf.util.algorithm import *
@@ -136,7 +137,7 @@ class SDFProperty(PropertyGroup):
         
         # Generate shaders according to the current hierarchy
         f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
-        print(f_dist)
+        # print(f_dist)
         Raymarching.update_distance_function(f_dist)
         
     def on_nest_prop_update(self, context):
@@ -149,7 +150,7 @@ class SDFProperty(PropertyGroup):
         
         # Generate shaders according to the current hierarchy
         f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
-        print(f_dist)
+        # print(f_dist)
         Raymarching.update_distance_function(f_dist)
 
     @classmethod
@@ -286,7 +287,7 @@ class SDFProperty(PropertyGroup):
                 
                 # Generate shaders according to the current hierarchy
                 f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
-                print(f_dist)
+                # print(f_dist)
                 Raymarching.update_distance_function(f_dist)
         
     enabled: BoolProperty(
@@ -398,8 +399,8 @@ class SDF2MESH_UL_List(UIList):
                 layout.label(text=str(prop.primitive_type))
                 layout.label(text=str(prop.boolean_type))
                 layout.label(text=str(prop.blend_type))
-                layout.label(text=str(prop.index))
-                layout.label(text=str(prop.sub_index))
+#                layout.label(text=str(prop.index))
+#                layout.label(text=str(prop.sub_index))
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
             layout.label(text="")
@@ -416,6 +417,10 @@ class SDF2MESH_OT_List_Reload(Operator):
     
     def execute(self, context):
         global ctx
+        
+        # There may be a pointer whose object is None, so it should be removed here.
+        PointerListUtil.refresh_all_pointer_list(context)
+        
         # Fix index properties.
         alist = context.scene.sdf_object_pointer_list
         for i, pointer in enumerate(alist):
@@ -445,7 +450,7 @@ class SDF2MESH_OT_List_Reload(Operator):
         
         # Generate shaders according to the current hierarchy
         f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
-        print(f_dist)
+        # print(f_dist)
         Raymarching.update_distance_function(f_dist)
         
         bpy.ops.ed.undo_push(message='mesh_from_sdf.hierarchy_reload')
@@ -496,7 +501,7 @@ class SDF2MESH_OT_List_Add(Operator):
 
         # Generate shaders according to the current hierarchy
         f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
-        print(f_dist)
+        # print(f_dist)
         Raymarching.update_distance_function(f_dist)
         
         bpy.ops.ed.undo_push(message='mesh_from_sdf.hierarchy_add')
@@ -513,6 +518,17 @@ class SDF2MESH_OT_List_Remove(Operator):
     def poll(cls, context):
         return (context.scene and context.scene.sdf_object_pointer_list and (len(context.scene.sdf_object_pointer_list) > context.scene.sdf_object_pointer_list_index) and (context.scene.sdf_object_pointer_list_index >= 0))
     
+    @classmethod
+    def update_pointer_list_index(cls, context, alist, deleted_index):
+        # Decrements the index by 1 from the item whose index is larger than the deleted item
+        for i in range(deleted_index,len(alist)):
+            alist[i].object.sdf_prop.index -= 1
+        
+        if len(alist) > context.scene.sdf_object_pointer_list_index:
+            pass
+        else:
+            context.scene.sdf_object_pointer_list_index = -1
+    
     def execute(self, context):
         global ctx, sdf_object_pointer_list_by_primitive_type, generate_storage_buffer_by_primitive_type
         
@@ -521,40 +537,60 @@ class SDF2MESH_OT_List_Remove(Operator):
         deleted_index = index
         if deleted_index > -1:
             object = context.scene.sdf_object_pointer_list[deleted_index].object
-            primitive_type = object.sdf_prop.primitive_type
             if object != None:
+                primitive_type = object.sdf_prop.primitive_type
+                
+                # Terminate the parent-child relationship with the child.
+                for child in object.children:
+                    SDFProperty.reset_nested_object_transform(child)
                 # Delete mesh
                 if object.data:
                     bpy.data.meshes.remove(object.data,do_unlink=True)
                     
-            alist.remove(deleted_index)
-            PointerListUtil.refresh_pointer_list(context, primitive_type)
-            
-            # Decrements the index by 1 from the item whose index is larger than the deleted item
-            for i in range(deleted_index,len(alist)):
-                alist[i].object.sdf_prop.index -= 1
-            
-            if len(alist) > context.scene.sdf_object_pointer_list_index:
-                pass
+                # Since the primitives are known, refresh only the corresponding list
+                alist.remove(deleted_index)
+                PointerListUtil.refresh_pointer_list(context, primitive_type)
+                
+                # Decrements the index by 1 from the item whose index is larger than the deleted item
+                self.__class__.update_pointer_list_index(context, alist, deleted_index)
+                
+                # Update the order of CollectionProperty(type=SDFObjectPointer).
+                blist = sdf_object_pointer_list_by_primitive_type[primitive_type](context)
+                alloc = generate_storage_buffer_by_primitive_type[primitive_type]
+                    
+                # Reassign sub-indexes
+                PointerListUtil.recalc_sub_index_without_sort(blist)
+                
+                # Rebuild Storage Buffer Objects
+                alloc(ctx, context)
+                
             else:
-                context.scene.sdf_object_pointer_list_index = -1
+                # Perform refresh on all listings due to unknown primitive type
+                alist.remove(deleted_index)
+                PointerListUtil.refresh_all_pointer_list(context)
+            
+                # Decrements the index by 1 from the item whose index is larger than the deleted item
+                self.__class__.update_pointer_list_index(context, alist, deleted_index)
                 
-            # Update the order of CollectionProperty(type=SDFObjectPointer).
-            blist = sdf_object_pointer_list_by_primitive_type[primitive_type](context)
-            alloc = generate_storage_buffer_by_primitive_type[primitive_type]
-                
-            # Reassign sub-indexes
-            PointerListUtil.recalc_sub_index_without_sort(blist)
+                for blist, alloc in zip(sdf_object_pointer_list_by_primitive_type, generate_storage_buffer_by_primitive_type):
+                    blist = blist(context)
+                    
+                    # Reassign sub-indexes
+                    PointerListUtil.recalc_sub_index_without_sort(blist)
+                    
+                    # Rebuild Storage Buffer Objects
+                    alloc(ctx, context)
             
             # Rebuild Storage Buffer Objects
-            alloc(ctx, context)
             ShaderBufferFactory.generate_object_common_buffer(ctx, context)
             
             # Generate shaders according to the current hierarchy
             f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
-            print(f_dist)
+            # print(f_dist)
             Raymarching.update_distance_function(f_dist)
-                
+
+            tag_redraw_all_3dviews()
+
             bpy.ops.ed.undo_push(message='mesh_from_sdf.hierarchy_remove')
         return {'FINISHED'}
 
@@ -620,7 +656,7 @@ class SDF2MESH_OT_List_Reorder(Operator):
         
         # Generate shaders according to the current hierarchy
         f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
-        print(f_dist)
+        # print(f_dist)
         Raymarching.update_distance_function(f_dist)
         
         bpy.ops.ed.undo_push(message='mesh_from_sdf.hierarchy_reorder')
@@ -668,7 +704,7 @@ class SDF2MESH_OT_Load_Distance_Function(Operator):
             
             # Generate shaders according to the current hierarchy
             f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
-            print(f_dist)
+            # print(f_dist)
             Raymarching.update_distance_function(f_dist)
             
             bpy.ops.ed.undo_push(message='mesh_from_sdf.load_distance_function')
@@ -880,8 +916,9 @@ class OBJECT_OT_Delete_SDF(Operator):
         decrement = 1
         for i,object in enumerate(delete_target_objects):
             if (indexed_object != None) and (object == indexed_object):
-                indexed_object_deleted = True            
-            if object.data:
+                indexed_object_deleted = True
+                
+            if object.data != None:
                 
                 # Update the CollectionProperty(type=SDFObjectPointer) that references the deleted SDFObject.
                 refresh_required_primitive_types.append(str(object.sdf_prop.prev_primitive_type))
@@ -892,14 +929,14 @@ class OBJECT_OT_Delete_SDF(Operator):
                 bpy.data.meshes.remove(object.data,do_unlink=True) # Delete mesh
                 
                 # Decrement the index because the object was deleted
-                if (deleted_index > -1) and (len(alist) > 0) and (len(alist) > deleted_index):
-                    next_neighbors_index = len(alist) - 1 if (i > len(delete_target_objects) - 2) else delete_target_objects[i + 1].object.sdf_prop.index
+                alist_len = len(alist)
+                if (deleted_index > -1) and (alist_len > 0) and (alist_len > deleted_index):
+                    next_neighbors_index = (alist_len - 1) if (i > len(delete_target_objects) - 2) else delete_target_objects[i + 1].sdf_prop.index - 1
                     # Update index properties to include the following targets to be excluded.
                     for j in range(deleted_index, next_neighbors_index + 1):
                         alist[j].object.sdf_prop.index = alist[j].object.sdf_prop.index - decrement
-                        
                     decrement = decrement + 1
-                
+
         refresh_required_primitive_types = set(refresh_required_primitive_types) # Remove duplicates
         PointerListUtil.refresh_pointer_lists(context, refresh_required_primitive_types)
                 
@@ -913,8 +950,10 @@ class OBJECT_OT_Delete_SDF(Operator):
             
         # Generate shaders according to the current hierarchy
         f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
-        print(f_dist)
+        # print(f_dist)
         Raymarching.update_distance_function(f_dist)
+        
+        tag_redraw_all_3dviews()
             
         bpy.ops.ed.undo_push(message='object.delete_sdf')
         return {'FINISHED'}

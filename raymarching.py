@@ -8,6 +8,7 @@ from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
 from mathutils.geometry import intersect_line_plane
+from mesh_from_sdf.util.view import *
 from mesh_from_sdf.shader import common
 from mesh_from_sdf.shader.buffer_factory import ShaderBufferFactory
 
@@ -56,6 +57,7 @@ class Raymarching(bpy.types.Operator):
                         cls.config["u_ViewMatrix"] = region3d.view_matrix
                         cls.config["u_CameraRotationMatrix"] = region3d.view_rotation.to_matrix().to_4x4()
                         cls.config["u_IsPers"] = region3d.is_perspective
+                        cls.config["u_Color"] = bpy.context.scene.sdf_display_settings_color * 255.0
                         if region3d.is_perspective:
                             cls.config["u_CameraPosition"] = region3d.view_matrix.inverted().translation
                         else:
@@ -65,16 +67,6 @@ class Raymarching(bpy.types.Operator):
                                 [region.width / 2, region.height / 2],
                                 clamp=10.0
                             )
-
-    # Force scene view redraw
-    @classmethod
-    def tag_redraw_all_3dviews(cls):
-        for window in bpy.context.window_manager.windows:
-            for area in window.screen.areas:
-                if area.type == 'VIEW_3D':
-                    for region in area.regions:
-                        if region.type == 'WINDOW':
-                            region.tag_redraw()
 
     dist_ = '''
     
@@ -267,6 +259,7 @@ class Raymarching(bpy.types.Operator):
 
         uniform mat4 u_PerspectiveMatrix;
         uniform bool u_IsPers;
+        uniform vec3 u_Color;
         uniform vec3 u_CameraPosition;
         
         #define MAX_STEPS 100
@@ -324,7 +317,7 @@ class Raymarching(bpy.types.Operator):
                 vec3 p = ro + rd * d.x;
                 vec3 n = getNormal(p);
                 float c = clamp(dot(n,-rd),0,1);
-                col = vec4(c,c,c,1)*normalizedColor(vec4(245,113,5,255));
+                col = vec4(c,c,c,1)*normalizedColor(vec4(u_Color.x,u_Color.y,u_Color.z,255));
                 vec4 clipSpace = mulVec(u_PerspectiveMatrix, p);
                 float fragDepth = clipSpace.z / clipSpace.w;
                 fragDepth = (fragDepth + 1.0) / 2.0;
@@ -347,7 +340,7 @@ class Raymarching(bpy.types.Operator):
     def recreate_shader(cls):
         if cls.shader != None:
             del cls.shader
-        print(cls.get_frag())
+        # print(cls.get_frag())
         cls.shader = gpu.types.GPUShader(cls.get_vert(), cls.get_frag())
 
     # Update the distance function part of the shader
@@ -382,6 +375,7 @@ class Raymarching(bpy.types.Operator):
         cls.shader.uniform_bool("u_IsPers", cls.config["u_IsPers"])
         cls.shader.uniform_float("u_PerspectiveMatrix", cls.config["u_PerspectiveMatrix"])
         cls.shader.uniform_float("u_ViewMatrix", cls.config["u_ViewMatrix"])
+        cls.shader.uniform_float("u_Color", cls.config["u_Color"])
         cls.shader.uniform_float("u_CameraPosition", cls.config["u_CameraPosition"])
         cls.shader.uniform_float("u_CameraRotationMatrix", cls.config["u_CameraRotationMatrix"])
         
@@ -394,12 +388,37 @@ class Raymarching(bpy.types.Operator):
         batch.draw(cls.shader)
         gpu.state.depth_mask_set(False)
         gpu.state.blend_set("NONE")
-        cls.tag_redraw_all_3dviews()
+        tag_redraw_all_3dviews()
 
 
-classes = []
+class SDF2MESH_PT_Display_Settings(bpy.types.Panel):
+
+    bl_label = "Display Settings"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "SDF2Mesh"
+
+    def draw(self, context):
+        sc = context.scene
+        layout = self.layout
+        layout.prop(context.scene, 'sdf_display_settings_color')
+
+
+classes = [SDF2MESH_PT_Display_Settings]
 
 def register():
+    
+    bpy.types.Scene.sdf_display_settings_color = bpy.props.FloatVectorProperty(
+        name= "Color",
+        description= "Color",
+        subtype= 'COLOR',
+        min= 0.0,
+        max= 1.0,
+        soft_min= 0.0,
+        soft_max= 1.0,
+        default= (245/255.0,113/255.0,5/255.0)
+    )
+    
     for c in classes:
         bpy.utils.register_class(c)
 

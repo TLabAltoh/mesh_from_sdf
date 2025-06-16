@@ -1461,7 +1461,7 @@ class ShaderBufferFactory(object):
     @classmethod
     def release_glsl_buffer(cls):
         if cls.glsl_buffer != None:
-            del cls.active_buffers[1]
+            del cls.active_buffers[11]
             cls.glsl_buffer.release()
         cls.glsl_buffer = None
 
