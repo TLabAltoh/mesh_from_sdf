@@ -3,7 +3,7 @@
 # Mesh from SDF
 Add-on for mesh modeling with SDF in Blender.
 
-<video src="https://github.com/user-attachments/assets/bf59eaa9-c745-4b4f-9cd6-fea1d25ea2fb"></video>
+<video src="https://github.com/user-attachments/assets/b20142b3-20d9-4de1-8d97-927f9eca7366"></video>
 
 ## Features
 
