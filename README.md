@@ -41,7 +41,7 @@ Add-on for mesh modeling with SDF in Blender.
 <img src="media/panel.png" width="256"><img/>
 
 
-<video src="https://github.com/user-attachments/assets/e69b08ca-99fe-470b-b5f7-6bee1c99ad03" width="256"></video>
+<video src="https://github.com/user-attachments/assets/3470f581-a11a-4376-96a3-56fd255e6952" width="256"></video>
 
 
 ## Requirements
