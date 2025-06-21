@@ -32,6 +32,11 @@ Add-on for mesh modeling with SDF in Blender.
   - [x] Round
 - [ ] Mirror
 - [ ] Repeat
+- [x] Visualization of bounding boxes
+
+## Screenshots
+
+<img src="media/panel.png" width="256"><img/>
 
 
 ## Requirements

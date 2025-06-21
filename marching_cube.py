@@ -5,7 +5,6 @@ import gpu
 import moderngl
 import math
 import numpy as np
-from bpy.props import FloatProperty
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
@@ -13,6 +12,7 @@ from mesh_from_sdf import marching_tables
 from mesh_from_sdf.shader import common
 from mesh_from_sdf.shader.factory import *
 from mesh_from_sdf.shader.buffer_factory import *
+from bpy.props import FloatProperty, BoolProperty, FloatVectorProperty
 
 
 class MarchingCube(object):
@@ -211,14 +211,20 @@ class MarchingCube(object):
         if xran > chunk_size:
             xran = int(xran / chunk_size) * chunk_size + chunk_size
             xlen = int(xran / chunk_size)
+        else:
+            xran = chunk_size
             
         if yran > chunk_size:
             yran = int(yran / chunk_size) * chunk_size + chunk_size
             ylen = int(yran / chunk_size)
+        else:
+            yran = chunk_size
             
         if zran > chunk_size:
             zran = int(zran / chunk_size) * chunk_size + chunk_size
             zlen = int(zran / chunk_size)
+        else:
+            zran = chunk_size
 
         xmin = (xmax + xmin) * 0.5 - xran * 0.5
         ymin = (ymax + ymin) * 0.5 - yran * 0.5
@@ -381,6 +387,9 @@ class SDF2MESH_PT_Generate(bpy.types.Panel):
 
         layout = self.layout
         layout.prop(context.scene, 'marching_cube_chunk_size')
+        layout_row = layout.row()
+        layout_row.prop(context.scene, 'marching_cube_draw_gizmo')
+        layout_row.prop(context.scene, 'marching_cube_gizmo_color')
         layout.operator(op_cls.bl_idname, text="Generate", icon="PLAY")
 
 
@@ -389,12 +398,104 @@ classes = [
     SDF2MESH_PT_Generate,
 ]
 
+__shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+
+def __draw():
+    global __shader
+    draw_gizmo = bpy.context.scene.marching_cube_draw_gizmo
+    if draw_gizmo:
+        chunk_size = bpy.context.scene.marching_cube_chunk_size
+        corners, chunk_count, forward, right, up = MarchingCube.get_smallest_bounding_box(chunk_size)
+        if len(corners) > 0:        
+            gizmo_color = bpy.context.scene.marching_cube_gizmo_color
+            """
+            [cx - xdif, cy - ydif, cz - zdif],
+            [cx - xdif, cy + ydif, cz - zdif],
+            [cx - xdif, cy + ydif, cz + zdif],
+            [cx - xdif, cy - ydif, cz + zdif],
+            [cx + xdif, cy + ydif, cz + zdif],
+            [cx + xdif, cy + ydif, cz - zdif],
+            [cx + xdif, cy - ydif, cz + zdif],
+            [cx + xdif, cy - ydif, cz - zdif],
+            """
+            corners = [
+                corners[0], corners[7],
+                corners[1], corners[5],
+                corners[2], corners[4],
+                corners[3], corners[6],
+                
+                corners[0], corners[1],
+                corners[0], corners[3],
+                corners[2], corners[1],
+                corners[2], corners[3],
+                
+                corners[4], corners[5],
+                corners[4], corners[6],
+                corners[7], corners[5],
+                corners[7], corners[6],
+            ]
+            batch = batch_for_shader(__shader, 'LINES', {"pos": corners})
+            __shader.uniform_float("color", (gizmo_color[0], gizmo_color[1], gizmo_color[2], 1.0))
+            batch.draw(__shader)
+        
+        
+# Variable that holds the handler obtained when the drawing event is registered 
+# (this handler is needed to cancel the drawing event)
+__handle = None
+
+# Registration of drawing events
+def __start():
+    global __handle
+    __handle = bpy.types.SpaceView3D.draw_handler_add(__draw, (), 'WINDOW', 'POST_VIEW')
+
+# Release drawing events
+def __stop():
+    global __handle
+    if __handle != None:
+        bpy.types.SpaceView3D.draw_handler_remove(__handle, 'WINDOW')
+        __handle = None
+
 def register():
     for c in classes:
         bpy.utils.register_class(c)
     
-    bpy.types.Scene.marching_cube_chunk_size = FloatProperty(name = 'Chunk Size', default = 2.5)
+    bpy.types.Scene.marching_cube_chunk_size = FloatProperty(
+        name = 'Chunk Size',
+        min = 0.1,
+        default = 2.5)
+    bpy.types.Scene.marching_cube_draw_gizmo = BoolProperty(
+        name = 'Draw Gizmo',
+        default = False)
+    bpy.types.Scene.marching_cube_gizmo_color = FloatVectorProperty(
+        name= "Color",
+        description= "Color",
+        subtype= 'COLOR',
+        min= 0.0,
+        max= 1.0,
+        soft_min= 0.0,
+        soft_max= 1.0,
+        default= (0.0/255.0,255.0/255.0,0.0/255.0)
+    )
+    
+    __start()
 
 def unregister():
+    
+    __stop()
+    
     for c in classes:
         bpy.utils.unregister_class(c)
+        
+"""
+coords = [(1, 1, 1), (-2, 0, 0), (-2, -1, 3), (0, 1, 1)]
+shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+batch = batch_for_shader(shader, 'LINES', {"pos": coords})
+
+
+def draw():
+    shader.uniform_float("color", (1, 1, 0, 1))
+    batch.draw(shader)
+
+
+bpy.types.SpaceView3D.draw_handler_add(draw, (), 'WINDOW', 'POST_VIEW')
+"""
