@@ -1031,14 +1031,18 @@ def deinit_shader():
 def on_depsgraph_update(scene):
     global ctx
     depsgraph = bpy.context.evaluated_depsgraph_get()
+    update_buffer_requested = False
+    
     for update in depsgraph.updates:
-        if update.is_updated_transform:
-            for obj in bpy.context.selected_objects:
-                if obj.sdf_prop.enabled:
-                    # print('\n', '[update_transform]', obj.name, '\n')
-                    ShaderBufferFactory.update_object_common_buffer(ctx, bpy.context, obj.sdf_prop.index)                    
-                    for child in obj.children:
-                        ShaderBufferFactory.update_object_common_buffer(ctx, bpy.context, child.sdf_prop.index)
+        update_buffer_requested |= update.id.id_type == 'OBJECT' and update.is_updated_transform
+        
+    if update_buffer_requested:
+        for obj in bpy.context.selected_objects:
+            if obj.sdf_prop.enabled:
+                # print('\n', '[update_transform]', obj.name, '\n')
+                ShaderBufferFactory.update_object_common_buffer(ctx, bpy.context, obj.sdf_prop.index)                    
+                for child in obj.children:
+                    ShaderBufferFactory.update_object_common_buffer(ctx, bpy.context, child.sdf_prop.index)
 
 
 global ctx, test_global
@@ -1095,8 +1099,8 @@ def register():
     print('[mesh_from_sdf] The add-on has been activated.')
     
     bpy.app.handlers.depsgraph_update_post.append(on_depsgraph_update)
-    
-    
+
+
 def unregister():
     del bpy.types.Object.sdf_prop
     del bpy.types.Scene.sdf_object_pointer_list
