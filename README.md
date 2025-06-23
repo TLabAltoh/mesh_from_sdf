@@ -59,10 +59,13 @@ Add-on for mesh modeling with SDF in Blender.
 1. Select `SDF2Mesh` from the toolbar to open the add-on hierarchy panel.
 2. Changed `RenderEngine` to `MeshFromSDF`
 3. Switch the 3D View render mode to `Render` or `Material`.
-4. Pressing the reload button displays the SDF objects registered in the hierarchy (Do this the first time you start Blender or activate this add-on).
+4. Pressing the `reload button` displays the SDF objects registered in the hierarchy (Do this the first time you start Blender or activate this add-on).
+
+<img src="media/reload_button.png" width="256"><img/>
 
 ## Known Issue
 - Undo processing is not implemented for Gizmo operations on SDF primitives.
   - While it is possible to always invoke Undo while dragging Gizmo, ideally, Undo should be executed only when the drag ends.
 - After changing the type of the SDF primitive once, the previous Gizmo operation is reset when it is changed back again.
-- The Quadratic Bezier primitive does not currently support rotation and scaling operations. Changing the value is automatically reset to rotaiton_euler = (0,0,0), scale = (1,1,1) afterwards.
+- The Quadratic Bezier primitive does not currently support rotation and scaling operations. Changing the value is automatically reset to `rotaiton_euler = (0,0,0)`, `scale = (1,1,1)` afterwards.
+- The Quadratic Bezier primitive does not currently support object selection via a mesh proxy, but rather via the three control points defining the Quadratic Bezier and the edge connecting them.
