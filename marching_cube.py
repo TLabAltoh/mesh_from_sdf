@@ -191,12 +191,14 @@ class MarchingCube(object):
             object = pointer.object
             sdf_prop = object.sdf_prop
             primitive_type = sdf_prop.primitive_type
+            
+            max_radius = 0
+            
             if primitive_type == 'Quadratic Bezier':
-                radius = bpy.context.scene.sdf_quadratic_bezier_pointer_list[object.sub_index].radius
-                offset = (Vector([+radius, +radius, +radius]), Vector([-radius, -radius, -radius]))
-                world_points = [object.matrix_world @ v.co for v in object.data.vertices]
-                verts += [(p + offset[0]) for p in world_points]
-                verts += [(p + offset[1]) for p in world_points]
+                radius = bpy.context.scene.sdf_quadratic_bezier_pointer_list[sdf_prop.sub_index].radius
+                remain = max_radius > radius
+                max_radius = max_radius * remain + radius * (1.0 - remain)
+                verts += [object.matrix_world @ v.co for v in object.data.vertices]
             else:
                 verts += [object.matrix_world @ v.co for v in object.data.vertices]
 
@@ -213,9 +215,9 @@ class MarchingCube(object):
         co_min = np.min(points_r, axis=0)
         co_max = np.max(points_r, axis=0)
 
-        xmin, xmax = co_min[0], co_max[0]
-        ymin, ymax = co_min[1], co_max[1]
-        zmin, zmax = co_min[2], co_max[2]
+        xmin, xmax = co_min[0] - max_radius, co_max[0] + max_radius
+        ymin, ymax = co_min[1] - max_radius, co_max[1] + max_radius
+        zmin, zmax = co_min[2] - max_radius, co_max[2] + max_radius
 
         xran = xmax - xmin
         yran = ymax - ymin
