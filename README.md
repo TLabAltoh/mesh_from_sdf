@@ -16,9 +16,9 @@ Add-on for mesh modeling with SDF in Blender.
   - [x] Pyramid
   - [x] Truncated Pyramid
   - [x] Hexagonal Prism
-  - [x] Triangular Prism
+  - [ ] ~~Triangular Prism~~ (Removed because it can be replaced by Truncated Pyramid and Ngon Prism)
   - [x] Ngon Prism
-  - [ ] Spline
+  - [x] Spline (Quadratic Bezier)
   - [x] Distance Function (External files written in GLSL format)
 - [x] SDF to Mesh Conversion (Based on Marching Cube)
 - Boolean Operations 
