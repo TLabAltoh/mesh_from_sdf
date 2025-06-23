@@ -65,3 +65,4 @@ Add-on for mesh modeling with SDF in Blender.
 - Undo processing is not implemented for Gizmo operations on SDF primitives.
   - While it is possible to always invoke Undo while dragging Gizmo, ideally, Undo should be executed only when the drag ends.
 - After changing the type of the SDF primitive once, the previous Gizmo operation is reset when it is changed back again.
+- The Quadratic Bezier primitive does not currently support rotation and scaling operations. Changing the value is automatically reset to rotaiton_euler = (0,0,0), scale = (1,1,1) afterwards.
