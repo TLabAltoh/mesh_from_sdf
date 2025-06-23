@@ -61,10 +61,21 @@ Add-on for mesh modeling with SDF in Blender.
 ## Start up
 1. Select `SDF2Mesh` from the toolbar to open the add-on hierarchy panel.
 2. Changed `RenderEngine` to `MeshFromSDF`
+
+<img src="media/render-engine.png" width="256"><img/>
+
 3. Switch the 3D View render mode to `Render` or `Material`.
 4. Pressing the `reload button` displays the SDF objects registered in the hierarchy (Do this the first time you start Blender or activate this add-on).
 
 <img src="media/reload_button.png" width="256"><img/>
+
+## The part to be replaced from the existing operation
+### Deleting Objects
+Choose one of the following two ways of operation.
+1. Select an object of the hierarchy on the Mesh2SDF panel and press the minus button
+2. Select `Delete (SDF Object)` instead of `Delete` on the context menu
+
+<img src="media/delete-object.png" width="256"><img/>
 
 ## Known Issue
 - Undo processing is not implemented for Gizmo operations on SDF primitives.
