@@ -72,7 +72,7 @@ Add-on for mesh modeling with SDF in Blender.
 ## The part to be replaced from the existing operation
 ### Deleting Objects
 Choose one of the following two ways of operation.
-1. Select an object of the hierarchy on the Mesh2SDF panel and press the minus button
+1. Select an object of the hierarchy on the `SDF2Mesh2` panel and press the minus button
 2. Select `Delete (SDF Object)` instead of `Delete` on the context menu
 
 <img src="media/delete-object.png" width="256"><img/>
