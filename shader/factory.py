@@ -43,10 +43,27 @@ class ShaderFactory(object):
                 dist = sdHexPrism(samplpos, sdfHexPrismProp.h, sdfHexPrismProp.ra);
                 dist = opRound(dist, sdfHexPrismProp.rd);
             ''',
-            'Triangular Prism':'''
-                sdfTriPrismProp = sdfTriPrismProps[sdfTriPrismPropIdx++];
-                dist = sdTriPrism(samplpos, sdfTriPrismProp.h, sdfTriPrismProp.ra);
-                dist = opRound(dist, sdfTriPrismProp.rd);
+            'Quadratic Bezier':'''
+                sdfQuadraticBezierProp = sdfQuadraticBezierProps[sdfQuadraticBezierPropIdx++];
+                dist = sdBezier(samplpos,
+                    vec3(
+                        sdfQuadraticBezierProp.point_0_x,
+                        sdfQuadraticBezierProp.point_0_y,
+                        sdfQuadraticBezierProp.point_0_z
+                    ),
+                    vec3(
+                        sdfQuadraticBezierProp.point_1_x,
+                        sdfQuadraticBezierProp.point_1_y,
+                        sdfQuadraticBezierProp.point_1_z
+                    ),
+                    vec3(
+                        sdfQuadraticBezierProp.point_2_x,
+                        sdfQuadraticBezierProp.point_2_y,
+                        sdfQuadraticBezierProp.point_2_z
+                    )
+                ).x;
+                dist = abs(dist);
+                dist -= sdfQuadraticBezierProp.radius;
             ''',
             'Ngon Prism':'''
                 sdfNgonPrismProp = sdfNgonPrismProps[sdfNgonPrismPropIdx++];
@@ -83,7 +100,7 @@ class ShaderFactory(object):
             SDFPyramidProp sdfPyramidProp; uint sdfPyramidPropIdx = 0;
             SDFTruncatedPyramidProp sdfTruncatedPyramidProp; uint sdfTruncatedPyramidPropIdx = 0;
             SDFPrismProp sdfHexPrismProp; uint sdfHexPrismPropIdx = 0;
-            SDFPrismProp sdfTriPrismProp; uint sdfTriPrismPropIdx = 0;
+            SDFQuadraticBezierProp sdfQuadraticBezierProp; uint sdfQuadraticBezierPropIdx = 0;
             SDFNgonPrismProp sdfNgonPrismProp; uint sdfNgonPrismPropIdx = 0;
             SDFGLSLProp sdfGLSLProp; uint sdfGLSLPropIdx = 0;
             

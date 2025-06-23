@@ -11,7 +11,7 @@ sdf_object_pointer_list_by_primitive_type = {'Box': lambda context: context.scen
                                      'Pyramid': lambda context: context.scene.sdf_pyramid_pointer_list,
                                      'Truncated Pyramid': lambda context: context.scene.sdf_truncated_pyramid_pointer_list,
                                      'Hexagonal Prism': lambda context: context.scene.sdf_hex_prism_pointer_list,
-                                     'Triangular Prism': lambda context: context.scene.sdf_tri_prism_pointer_list,
+                                     'Quadratic Bezier': lambda context: context.scene.sdf_quadratic_bezier_pointer_list,
                                      'Ngon Prism': lambda context: context.scene.sdf_ngon_prism_pointer_list,
                                      'GLSL': lambda context: context.scene.sdf_glsl_pointer_list}
 

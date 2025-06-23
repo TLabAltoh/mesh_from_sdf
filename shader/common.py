@@ -35,6 +35,13 @@ include_frag_ = '''
         float dot2( in vec3 v ) { return dot(v,v); }
         float ndot( in vec2 a, in vec2 b ) { return a.x*b.x - a.y*b.y; }
 
+        // https://www.shadertoy.com/view/WltSD7
+        float cos_acos_3( in float x )
+        {
+            x = sqrt(0.5+0.5*x);
+            return x*(x*(x*(x*-0.008972+0.039071)-0.107074)+0.576975)+0.5; 
+        }
+
         float opRound( in float d, in float h )
         {
             return d - h;
@@ -214,49 +221,6 @@ include_frag_ = '''
             float d = sqrt(min(min(min(dot(d1, d1), dot(d2, d2)), dot(d3, d3)), dot(d4, d4)));
             return which(-d, d, max(max(h1, h2), abs(p.y) - hh) < 0.0);
         }
-        float sdTriPrism(vec3 p, float h, float r) {
-            const float PI = 3.14159;
-        
-            p = p.zxy;
-        
-            float dist, side = 3.0 - 0.5, _h;
-            vec2 a, b = vec2(r, 0), ba, pa;
-            
-            // i = 0, theta = 2 / 3 * PI
-            a = b;
-            b = vec2(r*-0.5, r*0.86602);
-            
-            ba = b-a;
-            pa = p.xy-a;
-            _h = clamp(dot(pa,ba)/dot(ba,ba),0.0,1.0);
-            
-            dist = length(pa-_h*ba);
-            side -= sign((b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x));
-            
-            // i = 1, theta = 2 / 3 * PI
-            a = b;
-            b = vec2(r*-0.5, r*-0.86602);
-            
-            ba = b-a;
-            pa = p.xy-a;
-            _h = clamp(dot(pa,ba)/dot(ba,ba),0.0,1.0);
-            
-            dist = min(length(pa-_h*ba),dist);
-            side -= sign((b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x));
-            
-            // i = 2, theta = 2 * PI
-            a = b;
-            b = vec2(r, 0.0);
-            
-            ba = b-a;
-            pa = p.xy-a;
-            _h = clamp(dot(pa,ba)/dot(ba,ba),0.0,1.0);
-            
-            dist = min(length(pa-_h*ba),dist);
-            side -= sign((b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x));
-            
-            return opExtrusion(p, sign(side) * abs(dist), h);
-        }
         float sdHexPrism( vec3 p, in float h, in float r ) {
             const vec3 k = vec3(-0.8660254, 0.5, 0.57735);
             p = abs(p);
@@ -265,6 +229,73 @@ include_frag_ = '''
                 length(p.xz-vec2(clamp(p.x,-k.z*r,k.z*r), r))*sign(p.z-r),
                 p.y-h );
             return min(max(d.x,d.y),0.0) + length(max(d,0.0));
+        }
+        // https://www.shadertoy.com/view/ldj3Wh
+        vec2 sdBezier(vec3 pos, vec3 A, vec3 B, vec3 C)
+        {    
+            vec3 a = B - A;
+            vec3 b = A - 2.0*B + C;
+            vec3 c = a * 2.0;
+            vec3 d = A - pos;
+
+            float kk = 1.0 / dot(b,b);
+            float kx = kk * dot(a,b);
+            float ky = kk * (2.0*dot(a,a)+dot(d,b)) / 3.0;
+            float kz = kk * dot(d,a);      
+
+            vec2 res;
+
+            float p = ky - kx*kx;
+            float p3 = p*p*p;
+            float q = kx*(2.0*kx*kx - 3.0*ky) + kz;
+            float q2 = q*q;
+            float h = q2 + 4.0*p3;
+
+            if(h >= 0.0) 
+            { 
+                h = sqrt(h);
+                vec2 x = (vec2(h,-h)-q)/2.0;
+                
+                #if 1
+                if( abs(p)<0.001 )
+                {
+                  //float k = p3/q;              // linear approx
+                    float k = (1.0-p3/q2)*p3/q;  // quadratic approx 
+                    x = vec2(k,-k-q);  
+                }
+                #endif
+                
+                vec2 uv = sign(x)*pow(abs(x), vec2(1.0/3.0));
+                float t = clamp(uv.x+uv.y-kx, 0.0, 1.0);
+
+                // 1 root
+                res = vec2(dot2(d+(c+b*t)*t),t);
+                
+                //res = vec2( dot2( pos-bezier(A,B,C,t)), t );
+            }
+            else
+            {
+                float z = sqrt(-p);
+                #if 0
+                float v = acos( q/(p*z*2.0) ) / 3.0;
+                float m = cos(v);
+                float n = sin(v)*1.732050808;
+                #else
+                float m = cos_acos_3( q/(p*z*2.0) );
+                float n = sqrt(1.0-m*m)*1.732050808;
+                #endif
+                vec3 t = clamp( vec3(m+m,-n-m,n-m)*z-kx, 0.0, 1.0);
+                
+                // 3 roots, but only need two
+                float dis = dot2(d+(c+b*t.x)*t.x);
+                res = vec2(dis,t.x);
+
+                dis = dot2(d+(c+b*t.y)*t.y);
+                if( dis<res.x ) res = vec2(dis,t.y );
+            }
+            
+            res.x = sqrt(res.x);
+            return res;
         }
         float sdNgonPrism( vec3 p, in float h, in float r, in float n) { // n: nsides
             const float PI = 3.14159;
@@ -362,6 +393,18 @@ include_struct_ = '''
             float ra; // radius
             float rd; // round
             float n;  // nsides
+        };
+        struct SDFQuadraticBezierProp {
+            float point_0_x;
+            float point_0_y;
+            float point_0_z;
+            float point_1_x;
+            float point_1_y;
+            float point_1_z;
+            float point_2_x;
+            float point_2_y;
+            float point_2_z;
+            float radius;
         };
         struct SDFGLSLProp {
             vec4 br;  // bound and round

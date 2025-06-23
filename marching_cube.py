@@ -23,6 +23,7 @@ class MarchingCube(object):
     max_triangle_count=voxel_count*5
     
     ctx = None
+    loaded = False
 
     @classmethod
     def generate_glsl(cls, dist):
@@ -61,7 +62,7 @@ class MarchingCube(object):
         layout(binding=6) readonly buffer in_prop_pyramid { SDFPyramidProp sdfPyramidProps[]; };
         layout(binding=7) readonly buffer in_prop_truncated_pyramid { SDFTruncatedPyramidProp sdfTruncatedPyramidProps[]; };
         layout(binding=8) readonly buffer in_prop_hex_prism { SDFPrismProp sdfHexPrismProps[]; };
-        layout(binding=9) readonly buffer in_prop_tri_prism { SDFPrismProp sdfTriPrismProps[]; };
+        layout(binding=9) readonly buffer in_prop_quadratic_bezier { SDFQuadraticBezierProp sdfQuadraticBezierProps[]; };
         layout(binding=10) readonly buffer in_prop_ngon_prism { SDFNgonPrismProp sdfNgonPrismProps[]; };
         layout(binding=11) readonly buffer in_prop_glsl { SDFGLSLProp sdfGLSLProps[]; };
         
@@ -174,6 +175,10 @@ class MarchingCube(object):
         cls.ctx = ctx
 
     @classmethod
+    def on_load(cls):
+        cls.loaded = True
+
+    @classmethod
     def _np_normalized(cls, x):
         x_l2_norm = sum(x**2)**0.5
         x_l2_normalized = x / x_l2_norm
@@ -184,7 +189,19 @@ class MarchingCube(object):
         verts = []
         for pointer in bpy.context.scene.sdf_object_pointer_list:
             object = pointer.object
-            verts += [object.matrix_world @ v.co for v in object.data.vertices]
+            sdf_prop = object.sdf_prop
+            primitive_type = sdf_prop.primitive_type
+            if primitive_type == 'Quadratic Bezier':
+                radius = bpy.context.scene.sdf_quadratic_bezier_pointer_list[object.sub_index].radius
+                offset = (Vector([+radius, +radius, +radius]), Vector([-radius, -radius, -radius]))
+                world_points = [object.matrix_world @ v.co for v in object.data.vertices]
+                verts += [(p + offset[0]) for p in world_points]
+                verts += [(p + offset[1]) for p in world_points]
+            else:
+                verts += [object.matrix_world @ v.co for v in object.data.vertices]
+
+        if len(verts) == 0:
+            raise Exception('Bounding box cannot be calculated because the number of valid vertices is 0')
 
         points = np.asarray(verts)
 
@@ -263,6 +280,9 @@ class MarchingCube(object):
 
     @classmethod
     def generate(cls, operator):
+
+        if cls.loaded == False:
+            return
         
         print('[Mesh Generation] start ...')
 
@@ -286,7 +306,11 @@ class MarchingCube(object):
         view_layer.objects.active = new_object
         
         chunk_size = bpy.context.scene.marching_cube_chunk_size
-        corners, chunk_count, forward, right, up = cls.get_smallest_bounding_box(chunk_size)
+        try:
+            corners, chunk_count, forward, right, up = cls.get_smallest_bounding_box(chunk_size)
+        except Exception as e:
+            operator.report({'ERROR'}, e)
+            return
         
 #        print('\n', 'chunk_count:', chunk_count, '\n')
         
@@ -403,8 +427,14 @@ def __draw():
     global __shader
     draw_gizmo = bpy.context.scene.marching_cube_draw_gizmo
     if draw_gizmo:
+        
         chunk_size = bpy.context.scene.marching_cube_chunk_size
-        corners, chunk_count, forward, right, up = MarchingCube.get_smallest_bounding_box(chunk_size)
+        try:
+            corners, chunk_count, forward, right, up = MarchingCube.get_smallest_bounding_box(chunk_size)
+        except Exception as e:
+            operator.report({'ERROR'}, e)
+            return
+        
         if len(corners) > 0:        
             gizmo_color = bpy.context.scene.marching_cube_gizmo_color
             """

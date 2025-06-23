@@ -24,8 +24,8 @@ class ShaderBufferFactory(object):
     pyramid_buffer = None
     truncated_pyramid_buffer = None
     hex_prism_buffer = None
-    tri_prism_buffer = None
     ngon_prism_buffer = None
+    quadratic_bezier_buffer = None
     glsl_buffer = None
     active_buffers = {}
     
@@ -46,7 +46,7 @@ class ShaderBufferFactory(object):
         cls.release_pyramid_buffer()
         cls.release_truncated_pyramid_buffer()
         cls.release_hex_prism_buffer()
-        cls.release_tri_prism_buffer()
+        cls.release_quadratic_bezier_buffer()
         cls.release_ngon_prism_buffer()
         cls.release_glsl_buffer()
 
@@ -62,7 +62,7 @@ class ShaderBufferFactory(object):
         cls.generate_pyramid_buffer(ctx, context)
         cls.generate_truncated_pyramid_buffer(ctx, context)
         cls.generate_hex_prism_buffer(ctx, context)
-        cls.generate_tri_prism_buffer(ctx, context)
+        cls.generate_quadratic_bezier_buffer(ctx, context)
         cls.generate_ngon_prism_buffer(ctx, context)
         cls.generate_glsl_buffer(ctx, context)
 
@@ -1146,104 +1146,117 @@ class ShaderBufferFactory(object):
             del cls.active_buffers[8]
             cls.hex_prism_buffer.release()
         cls.hex_prism_buffer = None
-
     
     # ----------------------------------------------------------
-    # Storage Buffer Objects of Tri Prism Primitive
+    # Storage Buffer Objects of Quadratic Bezier Primitive
     #
     
     @classmethod
-    def get_tri_prism_buffer(cls):
-        return cls.tri_prism_buffer
+    def get_quadratic_bezier_buffer(cls):
+        return cls.quadratic_bezier_buffer
     
     @classmethod
-    def _generate_tri_prism_buffer(cls, ctx, context):
+    def _generate_quadratic_bezier_buffer(cls, ctx, context):
         
         # If the buffer has already been allocated, release it
-        cls.release_tri_prism_buffer()
+        cls.release_quadratic_bezier_buffer()
         
-        dsize = 4 # height (1), radius (1), round (1), dummy (1)
-        alist = context.scene.sdf_tri_prism_pointer_list
+        dsize = 10 # point_0 (3), point_1 (3), point_2 (3), radius (1)
+        alist = context.scene.sdf_quadratic_bezier_pointer_list
         narray = np.empty(len(alist) * dsize, dtype=np.float32)
         
         for i, pointer in enumerate(alist):
             object = pointer.object
             sdf_prop = object.sdf_prop
             
-            height = pointer.height * 0.5
+            point_0 = pointer.point_0
+            point_1 = pointer.point_1
+            point_2 = pointer.point_2
             radius = pointer.radius
-            round = min(radius * 0.5, height) * pointer.round
             
             offset = i * dsize
-            narray[offset + 0] = height - round
-            narray[offset + 1] = radius - round * 2
-            narray[offset + 2] = round
-            # narray[offset + 3] = 0 # dummy
+            narray[offset + 0] = -point_0[0]
+            narray[offset + 1] = +point_0[2]
+            narray[offset + 2] = +point_0[1]
+            narray[offset + 3] = -point_1[0]
+            narray[offset + 4] = +point_1[2]
+            narray[offset + 5] = +point_1[1]
+            narray[offset + 6] = -point_2[0]
+            narray[offset + 7] = +point_2[2]
+            narray[offset + 8] = +point_2[1]
+            narray[offset + 9] = radius
 
         # Generate a buffer to bind to the shader using np.array as source
         buf = ctx.buffer(narray.tobytes())
-        cls.tri_prism_buffer = buf
-        cls.active_buffers[9] = cls.tri_prism_buffer
-        # buf.bind_to_storage_buffer(9)
+        cls.quadratic_bezier_buffer = buf
+        cls.active_buffers[9] = cls.quadratic_bezier_buffer
+        # buf.bind_to_storage_buffer(8)
         
-        # print('\n', '[generate_tri_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_quadratic_bezier_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
-        return cls.tri_prism_buffer
+        return cls.quadratic_bezier_buffer
 
     @classmethod
-    def generate_tri_prism_buffer(cls, ctx, context):
-        if len(context.scene.sdf_tri_prism_pointer_list) > 0:
-            cls._generate_tri_prism_buffer(ctx, context)
+    def generate_quadratic_bezier_buffer(cls, ctx, context):
+        if len(context.scene.sdf_quadratic_bezier_pointer_list) > 0:
+            cls._generate_quadratic_bezier_buffer(ctx, context)
         else:
-            cls.release_tri_prism_buffer()
+            cls.release_quadratic_bezier_buffer()
 
     @classmethod
-    def _update_tri_prism_buffer(cls, ctx, context, i, sub_i):
+    def _update_quadratic_bezier_buffer(cls, ctx, context, i, sub_i):
         
-        dsize = 4 # height (1), radius (1), round (1), dummy (1)
-        alist = context.scene.sdf_tri_prism_pointer_list
+        dsize = 10 # point_0 (3), point_1 (3), point_2 (3), radius (1)
+        alist = context.scene.sdf_quadratic_bezier_pointer_list
         narray = np.empty(dsize, dtype=np.float32)
         
         pointer = alist[sub_i]
         object = pointer.object
         sdf_prop = object.sdf_prop
         
-        height = pointer.height * 0.5
+        point_0 = pointer.point_0
+        point_1 = pointer.point_1
+        point_2 = pointer.point_2
         radius = pointer.radius
-        round = min(radius * 0.5, height) * pointer.round
         
-        narray[0] = height - round
-        narray[1] = radius - round * 2
-        narray[2] = round
-        # narray[3] = 0 # dummy
+        narray[0] = -point_0[0]
+        narray[1] = +point_0[2]
+        narray[2] = +point_0[1]
+        narray[3] = -point_1[0]
+        narray[4] = +point_1[2]
+        narray[5] = +point_1[1]
+        narray[6] = -point_2[0]
+        narray[7] = +point_2[2]
+        narray[8] = +point_2[1]
+        narray[9] = radius
         
-        buf = cls.tri_prism_buffer
+        buf = cls.quadratic_bezier_buffer
         buf.write(narray.tobytes(), sub_i * dsize * 4)
         
-        # print('\n', '[generate_tri_prism_buffer] narray:', narray, 'buf:', buf.read(), '\n')
+        # print('\n', '[generate_quadratic_bezier_buffer] narray:', narray, 'buf:', buf.read(), '\n')
         
-        return cls.tri_prism_buffer
+        return cls.quadratic_bezier_buffer
 
     @classmethod
-    def update_tri_prism_buffer(cls, ctx, context, i, sub_i):
+    def update_quadratic_bezier_buffer(cls, ctx, context, i, sub_i):
 
         # If the element of the list is 0, the buffer is not used and shall be released.
-        if len(context.scene.sdf_tri_prism_pointer_list) == 0:
-            return cls.release_tri_prism_buffer()
+        if len(context.scene.sdf_quadratic_bezier_pointer_list) == 0:
+            return cls.release_quadratic_bezier_buffer()
         
         # If buffer is set to None for some reason, a new buffer is created here.
-        if cls.tri_prism_buffer == None:
-            return cls._generate_tri_prism_buffer(ctx, context)
+        if cls.quadratic_bezier_buffer == None:
+            return cls._generate_quadratic_bezier_buffer(ctx, context)
         
-        return cls._update_tri_prism_buffer(ctx, context, i, sub_i)
+        return cls._update_quadratic_bezier_buffer(ctx, context, i, sub_i)
     
     @classmethod
-    def release_tri_prism_buffer(cls):
-        if cls.tri_prism_buffer != None:
+    def release_quadratic_bezier_buffer(cls):
+        if cls.quadratic_bezier_buffer != None:
             del cls.active_buffers[9]
-            cls.tri_prism_buffer.release()
-        cls.tri_prism_buffer = None
-    
+            cls.quadratic_bezier_buffer.release()
+        cls.quadratic_bezier_buffer = None
+            
     # ----------------------------------------------------------
     # Storage Buffer Objects of Ngon Prism Primitive
     #
@@ -1427,8 +1440,6 @@ class ShaderBufferFactory(object):
         ]
         round = min(bound) * pointer.round
         
-        print('\n', '[round amount]', round, '\n')
-        
         bound[0] = bound[0] - round
         bound[1] = bound[1] - round
         bound[2] = bound[2] - round
@@ -1464,5 +1475,3 @@ class ShaderBufferFactory(object):
             del cls.active_buffers[11]
             cls.glsl_buffer.release()
         cls.glsl_buffer = None
-
-    pass

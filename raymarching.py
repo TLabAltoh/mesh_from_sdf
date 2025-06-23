@@ -70,7 +70,7 @@ class Raymarching(bpy.types.Operator):
 
     dist_ = '''
     
-        #define OBJECT_COUNT 6
+        #define OBJECT_COUNT 5
         
         #define UNION 0
         #define SUBTRACTION 1
@@ -81,32 +81,28 @@ class Raymarching(bpy.types.Operator):
         #define TORUS 2
         #define CAPPED_CONE 3
         #define HEX_PRISM 4
-        #define TRI_PRISM 5
-        #define NGON_PRISM 6
+        #define NGON_PRISM 5
     
         const vec3 positions[OBJECT_COUNT] = { 
             vec3(0.5,0.5,0.5), 
             vec3(0.2,0.5,0.0),
             vec3(0.1,0.3,0.1),
             vec3(0.3,0.2,0.6),
-            vec3(0.4,0.1,0.8),
-            vec3(0.1,0.6,0.1)
+            vec3(0.4,0.1,0.8)
         };
         const vec3 axiss[OBJECT_COUNT] = { 
             vec3(1.0, 0.0, 0.0),
             vec3(1.0, 0.0, 0.0),
             vec3(0.0, 1.0, 0.0),
             vec3(0.0, 0.0, 1.0),
-            vec3(0.0, 1.0, 0.0),
-            vec3(1.0, 0.0, 0.0)
+            vec3(0.0, 1.0, 0.0)
         };
         const float thetas[OBJECT_COUNT] = {
             3.14 * 0.5,
             3.14 * 0.2,
             3.14 * 0.0,
             3.14 * 0.15,
-            3.14 * 0.25,
-            3.14 * 0.33
+            3.14 * 0.25
         };
         const float scales[OBJECT_COUNT] = { 
             0.50,
@@ -114,15 +110,13 @@ class Raymarching(bpy.types.Operator):
             1.00,
             1.30,
             1.00,
-            1.15
         };
         const int primitives[OBJECT_COUNT] = {
             BOX,
             CAPPED_CONE,
             SPHERE,
             TORUS,
-            NGON_PRISM,
-            TRI_PRISM
+            NGON_PRISM
         };
         
         vec3 position, samplpos, axis;
@@ -155,9 +149,6 @@ class Raymarching(bpy.types.Operator):
                         break;
                     case CAPPED_CONE:
                         dist = sdCappedCone(samplpos, 1.0, 0.1, 0.75);
-                        break;
-                    case TRI_PRISM:
-                        dist = sdTriPrism(samplpos, 0.5, 0.8);
                         break;
                     case NGON_PRISM:
                         dist = sdNgonPrism(samplpos, 0.5, 8, 0.75);
@@ -192,9 +183,6 @@ class Raymarching(bpy.types.Operator):
                             break;
                         case CAPPED_CONE:
                             dist = sdCappedCone(samplpos, 1.0, 0.1, 0.75);
-                            break;
-                        case TRI_PRISM:
-                            dist = sdTriPrism(samplpos, 0.8, 0.5);
                             break;
                         case NGON_PRISM:
                             dist = sdNgonPrism(samplpos, 0.8, 0.5, 8);
@@ -248,7 +236,7 @@ class Raymarching(bpy.types.Operator):
         layout(binding=6) readonly buffer in_prop_pyramid { SDFPyramidProp sdfPyramidProps[]; };
         layout(binding=7) readonly buffer in_prop_truncated_pyramid { SDFTruncatedPyramidProp sdfTruncatedPyramidProps[]; };
         layout(binding=8) readonly buffer in_prop_hex_prism { SDFPrismProp sdfHexPrismProps[]; };
-        layout(binding=9) readonly buffer in_prop_tri_prism { SDFPrismProp sdfTriPrismProps[]; };
+        layout(binding=9) readonly buffer in_prop_quadratic_bezier { SDFQuadraticBezierProp sdfQuadraticBezierProps[]; };
         layout(binding=10) readonly buffer in_prop_ngon_prism { SDFNgonPrismProp sdfNgonPrismProps[]; };
         layout(binding=11) readonly buffer in_prop_glsl { SDFGLSLProp sdfGLSLProps[]; };
         
@@ -330,6 +318,7 @@ class Raymarching(bpy.types.Operator):
         return frag_
     
     ctx = None
+    loaded = False
     pause = False
     shader = None
     recreate_shader_requested = False
@@ -354,11 +343,15 @@ class Raymarching(bpy.types.Operator):
     def set_context(cls, ctx):
         cls.ctx = ctx
 
+    @classmethod
+    def on_load(cls):
+        cls.loaded = True
+
     # Execution of drawing process. Register this method with drawing events
     @classmethod
     def draw(cls):
         
-        if cls.pause:
+        if cls.pause or (cls.loaded == False):
             return
 
         try:

@@ -469,9 +469,6 @@ class SDFPrismPointer(SDFPrimitivePointer):
     update_prism_mesh_and_buffer_by_prism_type = {'Hexagonal Prism': lambda ctx, context, index, sub_index: (
                                                 SDFPrismPointer.update_hex_prism_mesh(context.scene.sdf_object_pointer_list[index]),
                                                 ShaderBufferFactory.update_hex_prism_buffer(ctx, context, index, sub_index)),
-                                                  'Triangular Prism': lambda ctx, context, index, sub_index: (
-                                                SDFPrismPointer.update_tri_prism_mesh(context.scene.sdf_object_pointer_list[index]),
-                                                ShaderBufferFactory.update_tri_prism_buffer(ctx, context, index, sub_index)),
                                                   'Ngon Prism': lambda ctx, context, index, sub_index: (
                                                 SDFPrismPointer.update_ngon_prism_mesh(context.scene.sdf_object_pointer_list[index]),
                                                 ShaderBufferFactory.update_ngon_prism_buffer(ctx, context, index, sub_index))}
@@ -541,16 +538,6 @@ class SDFPrismPointer(SDFPrimitivePointer):
         bpy.ops.mesh.primitive_cylinder_add(vertices=6, radius=radius, depth=height, enter_editmode=False, align='CURSOR', location=object.location, rotation=rotation_euler, scale=object.scale)
         
     @classmethod
-    def update_tri_prism_mesh(cls, pointer):
-        object = pointer.object
-        sdf_prop = object.sdf_prop
-        self = bpy.context.scene.sdf_tri_prism_pointer_list[sdf_prop.sub_index]
-        
-        height = self.height
-        radius = self.radius
-        bpy.ops.mesh.primitive_cylinder_add(vertices=3, radius=radius, depth=height, enter_editmode=False, align='CURSOR', location=object.location, rotation=object.rotation_euler, scale=object.scale)
-        
-    @classmethod
     def update_ngon_prism_mesh(cls, pointer):
         object = pointer.object
         sdf_prop = object.sdf_prop
@@ -563,6 +550,73 @@ class SDFPrismPointer(SDFPrimitivePointer):
         rotation_euler = mathutils.Euler((rotation_euler[0], rotation_euler[1], rotation_euler[2]), 'XYZ')
         # rotation_euler.rotate_axis('Z', 45*0.75)
         bpy.ops.mesh.primitive_cylinder_add(vertices=nsides, radius=radius, depth=height, enter_editmode=False, align='CURSOR', location=object.location, rotation=rotation_euler, scale=object.scale)
+
+
+class SDFQuadraticBezierPointer(SDFPrimitivePointer):
+    
+    # Callback processing when updating properties.
+    def on_prop_update(self, context):
+        global ctx
+        this = self.object.sdf_prop
+        
+        # Update mesh for primitive interactions
+        prev_mode = self.__class__.update_primitive_mesh_begin(context)
+        self.__class__.update_quadratic_bezier_mesh(context.scene.sdf_object_pointer_list[this.index])
+        self.__class__.update_primitive_mesh_end(prev_mode)
+        
+        # Updateing Storage Buffre Objects
+        ShaderBufferFactory.update_quadratic_bezier_buffer(ctx, context, this.index, this.sub_index)
+    
+    radius: FloatProperty(
+       name='Radius',
+       description='',
+       min=0.0,
+       default=0.3,
+       update=on_prop_update)
+       
+    point_0: FloatVectorProperty(
+        name='Point 0',
+        description='',
+        size=3,
+        default=(-1.0,0.0,0.0),
+        update=on_prop_update)
+        
+    point_1: FloatVectorProperty(
+        name='Point 1',
+        description='',
+        size=3,
+        default=(+0.0,0.0,0.0),
+        update=on_prop_update)
+        
+    point_2: FloatVectorProperty(
+        name='Point 2',
+        description='',
+        size=3,
+        default=(+1.0,0.0,0.0),
+        update=on_prop_update)
+       
+    @classmethod
+    def update_quadratic_bezier_mesh(cls, pointer):
+        object = pointer.object
+        sdf_prop = object.sdf_prop
+        self = bpy.context.scene.sdf_quadratic_bezier_pointer_list[sdf_prop.sub_index]
+        
+        object.scale = (1,1,1)
+        object.rotation_euler = (0,0,0)
+        
+        mesh = object.data
+        bm = bmesh.from_edit_mesh(mesh)
+        
+        point_0 = bm.verts.new(self.point_0)
+        point_1 = bm.verts.new(self.point_1)
+        point_2 = bm.verts.new(self.point_2)
+        bm.verts.ensure_lookup_table()
+        
+        bm.edges.new((point_0, point_1))
+        bm.edges.new((point_1, point_2))
+        bm.edges.ensure_lookup_table()
+
+        bmesh.update_edit_mesh(mesh)
 
 
 class SDFGLSLPointer(SDFPrimitivePointer):

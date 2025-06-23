@@ -31,7 +31,7 @@ from mesh_from_sdf.gizmo.cone import *
 from mesh_from_sdf.gizmo.pyramid import *
 from mesh_from_sdf.gizmo.truncated_pyramid import *
 from mesh_from_sdf.gizmo.hex_prism import *
-from mesh_from_sdf.gizmo.tri_prism import *
+from mesh_from_sdf.gizmo.quadratic_bezier import *
 from mesh_from_sdf.gizmo.ngon_prism import *
 from mesh_from_sdf.gizmo.glsl import *
 from mesh_from_sdf.util.view import *
@@ -55,8 +55,8 @@ class SDFProperty(PropertyGroup):
             ('Pyramid', 'Pyramid', ''),
             ('Truncated Pyramid', 'Truncated Pyramid', ''),
             ('Hexagonal Prism', 'Hexagonal Prism', ''),
-            ('Triangular Prism', 'Triangular Prism', ''),
             ('Ngon Prism','Ngon Prism',''),
+            ('Quadratic Bezier','Quadratic Bezier',''),
             ('GLSL','GLSL',''),)
              
     boolean_types = (('Union', 'Union', ''),
@@ -208,6 +208,10 @@ class SDFProperty(PropertyGroup):
                 # Sorts the list of SDF Objects according to the order of the hierarchy.
                 blist = None
                 alloc = None
+                
+                object.lock_scale = (False,False,False)
+                object.lock_rotation = (False,False,False)
+                
                 if (primitive_type == 'Box') and (SDFProperty.contains_in_pointer_list(context.scene.sdf_box_pointer_list, prv_pointer.object) == False):
                     self.reset_position_offset()
                     blist = context.scene.sdf_box_pointer_list
@@ -256,13 +260,17 @@ class SDFProperty(PropertyGroup):
                     self.__class__._add_new_pointer(prv_pointer, new_pointer, blist)
                     SDFPrismPointer.update_hex_prism_mesh(prv_pointer)
                     alloc = lambda ctx, context: ShaderBufferFactory.generate_hex_prism_buffer(ctx, context)
-                elif (primitive_type == 'Triangular Prism') and (SDFProperty.contains_in_pointer_list(context.scene.sdf_tri_prism_pointer_list, prv_pointer.object) == False):
+                elif (primitive_type == 'Quadratic Bezier') and (SDFProperty.contains_in_pointer_list(context.scene.sdf_quadratic_bezier_pointer_list, prv_pointer.object) == False):
+                    
+                    object.lock_scale = (True,True,True)
+                    object.lock_rotation = (True,True,True)
+                    
                     self.reset_position_offset()
-                    blist = context.scene.sdf_tri_prism_pointer_list
+                    blist = context.scene.sdf_quadratic_bezier_pointer_list
                     self.__class__._add_new_pointer(prv_pointer, new_pointer, blist)
-                    SDFPrismPointer.update_tri_prism_mesh(prv_pointer)
-                    alloc = lambda ctx, context: ShaderBufferFactory.generate_tri_prism_buffer(ctx, context)
-                elif (primitive_type == 'Ngon Prism') and (SDFProperty.contains_in_pointer_list(context.scene.sdf_ngon_prism_pointer_list, prv_pointer.object) == False):
+                    SDFQuadraticBezierPointer.update_quadratic_bezier_mesh(prv_pointer)
+                    alloc = lambda ctx, context: ShaderBufferFactory.generate_quadratic_bezier_buffer(ctx, context)
+                elif (primitive_type == 'Ngon Prism') and (SDFProperty.contains_in_pointer_list(context.scene.sdf_ngon_prism_pointer_list, prv_pointer.object) == False):                    
                     self.reset_position_offset()
                     blist = context.scene.sdf_ngon_prism_pointer_list
                     self.__class__._add_new_pointer(prv_pointer, new_pointer, blist)
@@ -435,7 +443,6 @@ class SDF2MESH_OT_List_Reload(Operator):
         PointerListUtil.recalc_sub_index(context.scene.sdf_pyramid_pointer_list)
         PointerListUtil.recalc_sub_index(context.scene.sdf_truncated_pyramid_pointer_list)
         PointerListUtil.recalc_sub_index(context.scene.sdf_hex_prism_pointer_list)
-        PointerListUtil.recalc_sub_index(context.scene.sdf_tri_prism_pointer_list)
         PointerListUtil.recalc_sub_index(context.scene.sdf_ngon_prism_pointer_list)
         PointerListUtil.recalc_sub_index(context.scene.sdf_glsl_pointer_list)
 
@@ -452,6 +459,9 @@ class SDF2MESH_OT_List_Reload(Operator):
         f_dist = ShaderFactory.generate_distance_function(context.scene.sdf_object_pointer_list)
         # print(f_dist)
         Raymarching.update_distance_function(f_dist)
+        
+        Raymarching.on_load()
+        MarchingCube.on_load()
         
         bpy.ops.ed.undo_push(message='mesh_from_sdf.hierarchy_reload')
         return {'FINISHED'}
@@ -544,7 +554,7 @@ class SDF2MESH_OT_List_Remove(Operator):
                 for child in object.children:
                     SDFProperty.reset_nested_object_transform(child)
                 # Delete mesh
-                if object.data:
+                if object.data != None:
                     bpy.data.meshes.remove(object.data,do_unlink=True)
                     
                 # Since the primitives are known, refresh only the corresponding list
@@ -824,11 +834,12 @@ draw_sdf_object_property_by_primitive_type = {'Box': lambda context, col, item: 
                                                 col.prop(sub_item, 'radius'),
                                                 col.prop(sub_item, 'height'),
                                                 col.prop(sub_item, 'round')),
-                                              'Triangular Prism': lambda context, col, item: (
-                                                sub_item := context.scene.sdf_tri_prism_pointer_list[item.sub_index],
+                                              'Quadratic Bezier': lambda context, col, item: (
+                                                sub_item := context.scene.sdf_quadratic_bezier_pointer_list[item.sub_index],
                                                 col.prop(sub_item, 'radius'),
-                                                col.prop(sub_item, 'height'),
-                                                col.prop(sub_item, 'round')),
+                                                col.prop(sub_item, 'point_0'),
+                                                col.prop(sub_item, 'point_1'),
+                                                col.prop(sub_item, 'point_2')),
                                               'Ngon Prism': lambda context, col, item: (
                                                 sub_item := context.scene.sdf_ngon_prism_pointer_list[item.sub_index],
                                                 col.prop(sub_item, 'radius'),
@@ -975,6 +986,7 @@ classes = [
     SDFPyramidPointer,
     SDFTruncatedPyramidPointer,
     SDFPrismPointer,
+    SDFQuadraticBezierPointer,
     SDFGLSLPointer,
     
     SDF2MESH_UL_List,
@@ -1001,7 +1013,7 @@ generate_storage_buffer_by_primitive_type = {'Box': lambda ctx, context: ShaderB
                                              'Pyramid': lambda ctx, context: ShaderBufferFactory.generate_pyramid_buffer(ctx, context),
                                              'Truncated Pyramid': lambda ctx, context: ShaderBufferFactory.generate_truncated_pyramid_buffer(ctx, context),
                                              'Hexagonal Prism': lambda ctx, context: ShaderBufferFactory.generate_hex_prism_buffer(ctx, context),
-                                             'Triangular Prism': lambda ctx, context: ShaderBufferFactory.generate_tri_prism_buffer(ctx, context),
+                                             'Quadratic Bezier': lambda ctx, context: ShaderBufferFactory.generate_quadratic_bezier_buffer(ctx, context),
                                              'Ngon Prism': lambda ctx, context: ShaderBufferFactory.generate_ngon_prism_buffer(ctx, context),
                                              'GLSL': lambda context: lambda ctx, context: ShaderBufferFactory.generate_glsl_buffer(ctx, context)}
                                              
@@ -1016,7 +1028,7 @@ update_storage_buffer_by_primitive_type = {'Box': lambda ctx, context, index, su
                                            'Pyramid': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_pyramid_buffer(ctx, context, index, sub_index),
                                            'Truncated Pyramid': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_truncated_pyramid_buffer(ctx, context, index, sub_index),
                                            'Hexagonal Prism': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_hex_prism_buffer(ctx, context, index, sub_index),
-                                           'Triangular Prism': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_tri_prism_buffer(ctx, context, index, sub_index),
+                                           'Quadratic Bezier': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_quadratic_bezier_buffer(ctx, context, index, sub_index),
                                            'Ngon Prism': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_ngon_prism_buffer(ctx, context, index, sub_index),
                                            'GLSL': lambda ctx, context, index, sub_index: ShaderBufferFactory.update_glsl_buffer(ctx, context, index, sub_index)}
 
@@ -1034,7 +1046,7 @@ def on_depsgraph_update(scene):
     update_buffer_requested = False
     
     for update in depsgraph.updates:
-        update_buffer_requested |= update.id.id_type == 'OBJECT' and update.is_updated_transform
+        update_buffer_requested |= (update.id.id_type == 'OBJECT' and update.is_updated_transform)
         
     if update_buffer_requested:
         for obj in bpy.context.selected_objects:
@@ -1068,7 +1080,7 @@ def register():
     gizmo.pyramid.register()
     gizmo.truncated_pyramid.register()
     gizmo.hex_prism.register()
-    gizmo.tri_prism.register()
+    gizmo.quadratic_bezier.register()
     gizmo.ngon_prism.register()
     gizmo.glsl.register()
 
@@ -1092,7 +1104,7 @@ def register():
     bpy.types.Scene.sdf_pyramid_pointer_list = CollectionProperty(type = SDFPyramidPointer)
     bpy.types.Scene.sdf_truncated_pyramid_pointer_list = CollectionProperty(type = SDFTruncatedPyramidPointer)
     bpy.types.Scene.sdf_hex_prism_pointer_list = CollectionProperty(type = SDFPrismPointer)
-    bpy.types.Scene.sdf_tri_prism_pointer_list = CollectionProperty(type = SDFPrismPointer)
+    bpy.types.Scene.sdf_quadratic_bezier_pointer_list = CollectionProperty(type = SDFQuadraticBezierPointer)
     bpy.types.Scene.sdf_ngon_prism_pointer_list = CollectionProperty(type = SDFPrismPointer)
     bpy.types.Scene.sdf_glsl_pointer_list = CollectionProperty(type = SDFGLSLPointer)
     
@@ -1117,7 +1129,7 @@ def unregister():
     gizmo.pyramid.unregister()
     gizmo.truncated_pyramid.unregister()
     gizmo.hex_prism.unregister()
-    gizmo.tri_prism.unregister()
+    gizmo.quadratic_bezier.unregister()
     gizmo.ngon_prism.unregister()
     gizmo.glsl.unregister()
 
